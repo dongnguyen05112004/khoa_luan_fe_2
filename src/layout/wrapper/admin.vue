@@ -44,7 +44,14 @@
           <i class="fas fa-box nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
         </a>
+
+        <router-link to="/admin/config" class="nav-item" active-class="active">
+          <i class="fas fa-cog nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
+        </router-link>
       </nav>
+      <!-- Nav -->
+
 
       <!-- Version badge at bottom -->
       <div class="sidebar-footer" v-show="!sidebarCollapsed">

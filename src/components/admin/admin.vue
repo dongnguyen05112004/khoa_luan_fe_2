@@ -9,6 +9,7 @@
 export default {
   name: 'AdminDashboard',
 }
+
 </script>
 
 <style scoped>
