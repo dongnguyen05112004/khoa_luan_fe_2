@@ -9,7 +9,7 @@
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Management Panel</div>
+          <div class="brand-sub">Admin Panel</div>
         </div>
       </div>
 
@@ -20,30 +20,20 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
-          <i class="fas fa-chart-line nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
-        </router-link>
-
-        <router-link to="/admin/acc_mgr" class="nav-item" active-class="active">
+        <router-link to="/admin/quanlynguoidung" class="nav-item" active-class="active">
           <i class="fas fa-users nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
+          <span v-show="!sidebarCollapsed">Quản lý người dùng</span>
         </router-link>
 
         <router-link to="/admin/cus_mgr" class="nav-item" active-class="active">
-          <i class="fas fa-dumbbell nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
+          <i class="fas fa-cog nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
 
-        <a href="#" class="nav-item">
-          <i class="fas fa-bullhorn nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
-        </a>
-
-        <a href="#" class="nav-item">
-          <i class="fas fa-box nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
-        </a>
+        <router-link to="/admin" class="nav-item" exact-active-class="active">
+          <i class="fas fa-clipboard-list nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
+        </router-link>
       </nav>
 
       <!-- Version badge at bottom -->
@@ -56,31 +46,18 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-left">
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item text-muted small">ADMIN</li>
-              <li class="breadcrumb-item active small">HỆ THỐNG</li>
-            </ol>
-          </nav>
+        <div class="header-search-wrap">
+          <i class="fas fa-search header-search-icon"></i>
+          <input type="text" class="header-search-input" placeholder="Tìm kiếm hệ thống..." />
         </div>
-        <div class="header-right d-flex align-items-center gap-3">
-          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-filter"></i>
-            <span>Lọc dữ liệu</span>
+        <div class="header-right">
+          <button class="header-icon-btn" title="Thông báo">
+            <i class="fas fa-bell"></i>
+            <span class="notif-dot"></span>
           </button>
-          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-user-plus"></i>
-            <span>Thêm nhân sự</span>
+          <button class="header-icon-btn" title="Tài khoản">
+            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="header-avatar" alt="Admin" />
           </button>
-          <!-- Admin Avatar -->
-          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
-            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
-            <div>
-              <div class="fw-bold small lh-1">Hệ thống Admin</div>
-              <div class="text-muted" style="font-size:0.72rem;">Super Admin</div>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -256,18 +233,81 @@ export default {
 .top-header {
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  padding: 14px 28px;
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   position: sticky;
   top: 0;
   z-index: 5;
 }
-.breadcrumb-item + .breadcrumb-item::before {
-  content: "›";
+.header-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+.header-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #94a3b8;
+  font-size: 0.82rem;
+}
+.header-search-input {
+  width: 100%;
+  padding: 9px 14px 9px 34px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  outline: none;
+  background: #f8fafc;
+  color: #1e293b;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.header-search-input:focus {
+  border-color: #2d7a3a;
+  box-shadow: 0 0 0 3px rgba(45,122,58,0.1);
+  background: #fff;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-icon-btn {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+  padding: 0;
+}
+.header-icon-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.notif-dot {
+  position: absolute;
+  top: 6px; right: 7px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #fff;
 }
 
 /* Page content */

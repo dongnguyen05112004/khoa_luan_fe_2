@@ -33,8 +33,8 @@ const routes = [
                 component: () => import('../components/admin/admin.vue'),
             }, 
             {
-                path: '/admin/acc_mgr',
-                component: () => import('../components/admin/acc_mgr.vue'),
+                path: '/admin/quanlynguoidung',
+                component: () => import('../components/admin/quanlynguoidung.vue'),
             }, 
             
             {
