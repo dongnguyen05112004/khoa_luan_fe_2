@@ -29,12 +29,14 @@
           <i class="fas fa-cog nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
-
         <router-link to="/admin" class="nav-item" exact-active-class="active">
           <i class="fas fa-clipboard-list nav-icon"></i>
           <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
+
         </router-link>
       </nav>
+      <!-- Nav -->
+
 
       <!-- Version badge at bottom -->
       <div class="sidebar-footer" v-show="!sidebarCollapsed">

@@ -1,0 +1,228 @@
+<template>
+  <div class="tab-content">
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="kpi-card accent-green">
+        <div class="kpi-label">TỶ LỆ GIỮ CHÂN TỔNG THỂ</div>
+        <div class="kpi-val">84.2%</div>
+        <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +2.4% ↑</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SỐ LƯỢNG NGUY CƠ RỜI BỎ</div>
+        <div class="kpi-val red">128 <span class="unit">Hội viên</span></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">HỘI VIÊN ĐÃ NGƯNG (30 NGÀY)</div>
+        <div class="kpi-val">42 <span class="unit-badge down"><i class="fas fa-caret-down"></i> -12%</span></div>
+      </div>
+      <div class="kpi-card accent-dark">
+        <div class="kpi-label">ĐIỂM SỐ TƯƠNG TÁC</div>
+        <div class="kpi-val white">78/100</div>
+        <div class="kpi-line-mini">
+          <svg viewBox="0 0 80 18" preserveAspectRatio="none"><polyline points="0,14 15,10 30,12 45,6 60,8 80,4" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section header -->
+    <div class="section-bar">
+      <h3 class="section-title">Phân tích tỷ lệ giữ chân hội viên</h3>
+      <div class="section-actions">
+        <div class="filter-select">
+          <span>Chi nhánh Quận 1</span><i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="filter-select">
+          <span>30 ngày qua</span><i class="fas fa-chevron-down"></i>
+        </div>
+        <button class="btn-export"><i class="fas fa-download"></i> Xuất báo cáo</button>
+      </div>
+    </div>
+
+    <!-- Main body -->
+    <div class="body-grid">
+      <!-- Donut chart -->
+      <div class="donut-card">
+        <div class="donut-header">
+          <strong>Phân khúc rủi ro rời bỏ</strong>
+          <i class="fas fa-info-circle info-ic"></i>
+        </div>
+        <div class="donut-sub">Phân loại rủi ro bằng AI</div>
+        <div class="donut-wrap">
+          <svg viewBox="0 0 160 160" class="donut-svg">
+            <!-- Background ring -->
+            <circle cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" stroke-width="22"/>
+            <!-- Segments (circumference ≈ 364.4) -->
+            <!-- An toàn 60% = 218.6 -->
+            <circle cx="80" cy="80" r="58" fill="none" stroke="#16a34a" stroke-width="22"
+              stroke-dasharray="218.6 364.4" stroke-dashoffset="0" stroke-linecap="butt"/>
+            <!-- Cần lưu ý 28% = 102.0; offset = -218.6 -->
+            <circle cx="80" cy="80" r="58" fill="none" stroke="#eab308" stroke-width="22"
+              stroke-dasharray="102.0 364.4" stroke-dashoffset="-218.6" stroke-linecap="butt"/>
+            <!-- Nguy cơ cao 12% = 43.7; offset = -320.6 -->
+            <circle cx="80" cy="80" r="58" fill="none" stroke="#dc2626" stroke-width="22"
+              stroke-dasharray="43.7 364.4" stroke-dashoffset="-320.6" stroke-linecap="butt"/>
+            <text x="80" y="74" text-anchor="middle" font-size="22" font-weight="800" fill="#1e293b">2480</text>
+            <text x="80" y="92" text-anchor="middle" font-size="9" fill="#94a3b8">TỔNG HỘI VIÊN</text>
+          </svg>
+        </div>
+        <div class="donut-legend">
+          <div class="legend-item"><span class="dot red"></span> Nguy cơ cao <strong>12%</strong></div>
+          <div class="legend-item"><span class="dot yellow"></span> Cần lưu ý <strong>28%</strong></div>
+          <div class="legend-item"><span class="dot green"></span> An toàn <strong>60%</strong></div>
+        </div>
+      </div>
+
+      <!-- At-risk member list -->
+      <div class="list-card">
+        <div class="list-header">
+          <strong>Danh sách hội viên rủi ro cần chú ý</strong>
+          <button class="btn-ai-badge"><i class="fas fa-robot"></i> AI CẬP NHẬT 2 PHÚT TRƯỚC</button>
+        </div>
+        <table class="member-table">
+          <thead>
+            <tr>
+              <th>ID HỘI VIÊN</th>
+              <th>NHÃN RỦI RO</th>
+              <th>BIẾN ĐỘNG CHỈ SỐ</th>
+              <th>ĐIỂM SỨC KHỎE</th>
+              <th>HÀNH ĐỘNG</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in members" :key="m.id">
+              <td>
+                <div class="member-id-cell">
+                  <div class="avatar" :style="{background: m.avatarColor}">{{ m.initials }}</div>
+                  <div>
+                    <div class="mid">{{ m.id }}</div>
+                    <div class="mname">{{ m.name }}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="tag" :class="m.riskClass">{{ m.risk }}</span></td>
+              <td>
+                <div class="metric-cell">
+                  <span :class="m.metricBad ? 'red-text' : 'green-text'">{{ m.metric }}</span>
+                  <span class="metric-label">check-in</span>
+                </div>
+              </td>
+              <td>
+                <div class="health-cell">
+                  <span :class="m.healthClass">{{ m.health }}</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-action">Xem tư vấn AI</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="table-footer">
+          <span class="table-note">Hiển thị 3 trên 128 hội viên có nguy cơ cao</span>
+          <div class="pagination">
+            <button class="pg-btn"><i class="fas fa-chevron-left"></i></button>
+            <button class="pg-btn active">1</button>
+            <button class="pg-btn">2</button>
+            <button class="pg-btn"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'TabGiuChan',
+  data() {
+    return {
+      members: [
+        { id: '#SG-8291', name: 'Lê Minh Khôi', initials: 'LM', avatarColor: '#bfdbfe', risk: 'Nguy cơ cao', riskClass: 'tag-red', metric: '↘ 72%', metricBad: true, health: 'Nguy 18% cấp', healthClass: 'health-red' },
+        { id: '#SG-9102', name: 'Trần Mỹ Linh', initials: 'TL', avatarColor: '#fde68a', risk: 'Cần lưu ý', riskClass: 'tag-yellow', metric: '↘ 45%', metricBad: true, health: 'Thấp 42% trong', healthClass: 'health-yellow' },
+        { id: '#SG-7721', name: 'Nguyễn Gia Huy', initials: 'NG', avatarColor: '#a7f3d0', risk: 'Nguy cơ cao', riskClass: 'tag-red', metric: '↘ 88%', metricBad: true, health: 'Nguy 12% cấp', healthClass: 'health-red' },
+      ],
+    }
+  },
+}
+</script>
+
+<style scoped>
+.tab-content { display: flex; flex-direction: column; gap: 20px; font-family: 'Segoe UI', sans-serif; }
+
+/* KPI */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.kpi-card { background:#fff; border-radius:14px; padding:18px 20px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.kpi-card.accent-green { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #bbf7d0; }
+.kpi-card.accent-dark  { background: linear-gradient(135deg,#1e293b,#0f172a); }
+.kpi-label { font-size:.65rem; font-weight:700; color:#94a3b8; letter-spacing:.5px; margin-bottom:6px; }
+.kpi-val { font-size:1.7rem; font-weight:800; color:#1e293b; line-height:1.1; }
+.kpi-val.red { color:#dc2626; }
+.kpi-val.white { color:#fff; }
+.unit { font-size:.85rem; font-weight:400; color:#64748b; }
+.kpi-badge { display:inline-flex; align-items:center; gap:3px; font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:20px; margin-top:6px; }
+.kpi-badge.up { background:#dcfce7; color:#16a34a; }
+.unit-badge { font-size:.75rem; font-weight:600; color:#dc2626; }
+.unit-badge.down { color:#dc2626; }
+.kpi-line-mini { margin-top:8px; height:18px; }
+.kpi-line-mini svg { width:100%; height:100%; }
+
+/* Section bar */
+.section-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.section-title { margin:0; font-size:1rem; font-weight:700; color:#1e293b; }
+.section-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filter-select { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:.8rem; color:#475569; cursor:pointer; }
+.filter-select i { font-size:.7rem; }
+.btn-export { display:flex; align-items:center; gap:6px; background:#2d7a3a; color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:.8rem; font-weight:600; cursor:pointer; }
+.btn-export:hover { opacity:.88; }
+
+/* Body */
+.body-grid { display:grid; grid-template-columns:260px 1fr; gap:16px; }
+
+/* Donut */
+.donut-card { background:#fff; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+.donut-header { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+.donut-header strong { font-size:.86rem; color:#1e293b; }
+.info-ic { color:#94a3b8; font-size:.8rem; }
+.donut-sub { font-size:.72rem; color:#94a3b8; margin-bottom:14px; }
+.donut-wrap { display:flex; justify-content:center; }
+.donut-svg { width:160px; height:160px; transform:rotate(-90deg); }
+.donut-svg text { transform:rotate(90deg) translateX(-160px); transform-origin:80px 80px; }
+.donut-legend { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:.8rem; color:#475569; }
+.legend-item strong { margin-left:auto; color:#1e293b; }
+.dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.dot.red { background:#dc2626; }
+.dot.yellow { background:#eab308; }
+.dot.green { background:#16a34a; }
+
+/* List */
+.list-card { background:#fff; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.06); overflow:hidden; }
+.list-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+.list-header strong { font-size:.9rem; color:#1e293b; }
+.btn-ai-badge { display:flex; align-items:center; gap:5px; background:#ede9fe; color:#7c3aed; border:none; border-radius:20px; padding:4px 12px; font-size:.7rem; font-weight:700; cursor:pointer; }
+.member-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+.member-table th { text-align:left; font-size:.65rem; font-weight:700; color:#94a3b8; letter-spacing:.4px; padding:8px 10px; border-bottom:1px solid #f1f5f9; }
+.member-table td { padding:12px 10px; border-bottom:1px solid #f8fafc; vertical-align:middle; }
+.member-id-cell { display:flex; align-items:center; gap:8px; }
+.avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:700; color:#1e293b; flex-shrink:0; }
+.mid { font-weight:700; font-size:.78rem; color:#1e293b; }
+.mname { font-size:.7rem; color:#94a3b8; }
+.tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.68rem; font-weight:700; }
+.tag-red { background:#fee2e2; color:#dc2626; }
+.tag-yellow { background:#fef9c3; color:#a16207; }
+.metric-cell { display:flex; flex-direction:column; gap:2px; }
+.metric-label { font-size:.65rem; color:#94a3b8; }
+.red-text { color:#dc2626; font-weight:700; }
+.green-text { color:#16a34a; font-weight:700; }
+.health-red { color:#dc2626; font-size:.75rem; font-weight:600; }
+.health-yellow { color:#a16207; font-size:.75rem; font-weight:600; }
+.btn-action { background:linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:.72rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+.btn-action:hover { opacity:.88; }
+.table-footer { display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:8px; }
+.table-note { font-size:.72rem; color:#94a3b8; }
+.pagination { display:flex; gap:4px; }
+.pg-btn { width:28px; height:28px; border:1px solid #e2e8f0; background:#fff; border-radius:6px; font-size:.75rem; cursor:pointer; color:#64748b; display:flex; align-items:center; justify-content:center; }
+.pg-btn.active { background:#2d7a3a; color:#fff; border-color:#2d7a3a; }
+</style>
