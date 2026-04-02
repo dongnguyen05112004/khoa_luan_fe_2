@@ -4,12 +4,10 @@
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <!-- Brand -->
       <div class="sidebar-brand">
-        <div class="brand-avatar">
-          <img src="https://ui-avatars.com/api/?name=Admin&background=ffffff&color=2d7a3a&bold=true&size=40" alt="Admin" />
-        </div>
+        <div class="brand-avatar">AD</div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Admin Panel</div>
+          <div class="brand-sub">Management Panel</div>
         </div>
       </div>
 
@@ -20,23 +18,31 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
+        <router-link to="/admin" class="nav-item" exact-active-class="active">
+          <i class="fas fa-chart-line nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
+        </router-link>
+
         <router-link to="/admin/quanlynguoidung" class="nav-item" active-class="active">
           <i class="fas fa-users nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý người dùng</span>
+          <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
         </router-link>
 
-        <router-link to="/admin/cus_mgr" class="nav-item" active-class="active">
-          <i class="fas fa-cog nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
+        <router-link to="/admin/thietbi" class="nav-item" active-class="active">
+          <i class="fas fa-dumbbell nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
         </router-link>
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
-          <i class="fas fa-clipboard-list nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
 
+        <router-link to="/admin/khuyenmai" class="nav-item" active-class="active">
+          <i class="fas fa-bullhorn nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
+        </router-link>
+
+        <router-link to="/admin/goitap" class="nav-item" active-class="active">
+          <i class="fas fa-box nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
         </router-link>
       </nav>
-      <!-- Nav -->
-
 
       <!-- Version badge at bottom -->
       <div class="sidebar-footer" v-show="!sidebarCollapsed">
@@ -48,18 +54,27 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-search-wrap">
-          <i class="fas fa-search header-search-icon"></i>
-          <input type="text" class="header-search-input" placeholder="Tìm kiếm hệ thống..." />
+        <div class="header-breadcrumb">
+          <span class="breadcrumb-root">ADMIN</span>
+          <i class="fas fa-chevron-right breadcrumb-sep"></i>
+          <span class="breadcrumb-current">HỆ THỐNG</span>
         </div>
         <div class="header-right">
-          <button class="header-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
+          <button class="header-action-btn">
+            <i class="fas fa-filter"></i>
+            <span>Lọc dữ liệu</span>
           </button>
-          <button class="header-icon-btn" title="Tài khoản">
-            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="header-avatar" alt="Admin" />
+          <button class="header-action-btn primary">
+            <i class="fas fa-user-plus"></i>
+            <span>Thêm nhân sự</span>
           </button>
+          <div class="header-user">
+            <div class="header-user-avatar">HA</div>
+            <div class="header-user-info">
+              <div class="header-user-name">Hệ thống Admin</div>
+              <div class="header-user-role">Super Admin</div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -133,11 +148,19 @@ export default {
   border-bottom: 1px solid rgba(255,255,255,0.15);
   margin-bottom: 12px;
 }
-.brand-avatar img {
+.brand-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .brand-title {
   font-size: 1rem;
@@ -245,63 +268,84 @@ export default {
   top: 0;
   z-index: 5;
 }
-.header-search-wrap {
-  position: relative;
-  flex: 1;
-  max-width: 320px;
-}
-.header-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
+/* Breadcrumb */
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 0.82rem;
+  font-weight: 500;
 }
-.header-search-input {
-  width: 100%;
-  padding: 9px 14px 9px 34px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  outline: none;
-  background: #f8fafc;
+.breadcrumb-root {
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+}
+.breadcrumb-sep {
+  font-size: 0.6rem;
+  color: #cbd5e1;
+}
+.breadcrumb-current {
   color: #1e293b;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
+  font-weight: 600;
 }
-.header-search-input:focus {
-  border-color: #2d7a3a;
-  box-shadow: 0 0 0 3px rgba(45,122,58,0.1);
-  background: #fff;
-}
+/* Header right */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.header-icon-btn {
+/* Action buttons */
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.header-action-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.header-action-btn.primary {
+  background: #2d7a3a;
+  color: #fff;
+  border-color: #2d7a3a;
+}
+.header-action-btn.primary:hover { background: #245f2e; }
+/* User info */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+.header-user-avatar {
   width: 38px;
   height: 38px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #64748b;
-  font-size: 0.95rem;
+  border-radius: 50%;
+  background: #2d7a3a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-  padding: 0;
+  flex-shrink: 0;
 }
-.header-icon-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-.header-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: cover;
+.header-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+.header-user-role {
+  font-size: 0.72rem;
+  color: #94a3b8;
 }
 .notif-dot {
   position: absolute;

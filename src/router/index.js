@@ -46,6 +46,14 @@ const routes = [
                 path: '/admin/config',
                 component: () => import('../components/admin/system_config.vue'),
             },
+            {
+                path: '/admin/thietbi',
+                component: () => import('../components/admin/tab_thietbi.vue'),
+            },
+            {
+                path: '/admin/khuyenmai',
+                component: () => import('../components/admin/tab_khuyenmai.vue'),
+            },
 
         ]
     },
