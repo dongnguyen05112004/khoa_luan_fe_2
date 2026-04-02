@@ -9,7 +9,7 @@
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Management Panel</div>
+          <div class="brand-sub">Admin Dashboard</div>
         </div>
       </div>
 
@@ -20,30 +20,30 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
+        <router-link to="/quanly/bao_cao" class="nav-item" active-class="active">
           <i class="fas fa-chart-line nav-icon"></i>
           <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
         </router-link>
 
-        <router-link to="/admin/acc_mgr" class="nav-item" active-class="active">
+        <router-link to="/quanly/tai_khoan" class="nav-item" active-class="active">
           <i class="fas fa-users nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
         </router-link>
 
-        <router-link to="/admin/cus_mgr" class="nav-item" active-class="active">
+        <router-link to="/quanly/thiet_bi" class="nav-item" active-class="active">
           <i class="fas fa-dumbbell nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
         </router-link>
 
-        <a href="#" class="nav-item">
+        <router-link to="/quanly/khuyen_mai" class="nav-item" active-class="active">
           <i class="fas fa-bullhorn nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
-        </a>
+        </router-link>
 
-        <a href="#" class="nav-item">
-          <i class="fas fa-box nav-icon"></i>
+        <router-link to="/quanly/goi_tap" class="nav-item" active-class="active">
+          <i class="fas fa-box-open nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
-        </a>
+        </router-link>
       </nav>
 
       <!-- Version badge at bottom -->
@@ -60,21 +60,29 @@
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
               <li class="breadcrumb-item text-muted small">ADMIN</li>
-              <li class="breadcrumb-item active small">HỆ THỐNG</li>
+              <li class="breadcrumb-item active small">QUẢN TRỊ HỆ THỐNG</li>
             </ol>
           </nav>
         </div>
         <div class="header-right d-flex align-items-center gap-3">
-          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-filter"></i>
-            <span>Lọc dữ liệu</span>
-          </button>
-          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-user-plus"></i>
-            <span>Thêm nhân sự</span>
+          <!-- Stat chips -->
+          <div class="header-stat-chip">
+            <i class="fas fa-users"></i>
+            <span class="chip-value">{{ stats.totalUsers }}</span>
+            <span class="chip-label">Người dùng</span>
+          </div>
+          <div class="header-stat-chip chip-danger">
+            <i class="fas fa-user-lock"></i>
+            <span class="chip-value">{{ stats.lockedAccounts }}</span>
+            <span class="chip-label">Bị khóa</span>
+          </div>
+          <!-- Notification bell -->
+          <button class="header-icon-btn" title="Thông báo hệ thống">
+            <i class="fas fa-bell"></i>
+            <span class="notif-dot"></span>
           </button>
           <!-- Admin Avatar -->
-          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
+          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-1">
             <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
             <div>
               <div class="fw-bold small lh-1">Hệ thống Admin</div>
@@ -109,11 +117,15 @@
 
 <script>
 export default {
-  name: 'BlankLayout',
+  name: 'QuanlyLayout',
   data() {
     return {
       sidebarCollapsed: false,
       showAiBubble: true,
+      stats: {
+        totalUsers: 128,
+        lockedAccounts: 3,
+      },
     }
   },
 }
@@ -141,9 +153,7 @@ export default {
   flex-shrink: 0;
   box-shadow: 4px 0 20px rgba(0,0,0,0.15);
 }
-.sidebar.collapsed {
-  width: 68px;
-}
+.sidebar.collapsed { width: 68px; }
 
 /* Brand */
 .sidebar-brand {
@@ -190,9 +200,7 @@ export default {
   z-index: 10;
   transition: background 0.2s;
 }
-.sidebar-toggle:hover {
-  background: #e8f5e9;
-}
+.sidebar-toggle:hover { background: #e8f5e9; }
 
 /* Nav items */
 .sidebar-nav {
@@ -201,12 +209,16 @@ export default {
   flex-direction: column;
   gap: 4px;
   padding: 0 10px;
+  overflow-y: auto;
 }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 12px 14px;
   border-radius: 10px;
   color: rgba(255,255,255,0.75);
   text-decoration: none;
@@ -220,9 +232,10 @@ export default {
   color: #fff;
 }
 .nav-item.active {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.22);
   color: #fff;
   font-weight: 600;
+  box-shadow: inset 3px 0 0 rgba(255,255,255,0.6);
 }
 .nav-icon {
   font-size: 1rem;
@@ -256,7 +269,7 @@ export default {
 .top-header {
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  padding: 14px 28px;
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -268,6 +281,56 @@ export default {
 .breadcrumb-item + .breadcrumb-item::before {
   content: "›";
   color: #94a3b8;
+}
+
+/* Header stat chips */
+.header-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0faf3;
+  border: 1px solid #c6e9cf;
+  border-radius: 20px;
+  padding: 5px 14px;
+  color: #1a5c28;
+  font-size: 0.8rem;
+}
+.header-stat-chip i { font-size: 0.8rem; opacity: 0.7; }
+.chip-value { font-weight: 700; }
+.chip-label { color: #4a7c5a; font-size: 0.72rem; }
+.header-stat-chip.chip-danger {
+  background: #fff5f5;
+  border-color: #ffc5c5;
+  color: #c0392b;
+}
+.header-stat-chip.chip-danger .chip-label { color: #c0392b; opacity: 0.7; }
+
+/* Header icon button */
+.header-icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f5f7fa;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.header-icon-btn:hover { background: #e8f5e9; color: #2d7a3a; }
+.notif-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e74c3c;
+  border: 2px solid #fff;
 }
 
 /* Page content */

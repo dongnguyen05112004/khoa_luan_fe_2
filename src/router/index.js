@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from "vue-router"; // cài vue-router:
 
 const routes = [
     {
+        path: '/',
+        component: () => import('../components/admin/start.vue'),
+        meta: { layout: 'index' },
+    },
+     {
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
@@ -30,18 +35,21 @@ const routes = [
         meta: { layout: "admin" },
         children: [
             {
-                path: '/admin',
+                path: '/admin/admin',
                 component: () => import('../components/admin/admin.vue'),
-            },
+            }, 
             {
                 path: '/admin/quanlynguoidung',
                 component: () => import('../components/admin/quanlynguoidung.vue'),
-            }, 
-            {
-                path: '/admin/cus_mgr',
-                component: () => import('../components/admin/cus_mgr.vue'),
             },
-
+            {
+                path: '/admin/cau_hinh',
+                component: () => import('../components/admin/cau_hinh.vue'),
+            },
+            {
+                path: '/admin/nhat_ky',
+                component: () => import('../components/admin/nhat_ky.vue'),
+            },
             {
                 path: '/admin/config',
                 component: () => import('../components/admin/system_config.vue'),
@@ -54,7 +62,7 @@ const routes = [
                 path: '/admin/khuyenmai',
                 component: () => import('../components/admin/tab_khuyenmai.vue'),
             },
-
+                
         ]
     },
     {
@@ -62,32 +70,32 @@ const routes = [
         component: () => import('../layout/wrapper/nhanvien.vue'),
         meta: { layout: "nhanvien" },
         children: [
-
+             
             {
-                path: '/nhanvien',
+                path: '/nhanvien', 
                 component: () => import('../components/nhanvien/nhanvien.vue'),
-            },
+            }, 
         ]
     },
     {
         path: '/khachhang',
         component: () => import('../layout/wrapper/khachhang.vue'),
         meta: { layout: "khachhang" },
-        children: [
+        children: [ 
             {
-                path: '/chisosuckhoe',
+                path: '/chisosuckhoe', 
                 component: () => import('../components/khachhang/chisosuckhoe.vue'),
             },
             {
-                path: '/histori',
+                path: '/histori', 
                 component: () => import('../components/khachhang/histori.vue'),
             },
             {
-                path: '/tientrinhtapluyen',
+                path: '/tientrinhtapluyen', 
                 component: () => import('../components/khachhang/tientrinhtapluyen.vue'),
             },
             {
-                path: '/hosocanhan',
+                path: '/hosocanhan', 
                 component: () => import('../components/khachhang/hosocanhan.vue'),
             }
         ]

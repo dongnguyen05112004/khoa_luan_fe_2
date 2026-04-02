@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import Default from './layout/wrapper/index.vue'
+import Default from './layout/wrapper/quanly.vue'
 const app = createApp(App)
 
 app.use(router)

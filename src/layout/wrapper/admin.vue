@@ -7,7 +7,7 @@
         <div class="brand-avatar">AD</div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Management Panel</div>
+          <div class="brand-sub">Admin Dashboard</div>
         </div>
       </div>
 
@@ -22,25 +22,15 @@
           <i class="fas fa-chart-line nav-icon"></i>
           <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
         </router-link>
-
-        <router-link to="/admin/quanlynguoidung" class="nav-item" active-class="active">
-          <i class="fas fa-users nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
+        
+       <router-link to="/admin/cau_hinh" class="nav-item" active-class="active">
+          <i class="fas fa-cogs nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
 
-        <router-link to="/admin/thietbi" class="nav-item" active-class="active">
-          <i class="fas fa-dumbbell nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
-        </router-link>
-
-        <router-link to="/admin/khuyenmai" class="nav-item" active-class="active">
-          <i class="fas fa-bullhorn nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
-        </router-link>
-
-        <router-link to="/admin/goitap" class="nav-item" active-class="active">
-          <i class="fas fa-box nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
+        <router-link to="/admin/nhat_ky" class="nav-item" active-class="active">
+          <i class="fas fa-search nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
         </router-link>
       </nav>
 
@@ -54,25 +44,29 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-breadcrumb">
-          <span class="breadcrumb-root">ADMIN</span>
-          <i class="fas fa-chevron-right breadcrumb-sep"></i>
-          <span class="breadcrumb-current">HỆ THỐNG</span>
+        <div class="header-left">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item text-muted small">ADMIN</li>
+              <li class="breadcrumb-item active small">HỆ THỐNG</li>
+            </ol>
+          </nav>
         </div>
-        <div class="header-right">
-          <button class="header-action-btn">
+        <div class="header-right d-flex align-items-center gap-3">
+          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
             <i class="fas fa-filter"></i>
             <span>Lọc dữ liệu</span>
           </button>
-          <button class="header-action-btn primary">
+          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
             <i class="fas fa-user-plus"></i>
             <span>Thêm nhân sự</span>
           </button>
-          <div class="header-user">
-            <div class="header-user-avatar">HA</div>
-            <div class="header-user-info">
-              <div class="header-user-name">Hệ thống Admin</div>
-              <div class="header-user-role">Super Admin</div>
+          <!-- Admin Avatar -->
+          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
+            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
+            <div>
+              <div class="fw-bold small lh-1">Hệ thống Admin</div>
+              <div class="text-muted" style="font-size:0.72rem;">Super Admin</div>
             </div>
           </div>
         </div>
@@ -108,6 +102,10 @@ export default {
     return {
       sidebarCollapsed: false,
       showAiBubble: true,
+      stats: {
+        totalUsers: 128,
+        lockedAccounts: 3,
+      },
     }
   },
 }
@@ -201,18 +199,37 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   padding: 0 10px;
+  overflow-y: auto;
 }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+/* Section labels */
+.nav-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  padding: 14px 12px 4px;
+  text-transform: uppercase;
+}
+.nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin: 10px 12px;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 10px 12px;
   border-radius: 10px;
   color: rgba(255,255,255,0.75);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.86rem;
   font-weight: 500;
   transition: background 0.2s, color 0.2s;
   line-height: 1.3;
@@ -222,12 +239,13 @@ export default {
   color: #fff;
 }
 .nav-item.active {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.22);
   color: #fff;
   font-weight: 600;
+  box-shadow: inset 3px 0 0 rgba(255,255,255,0.6);
 }
 .nav-icon {
-  font-size: 1rem;
+  font-size: 0.95rem;
   width: 20px;
   text-align: center;
   flex-shrink: 0;
@@ -346,14 +364,6 @@ export default {
 .header-user-role {
   font-size: 0.72rem;
   color: #94a3b8;
-}
-.notif-dot {
-  position: absolute;
-  top: 6px; right: 7px;
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #ef4444;
-  border: 1.5px solid #fff;
 }
 
 /* Page content */
