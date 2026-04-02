@@ -20,27 +20,27 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <router-link to="/quanly/bao_cao" class="nav-item" active-class="active">
+        <router-link to="/quanly/baocao" class="nav-item" active-class="active">
           <i class="fas fa-chart-line nav-icon"></i>
           <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
         </router-link>
 
-        <router-link to="/quanly/tai_khoan" class="nav-item" active-class="active">
+        <router-link to="/quanly/taikhoan" class="nav-item" active-class="active">
           <i class="fas fa-users nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
         </router-link>
 
-        <router-link to="/quanly/thiet_bi" class="nav-item" active-class="active">
+        <router-link to="/quanly/thietbi" class="nav-item" active-class="active">
           <i class="fas fa-dumbbell nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
         </router-link>
 
-        <router-link to="/quanly/khuyen_mai" class="nav-item" active-class="active">
+        <router-link to="/quanly/khuyenmai" class="nav-item" active-class="active">
           <i class="fas fa-bullhorn nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
         </router-link>
 
-        <router-link to="/quanly/goi_tap" class="nav-item" active-class="active">
+        <router-link to="/quanly/goitap" class="nav-item" active-class="active">
           <i class="fas fa-box-open nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
         </router-link>

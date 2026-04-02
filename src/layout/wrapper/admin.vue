@@ -18,12 +18,12 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
+        <router-link to="/admin/quanlynguoidung" class="nav-item" exact-active-class="active">
           <i class="fas fa-chart-line nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
+          <span v-show="!sidebarCollapsed">Quản lý người dùng</span>
         </router-link>
-        
-       <router-link to="/admin/cau_hinh" class="nav-item" active-class="active">
+
+       <router-link to="/admin/config" class="nav-item" active-class="active">
           <i class="fas fa-cogs nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>

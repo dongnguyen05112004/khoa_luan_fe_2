@@ -260,7 +260,7 @@
 </template>
 
 <script>
-import TabKhuyenMaiPhanTich from '../quanly/baocao/tab_khuyenmai_phantich.vue'
+import TabKhuyenMaiPhanTich from './tab_khuyenmai_phantich.vue'
 export default {
   name: 'TabKhuyenMai',
   components: { TabKhuyenMaiPhanTich },

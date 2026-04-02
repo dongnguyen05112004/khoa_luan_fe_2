@@ -6,7 +6,7 @@ const routes = [
         component: () => import('../components/admin/start.vue'),
         meta: { layout: 'index' },
     },
-     {
+    {
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
@@ -34,10 +34,7 @@ const routes = [
         component: () => import('../layout/wrapper/admin.vue'),
         meta: { layout: "admin" },
         children: [
-            {
-                path: '/admin/admin',
-                component: () => import('../components/admin/admin.vue'),
-            }, 
+
             {
                 path: '/admin/quanlynguoidung',
                 component: () => import('../components/admin/quanlynguoidung.vue'),
@@ -55,47 +52,71 @@ const routes = [
                 component: () => import('../components/admin/system_config.vue'),
             },
             {
-                path: '/admin/thietbi',
-                component: () => import('../components/admin/tab_thietbi.vue'),
-            },
-            {
                 path: '/admin/khuyenmai',
-                component: () => import('../components/admin/tab_khuyenmai.vue'),
+                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
             },
-                
+
         ]
     },
+
     {
         path: '/nhanvien',
         component: () => import('../layout/wrapper/nhanvien.vue'),
         meta: { layout: "nhanvien" },
         children: [
-             
+
             {
-                path: '/nhanvien', 
+                path: '/nhanvien',
                 component: () => import('../components/nhanvien/nhanvien.vue'),
-            }, 
+            },
+        ]
+    },
+    {
+        path: '/quanly',
+        component: () => import('../layout/wrapper/quanly.vue'),
+        meta: { layout: "quanly" },
+        children: [
+            {
+                path: '/quanly/baocao',
+                component: () => import('../components/quanly/trungtambaocaothongke.vue'),
+            },
+            {
+                path: '/quanly/goitap',
+                component: () => import('../components/quanly/goi_tap.vue'),
+            },
+            {
+                path: '/quanly/khuyenmai',
+                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
+            },
+            {
+                path: '/quanly/taikhoan',
+                component: () => import('../components/quanly/tai_khoan.vue'),
+            },
+            {
+                path: '/quanly/thietbi',
+                component: () => import('../components/quanly/thietbi.vue'),
+            },
         ]
     },
     {
         path: '/khachhang',
         component: () => import('../layout/wrapper/khachhang.vue'),
         meta: { layout: "khachhang" },
-        children: [ 
+        children: [
             {
-                path: '/chisosuckhoe', 
+                path: '/chisosuckhoe',
                 component: () => import('../components/khachhang/chisosuckhoe.vue'),
             },
             {
-                path: '/histori', 
+                path: '/histori',
                 component: () => import('../components/khachhang/histori.vue'),
             },
             {
-                path: '/tientrinhtapluyen', 
+                path: '/tientrinhtapluyen',
                 component: () => import('../components/khachhang/tientrinhtapluyen.vue'),
             },
             {
-                path: '/hosocanhan', 
+                path: '/hosocanhan',
                 component: () => import('../components/khachhang/hosocanhan.vue'),
             }
         ]

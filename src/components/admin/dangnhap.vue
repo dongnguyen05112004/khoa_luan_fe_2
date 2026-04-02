@@ -1,7 +1,7 @@
 <template>
-  <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
+  <div class=" min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
     
-    <div class="card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
+    <div class="mb-3 card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
       <div class="row g-0 h-100">
         
         <div class="col-md-6 d-none d-md-flex flex-column justify-content-between p-5 text-white custom-bg-gradient">
@@ -95,9 +95,8 @@
         </div>
 
       </div>
-    </div>
-
-    <div class="position-absolute bottom-0 mb-4 d-flex gap-4 small text-muted">
+    </div> 
+    <div class="position-absolute bottom-0  mb-4 d-flex gap-4 small text-muted">
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Quy định</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Bảo mật</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Hỗ trợ</a>

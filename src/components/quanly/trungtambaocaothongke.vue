@@ -200,11 +200,11 @@
 </template>
 
 <script>
-import TabGiuChan     from './tab_giuchan.vue'
-import TabGoiTap      from './tab_goitap.vue'
-import TabKhuyenMai   from './tab_khuyenmai.vue'
-import TabPhanHoi     from './tab_phanhoi.vue'
-import TabBaoCao      from './tab_baocao.vue'
+import TabGiuChan     from './baocao/tab_giuchan.vue'
+import TabGoiTap      from './baocao/tab_goitap.vue'
+import TabKhuyenMai   from './baocao/tab_khuyenmai.vue'
+import TabPhanHoi     from './baocao/tab_phanhoi.vue'
+import TabBaoCao      from './baocao/tab_baocao.vue'
 
 export default {
   name: 'AdminDashboard',
