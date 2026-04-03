@@ -36,7 +36,7 @@ const routes = [
             {
                 path: '/admin/quanlynguoidung',
                 component: () => import('../components/admin/quanlynguoidung.vue'),
-            }, 
+            },
             {
                 path: '/admin/cus_mgr',
                 component: () => import('../components/admin/cus_mgr.vue'),
@@ -46,6 +46,11 @@ const routes = [
                 path: '/admin/config',
                 component: () => import('../components/admin/system_config.vue'),
             },
+
+            {
+                path: '/admin/audit_logs',
+                component: () => import('../components/admin/audit_logs.vue'),
+            }
 
         ]
     },

@@ -139,31 +139,26 @@ const handleLogin = () => {
   font-family: 'Quicksand', sans-serif; 
 }
 
-/* Bo góc siêu lớn cho form */
 .custom-card { 
   border-radius: 2.5rem; 
   min-height: 600px; 
 }
 
-/* Gradient nền cột trái giống hình */
 .custom-bg-gradient { 
   background: linear-gradient(135deg, #2a4d3e 0%, #6035d0 100%); 
 }
 
-/* Badge (Tag) trong suốt */
 .custom-glass-badge {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Label text nhỏ xíu có khoảng cách chữ (Tracking) */
 .custom-label {
   font-size: 0.65rem;
   letter-spacing: 1px;
 }
 
-/* Biến tấu Input của Bootstrap thành dạng gạch chân */
 .custom-input-group { 
   border-bottom: 2px solid #e2e8f0; 
   transition: border-color 0.3s ease; 

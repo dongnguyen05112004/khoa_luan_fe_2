@@ -29,10 +29,9 @@
           <i class="fas fa-cog nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
-          <i class="fas fa-clipboard-list nav-icon"></i>
+        <router-link to="/admin/audit-logs" class="nav-item" active-class="active">
+          <i class="fas fa-list-alt nav-icon"></i>
           <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
-
         </router-link>
       </nav>
       <!-- Nav -->
