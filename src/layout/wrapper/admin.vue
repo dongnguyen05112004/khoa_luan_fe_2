@@ -79,19 +79,26 @@
     </div>
 
     <!-- AI Floating Chat Bubble -->
-    <div class="ai-bubble" v-if="showAiBubble">
-      <div class="ai-bubble-header">
-        <span class="ai-icon"><i class="fas fa-robot"></i></span>
-        <strong>AI GỢI Ý VẬN HÀNH</strong>
-        <button class="btn-close btn-close-white ms-auto" style="font-size:0.65rem;" @click="showAiBubble = false"></button>
+    <transition name="ai-fade">
+      <div class="ai-bubble" v-if="showAiBubble">
+        <div class="ai-bubble-header">
+          <span class="ai-icon"><i class="fas fa-robot"></i></span>
+          <strong>AI GỢI Ý VẬN HÀNH</strong>
+          <button class="ai-minimize-btn ms-auto" @click="showAiBubble = false" title="Thu gọn">
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
+        <p class="ai-bubble-text">
+          Phòng tập tại quận 1 đang thiếu PT vào khung giờ 17:00 – 19:00, AI đề xuất điều phối nhân sự từ cơ sở lân cận.
+        </p>
       </div>
-      <p class="ai-bubble-text">
-        Phòng tập tại quận 1 đang thiếu PT vào khung giờ 17:00 – 19:00, AI đề xuất điều phối nhân sự từ cơ sở lân cận.
-      </p>
-    </div>
-    <button class="ai-fab" v-else @click="showAiBubble = true" title="AI Assistant">
-      <i class="fas fa-robot"></i>
-    </button>
+    </transition>
+
+    <transition name="ai-fade">
+      <button class="ai-fab" v-if="!showAiBubble" @click="showAiBubble = true" title="AI Assistant">
+        <i class="fas fa-robot"></i>
+      </button>
+    </transition>
   </div>
 </template>
 
@@ -414,6 +421,20 @@ export default {
   margin: 0;
   line-height: 1.5;
 }
+.ai-minimize-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.8rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.ai-minimize-btn:hover { color: #6366f1; }
+
 .ai-fab {
   position: fixed;
   bottom: 28px;
@@ -435,8 +456,12 @@ export default {
 }
 .ai-fab:hover { transform: scale(1.1); }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Animation cho phép thu gọn / phình ra của AI Bubble */
+.ai-fade-enter-active, .ai-fade-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-fade-enter-from, .ai-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
 }
 </style>
