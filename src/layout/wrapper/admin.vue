@@ -4,12 +4,10 @@
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <!-- Brand -->
       <div class="sidebar-brand">
-        <div class="brand-avatar">
-          <img src="https://ui-avatars.com/api/?name=Admin&background=ffffff&color=2d7a3a&bold=true&size=40" alt="Admin" />
-        </div>
+        <div class="brand-avatar">AD</div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Admin Panel</div>
+          <div class="brand-sub">Admin Dashboard</div>
         </div>
       </div>
 
@@ -20,22 +18,20 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <router-link to="/admin/quanlynguoidung" class="nav-item" active-class="active">
-          <i class="fas fa-users nav-icon"></i>
+        <router-link to="/admin/quanlynguoidung" class="nav-item" exact-active-class="active">
+          <i class="fas fa-chart-line nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý người dùng</span>
         </router-link>
 
-        <router-link to="/admin/cus_mgr" class="nav-item" active-class="active">
-          <i class="fas fa-cog nav-icon"></i>
+       <router-link to="/admin/config" class="nav-item" active-class="active">
+          <i class="fas fa-cogs nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
-        <router-link to="/admin/audit-logs" class="nav-item" active-class="active">
-          <i class="fas fa-list-alt nav-icon"></i>
+        <router-link to="/admin" class="nav-item" exact-active-class="active">
+          <i class="fas fa-clipboard-list nav-icon"></i>
           <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
         </router-link>
       </nav>
-      <!-- Nav -->
-
 
       <!-- Version badge at bottom -->
       <div class="sidebar-footer" v-show="!sidebarCollapsed">
@@ -47,18 +43,31 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-search-wrap">
-          <i class="fas fa-search header-search-icon"></i>
-          <input type="text" class="header-search-input" placeholder="Tìm kiếm hệ thống..." />
+        <div class="header-left">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item text-muted small">ADMIN</li>
+              <li class="breadcrumb-item active small">HỆ THỐNG</li>
+            </ol>
+          </nav>
         </div>
-        <div class="header-right">
-          <button class="header-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
+        <div class="header-right d-flex align-items-center gap-3">
+          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-filter"></i>
+            <span>Lọc dữ liệu</span>
           </button>
-          <button class="header-icon-btn" title="Tài khoản">
-            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="header-avatar" alt="Admin" />
+          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-user-plus"></i>
+            <span>Thêm nhân sự</span>
           </button>
+          <!-- Admin Avatar -->
+          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
+            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
+            <div>
+              <div class="fw-bold small lh-1">Hệ thống Admin</div>
+              <div class="text-muted" style="font-size:0.72rem;">Super Admin</div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -69,19 +78,26 @@
     </div>
 
     <!-- AI Floating Chat Bubble -->
-    <div class="ai-bubble" v-if="showAiBubble">
-      <div class="ai-bubble-header">
-        <span class="ai-icon"><i class="fas fa-robot"></i></span>
-        <strong>AI GỢI Ý VẬN HÀNH</strong>
-        <button class="btn-close btn-close-white ms-auto" style="font-size:0.65rem;" @click="showAiBubble = false"></button>
+    <transition name="ai-fade">
+      <div class="ai-bubble" v-if="showAiBubble">
+        <div class="ai-bubble-header">
+          <span class="ai-icon"><i class="fas fa-robot"></i></span>
+          <strong>AI GỢI Ý VẬN HÀNH</strong>
+          <button class="ai-minimize-btn ms-auto" @click="showAiBubble = false" title="Thu gọn">
+            <i class="fas fa-chevron-down"></i>
+          </button>
+        </div>
+        <p class="ai-bubble-text">
+          Phòng tập tại quận 1 đang thiếu PT vào khung giờ 17:00 – 19:00, AI đề xuất điều phối nhân sự từ cơ sở lân cận.
+        </p>
       </div>
-      <p class="ai-bubble-text">
-        Phòng tập tại quận 1 đang thiếu PT vào khung giờ 17:00 – 19:00, AI đề xuất điều phối nhân sự từ cơ sở lân cận.
-      </p>
-    </div>
-    <button class="ai-fab" v-else @click="showAiBubble = true" title="AI Assistant">
-      <i class="fas fa-robot"></i>
-    </button>
+    </transition>
+
+    <transition name="ai-fade">
+      <button class="ai-fab" v-if="!showAiBubble" @click="showAiBubble = true" title="AI Assistant">
+        <i class="fas fa-robot"></i>
+      </button>
+    </transition>
   </div>
 </template>
 
@@ -92,6 +108,10 @@ export default {
     return {
       sidebarCollapsed: false,
       showAiBubble: true,
+      stats: {
+        totalUsers: 128,
+        lockedAccounts: 3,
+      },
     }
   },
 }
@@ -132,11 +152,19 @@ export default {
   border-bottom: 1px solid rgba(255,255,255,0.15);
   margin-bottom: 12px;
 }
-.brand-avatar img {
+.brand-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .brand-title {
   font-size: 1rem;
@@ -177,18 +205,37 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   padding: 0 10px;
+  overflow-y: auto;
 }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+/* Section labels */
+.nav-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  padding: 14px 12px 4px;
+  text-transform: uppercase;
+}
+.nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin: 10px 12px;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 10px 12px;
   border-radius: 10px;
   color: rgba(255,255,255,0.75);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: 0.86rem;
   font-weight: 500;
   transition: background 0.2s, color 0.2s;
   line-height: 1.3;
@@ -198,12 +245,13 @@ export default {
   color: #fff;
 }
 .nav-item.active {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.22);
   color: #fff;
   font-weight: 600;
+  box-shadow: inset 3px 0 0 rgba(255,255,255,0.6);
 }
 .nav-icon {
-  font-size: 1rem;
+  font-size: 0.95rem;
   width: 20px;
   text-align: center;
   flex-shrink: 0;
@@ -244,71 +292,84 @@ export default {
   top: 0;
   z-index: 5;
 }
-.header-search-wrap {
-  position: relative;
-  flex: 1;
-  max-width: 320px;
-}
-.header-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
+/* Breadcrumb */
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 0.82rem;
+  font-weight: 500;
 }
-.header-search-input {
-  width: 100%;
-  padding: 9px 14px 9px 34px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  outline: none;
-  background: #f8fafc;
+.breadcrumb-root {
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+}
+.breadcrumb-sep {
+  font-size: 0.6rem;
+  color: #cbd5e1;
+}
+.breadcrumb-current {
   color: #1e293b;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
+  font-weight: 600;
 }
-.header-search-input:focus {
-  border-color: #2d7a3a;
-  box-shadow: 0 0 0 3px rgba(45,122,58,0.1);
-  background: #fff;
-}
+/* Header right */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.header-icon-btn {
+/* Action buttons */
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.header-action-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.header-action-btn.primary {
+  background: #2d7a3a;
+  color: #fff;
+  border-color: #2d7a3a;
+}
+.header-action-btn.primary:hover { background: #245f2e; }
+/* User info */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+.header-user-avatar {
   width: 38px;
   height: 38px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #64748b;
-  font-size: 0.95rem;
+  border-radius: 50%;
+  background: #2d7a3a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-  padding: 0;
+  flex-shrink: 0;
 }
-.header-icon-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
-.header-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: cover;
+.header-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
 }
-.notif-dot {
-  position: absolute;
-  top: 6px; right: 7px;
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #ef4444;
-  border: 1.5px solid #fff;
+.header-user-role {
+  font-size: 0.72rem;
+  color: #94a3b8;
 }
 
 /* Page content */
@@ -359,6 +420,20 @@ export default {
   margin: 0;
   line-height: 1.5;
 }
+.ai-minimize-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.8rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.ai-minimize-btn:hover { color: #6366f1; }
+
 .ai-fab {
   position: fixed;
   bottom: 28px;
@@ -380,8 +455,12 @@ export default {
 }
 .ai-fab:hover { transform: scale(1.1); }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Animation cho phép thu gọn / phình ra của AI Bubble */
+.ai-fade-enter-active, .ai-fade-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-fade-enter-from, .ai-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
 }
 </style>

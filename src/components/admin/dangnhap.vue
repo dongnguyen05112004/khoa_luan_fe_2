@@ -1,7 +1,7 @@
 <template>
-  <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
+  <div class=" min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
     
-    <div class="card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
+    <div class="mb-3 card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
       <div class="row g-0 h-100">
         
         <div class="col-md-6 d-none d-md-flex flex-column justify-content-between p-5 text-white custom-bg-gradient">
@@ -95,9 +95,8 @@
         </div>
 
       </div>
-    </div>
-
-    <div class="position-absolute bottom-0 mb-4 d-flex gap-4 small text-muted">
+    </div> 
+    <div class="position-absolute bottom-0  mb-4 d-flex gap-4 small text-muted">
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Quy định</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Bảo mật</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Hỗ trợ</a>
@@ -108,7 +107,10 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 
+const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
 
@@ -117,18 +119,53 @@ const form = reactive({
   password: ''
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   errorMsg.value = ''
   
-  // Logic kiểm tra điều kiện ràng buộc theo US 1
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
-  
-  if (!passwordRegex.test(form.password)) {
-    errorMsg.value = 'Mật khẩu không hợp lệ. Vui lòng nhập tối thiểu 8 ký tự bao gồm cả chữ và số.'
-    return
-  }
+  // Không cần validate mật khẩu ở FE, việc báo lỗi sẽ được xử lý từ kết quả BE trả về
 
-  console.log('Call API Login với dữ liệu:', form)
+  try {
+    const response = await axios.post('/api/login', form)
+    
+    // Đọc token và user từ response (tùy thuộc vào cấu trúc trả về của BE)
+    const resData = response.data.data || response.data;
+    const token = resData.token || resData.access_token || response.data.token;
+    const user = resData.user || resData;
+
+    if (token) {
+      // Lưu token vào localStorage để sử dụng cho các request sau
+      localStorage.setItem('token', token)
+      
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+
+      // Phân quyền chuyển hướng dựa vào role_id hoặc tên role
+      const roleId = user?.role_id;
+      const roleName = user?.role?.role_name || user?.role?.name || user?.role_name || String(user?.role || '');
+
+      if (roleId === 1 || roleName.toUpperCase() === 'ADMIN') {
+        router.push('/admin/quanlynguoidung')
+      } else if (roleId === 2 || roleName.toUpperCase() === 'MANAGER') {
+        router.push('/quanly/baocao')
+      } else if (roleId === 3 || roleName.toUpperCase() === 'STAFF') {
+        router.push('/nhanvien')
+      } else {
+        // Khách hàng / Hội viên
+        router.push('/hosocanhan') 
+      }
+    } else {
+      errorMsg.value = 'Không nhận được phân quyền truy cập (Token missing).'
+    }
+
+  } catch (error) {
+    console.error('Lỗi Login API:', error)
+    if (error.response?.data?.message) {
+      errorMsg.value = error.response.data.message
+    } else {
+      errorMsg.value = 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'
+    }
+  }
 }
 </script>
 
