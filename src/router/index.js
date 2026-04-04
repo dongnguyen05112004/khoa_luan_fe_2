@@ -69,10 +69,37 @@ const routes = [
         component: () => import('../layout/wrapper/nhanvien.vue'),
         meta: { layout: "nhanvien" },
         children: [
-
             {
                 path: '/nhanvien',
                 component: () => import('../components/nhanvien/nhanvien.vue'),
+            },
+            {
+                path: '/nhanvien/ho_so',
+                component: () => import('../components/nhanvien/ho_so.vue'),
+            },
+            {
+                path: '/nhanvien/quanlyhoivien',
+                component: () => import('../components/nhanvien/quanlyhoivien.vue'),
+            },
+            {
+                path: '/nhanvien/hop_dong',
+                component: () => import('../components/nhanvien/hop_dong.vue'),
+            },
+            {
+                path: '/nhanvien/checkin',
+                component: () => import('../components/nhanvien/checkin.vue'),
+            },
+            {
+                path: '/nhanvien/hoi_vien_moi',
+                component: () => import('../components/nhanvien/hoi_vien_moi.vue'),
+            },
+            {
+                path: '/nhanvien/thu_tien',
+                component: () => import('../components/nhanvien/thu_tien.vue'),
+            },
+            {
+                path: '/nhanvien/xuly_thanh_toan',
+                component: () => import('../components/nhanvien/xuly_thanh_toan.vue'),
             },
         ]
     },
