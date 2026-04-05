@@ -82,8 +82,12 @@
             </div>
 
             <div class="mt-5">
-              <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold text-white custom-btn-gradient border-0 tracking-wide">
-                ĐĂNG NHẬP
+              <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold text-white custom-btn-gradient border-0 tracking-wide" :disabled="loading">
+                <span v-if="loading">
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Đang đăng nhập...
+                </span>
+                <span v-else>ĐĂNG NHẬP</span>
               </button>
             </div>
           </form>
@@ -108,27 +112,48 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
+const loading = ref(false)
 
 const form = reactive({
   email: '',
   password: ''
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   errorMsg.value = ''
-  
-  // Logic kiểm tra điều kiện ràng buộc theo US 1
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
-  
-  if (!passwordRegex.test(form.password)) {
-    errorMsg.value = 'Mật khẩu không hợp lệ. Vui lòng nhập tối thiểu 8 ký tự bao gồm cả chữ và số.'
+
+  if (!form.email || !form.password) {
+    errorMsg.value = 'Vui lòng nhập email và mật khẩu.'
     return
   }
 
-  console.log('Call API Login với dữ liệu:', form)
+  loading.value = true
+  try {
+    const res = await axios.post('http://localhost:8000/api/login', {
+      email: form.email,
+      password: form.password,
+    })
+
+    const { token, user } = res.data
+
+    // Lưu token và thông tin user vào localStorage
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+
+    // Chuyển hướng vào dashboard admin
+    router.push('/admin/thietbi')
+  } catch (err) {
+    const msg = err.response?.data?.message
+    errorMsg.value = msg || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
