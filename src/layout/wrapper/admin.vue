@@ -4,9 +4,7 @@
     <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
       <!-- Brand -->
       <div class="sidebar-brand">
-        <div class="brand-avatar">
-          <img src="https://ui-avatars.com/api/?name=Admin&background=ffffff&color=2d7a3a&bold=true&size=40" alt="Admin" />
-        </div>
+        <div class="brand-avatar">AD</div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
           <div class="brand-sub">Management Panel</div>
@@ -25,25 +23,25 @@
           <span v-show="!sidebarCollapsed">Báo cáo kinh doanh AI</span>
         </router-link>
 
-        <router-link to="/admin/acc_mgr" class="nav-item" active-class="active">
+        <router-link to="/admin/quanlynguoidung" class="nav-item" active-class="active">
           <i class="fas fa-users nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý tài khoản nhân viên và hội viên</span>
         </router-link>
 
-        <router-link to="/admin/cus_mgr" class="nav-item" active-class="active">
+        <router-link to="/admin/thietbi" class="nav-item" active-class="active">
           <i class="fas fa-dumbbell nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý thiết bị phòng tập</span>
         </router-link>
 
-        <a href="#" class="nav-item">
+        <router-link to="/admin/khuyenmai" class="nav-item" active-class="active">
           <i class="fas fa-bullhorn nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý chiến dịch khuyến mãi</span>
-        </a>
+        </router-link>
 
-        <a href="#" class="nav-item">
+        <router-link to="/admin/goitap" class="nav-item" active-class="active">
           <i class="fas fa-box nav-icon"></i>
           <span v-show="!sidebarCollapsed">Quản lý gói tập</span>
-        </a>
+        </router-link>
       </nav>
 
       <!-- Version badge at bottom -->
@@ -56,29 +54,25 @@
     <div class="main-wrapper">
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-left">
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item text-muted small">ADMIN</li>
-              <li class="breadcrumb-item active small">HỆ THỐNG</li>
-            </ol>
-          </nav>
+        <div class="header-breadcrumb">
+          <span class="breadcrumb-root">ADMIN</span>
+          <i class="fas fa-chevron-right breadcrumb-sep"></i>
+          <span class="breadcrumb-current">HỆ THỐNG</span>
         </div>
-        <div class="header-right d-flex align-items-center gap-3">
-          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+        <div class="header-right">
+          <button class="header-action-btn">
             <i class="fas fa-filter"></i>
             <span>Lọc dữ liệu</span>
           </button>
-          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
+          <button class="header-action-btn primary">
             <i class="fas fa-user-plus"></i>
             <span>Thêm nhân sự</span>
           </button>
-          <!-- Admin Avatar -->
-          <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
-            <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
-            <div>
-              <div class="fw-bold small lh-1">Hệ thống Admin</div>
-              <div class="text-muted" style="font-size:0.72rem;">Super Admin</div>
+          <div class="header-user">
+            <div class="header-user-avatar">HA</div>
+            <div class="header-user-info">
+              <div class="header-user-name">Hệ thống Admin</div>
+              <div class="header-user-role">Super Admin</div>
             </div>
           </div>
         </div>
@@ -154,11 +148,19 @@ export default {
   border-bottom: 1px solid rgba(255,255,255,0.15);
   margin-bottom: 12px;
 }
-.brand-avatar img {
+.brand-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .brand-title {
   font-size: 1rem;
@@ -256,18 +258,102 @@ export default {
 .top-header {
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
-  padding: 14px 28px;
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   position: sticky;
   top: 0;
   z-index: 5;
 }
-.breadcrumb-item + .breadcrumb-item::before {
-  content: "›";
+/* Breadcrumb */
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.breadcrumb-root {
   color: #94a3b8;
+  letter-spacing: 0.3px;
+}
+.breadcrumb-sep {
+  font-size: 0.6rem;
+  color: #cbd5e1;
+}
+.breadcrumb-current {
+  color: #1e293b;
+  font-weight: 600;
+}
+/* Header right */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* Action buttons */
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+.header-action-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.header-action-btn.primary {
+  background: #2d7a3a;
+  color: #fff;
+  border-color: #2d7a3a;
+}
+.header-action-btn.primary:hover { background: #245f2e; }
+/* User info */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+.header-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2d7a3a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.header-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+}
+.header-user-role {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+.notif-dot {
+  position: absolute;
+  top: 6px; right: 7px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #fff;
 }
 
 /* Page content */
