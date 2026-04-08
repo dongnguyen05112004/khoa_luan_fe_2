@@ -44,7 +44,9 @@
           <option value="">Tất cả</option>
           <option value="ADMIN">ADMIN</option>
           <option value="MANAGER">MANAGER</option>
-          <option value="STAFF">STAFF</option>
+          <option value="STAFF">STAFF</option> 
+          <option value="TRAINER">TRAINER</option>
+          <option value="MEMBER">MEMBER</option>
         </select>
       </div>
       <div class="filter-group">
@@ -52,7 +54,7 @@
         <select v-model="filterStatus" class="filter-select">
           <option value="">Tất cả</option>
           <option value="active">Hoạt động</option>
-          <option value="locked">Đã khoá</option>
+          <option value="banned">Đã khoá</option>
         </select>
       </div>
       <button class="btn-reset-filter" @click="resetFilter">
@@ -75,32 +77,38 @@
         </thead>
         <tbody>
           <tr v-for="acc in paginatedAccounts" :key="acc.id" class="table-row">
-            <td class="col-id">{{ acc.code }}</td>
+            <td class="col-id">{{ acc.code || acc.card_number || acc.id }}</td>
             <td class="col-member">
               <div class="member-cell">
-                <img :src="acc.avatar" :alt="acc.name" class="member-avatar" />
-                <span class="member-name">{{ acc.name }}</span>
+                <img :src="acc.avatar" :alt="acc.full_name || acc.name" class="member-avatar" />
+                <span class="member-name">{{ acc.full_name || acc.name }}</span>
               </div>
             </td>
             <td class="col-email">{{ acc.email }}</td>
             <td class="col-role">
-              <span class="role-badge" :class="'role-' + acc.role.toLowerCase()">{{ acc.role }}</span>
+              <span class="role-badge" :class="'role-' + getRoleClass(acc)">{{ getRoleName(acc) }}</span>
             </td>
             <td class="col-status">
-              <span class="status-dot" :class="acc.status === 'active' ? 'dot-active' : 'dot-locked'"></span>
-              <span :class="acc.status === 'active' ? 'text-active' : 'text-locked'">
-                {{ acc.status === 'active' ? 'Hoạt động' : 'Đã khoá' }}
+              <span class="status-dot" :class="acc.state === 'active' ? 'dot-active' : 'dot-locked'"></span>
+              <span :class="acc.state === 'active' ? 'text-active' : 'text-locked'">
+                {{ acc.state === 'active' ? 'Hoạt động' : 'Đã khoá' }}
               </span>
             </td>
             <td class="col-actions">
+              <button class="action-btn view" title="Xem chi tiết" @click="openDetailModal(acc)">
+                <i class="fas fa-eye"></i>
+              </button>
               <button class="action-btn edit" title="Chỉnh sửa" @click="openEditModal(acc)">
                 <i class="fas fa-pen"></i>
               </button>
-              <button class="action-btn lock" :title="acc.status === 'active' ? 'Khoá tài khoản' : 'Mở khoá'" @click="toggleLock(acc)">
-                <i :class="acc.status === 'active' ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
+              <button class="action-btn lock" :title="acc.state === 'active' ? 'Khoá tài khoản' : 'Mở khoá'" @click="toggleLock(acc)">
+                <i :class="acc.state === 'active' ? 'fas fa-lock' : 'fas fa-lock-open'"></i>
               </button>
               <button class="action-btn key" title="Đặt lại mật khẩu" @click="resetPassword(acc)">
                 <i class="fas fa-key"></i>
+              </button>
+              <button class="action-btn delete" title="Xoá tài khoản" @click="deleteAccount(acc)">
+                <i class="fas fa-trash"></i>
               </button>
             </td>
           </tr>
@@ -185,10 +193,10 @@
             <div class="form-row">
               <div class="form-group">
                 <label><i class="fas fa-shield-alt form-label-icon"></i> Vai trò <span class="required">*</span></label>
-                <select v-model="newAcc.role">
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="MANAGER">MANAGER</option>
-                  <option value="STAFF">STAFF</option>
+                <select v-model="newAcc.role_id">
+                  <option :value="1">ADMIN</option>
+                  <option :value="2">MANAGER</option>
+                  <option :value="3">STAFF</option>
                 </select>
               </div>
               <div class="form-group">
@@ -230,13 +238,13 @@
 
           <!-- Avatar preview -->
           <div class="edit-avatar-row">
-            <img :src="editAcc.avatar" class="edit-avatar" :alt="editAcc.name" />
+            <img :src="editAcc.avatar" class="edit-avatar" :alt="editAcc.full_name || editAcc.name" />
             <div class="edit-avatar-info">
-              <div class="edit-avatar-name">{{ editAcc.name || 'Tên tài khoản' }}</div>
-              <div class="edit-avatar-code">{{ editAcc.code }}</div>
+              <div class="edit-avatar-name">{{ editAcc.full_name || editAcc.name || 'Tên tài khoản' }}</div>
+              <div class="edit-avatar-code">{{ editAcc.code || editAcc.id }}</div>
             </div>
-            <span class="status-badge-inline" :class="editAcc.status === 'active' ? 'badge-active' : 'badge-locked'">
-              {{ editAcc.status === 'active' ? '● Hoạt động' : '● Đã khoá' }}
+            <span class="status-badge-inline" :class="editAcc.state === 'active' ? 'badge-active' : 'badge-locked'">
+              {{ editAcc.state === 'active' ? '● Hoạt động' : '● Đã khoá' }}
             </span>
           </div>
 
@@ -244,7 +252,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label><i class="fas fa-user form-label-icon"></i> Họ và tên <span class="required">*</span></label>
-                <input v-model="editAcc.name" type="text" placeholder="Nhập họ và tên..." :class="{ 'input-error': editErrors.name }" @input="editErrors.name = ''; refreshAvatar()" />
+                <input v-model="editAcc.full_name" type="text" placeholder="Nhập họ và tên..." :class="{ 'input-error': editErrors.name }" @input="editErrors.name = ''; refreshAvatar()" />
                 <span class="error-msg" v-if="editErrors.name">{{ editErrors.name }}</span>
               </div>
               <div class="form-group">
@@ -256,10 +264,10 @@
             <div class="form-row">
               <div class="form-group">
                 <label><i class="fas fa-shield-alt form-label-icon"></i> Vai trò <span class="required">*</span></label>
-                <select v-model="editAcc.role">
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="MANAGER">MANAGER</option>
-                  <option value="STAFF">STAFF</option>
+                <select v-model="editAcc.role_id">
+                  <option :value="1">ADMIN</option>
+                  <option :value="2">MANAGER</option>
+                  <option :value="3">STAFF</option>
                 </select>
               </div>
               <div class="form-group">
@@ -267,11 +275,11 @@
                 <div class="status-toggle-wrap">
                   <button
                     class="status-toggle-btn"
-                    :class="editAcc.status === 'active' ? 'toggle-active' : 'toggle-locked'"
-                    @click="editAcc.status = editAcc.status === 'active' ? 'locked' : 'active'"
+                    :class="editAcc.state === 'active' ? 'toggle-active' : 'toggle-locked'"
+                    @click="editAcc.state = editAcc.state === 'active' ? 'banned' : 'active'"
                   >
-                    <i :class="editAcc.status === 'active' ? 'fas fa-check-circle' : 'fas fa-ban'"></i>
-                    {{ editAcc.status === 'active' ? 'Hoạt động' : 'Đã khoá' }}
+                    <i :class="editAcc.state === 'active' ? 'fas fa-check-circle' : 'fas fa-ban'"></i>
+                    {{ editAcc.state === 'active' ? 'Hoạt động' : 'Đã khoá' }}
                     <span class="toggle-hint">(nhấn để đổi)</span>
                   </button>
                 </div>
@@ -321,6 +329,103 @@
       </div>
     </transition>
 
+    <!-- ======================== -->
+    <!-- MODAL: CHI TIẾT USER    -->
+    <!-- ======================== -->
+    <transition name="modal-fade">
+      <div class="modal-overlay" v-if="showDetailModal" @click.self="showDetailModal = false">
+        <div class="modal-box modal-box-wide">
+          <div class="modal-header">
+            <div class="modal-header-icon detail-icon"><i class="fas fa-id-card"></i></div>
+            <div>
+              <h2>Chi tiết người dùng</h2>
+              <p>{{ detailUser.full_name || detailUser.name }} — <span class="text-muted">{{ detailUser.email }}</span></p>
+            </div>
+            <button class="modal-close" @click="showDetailModal = false"><i class="fas fa-times"></i></button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="detail-tabs">
+            <button
+              v-for="tab in detailTabs" :key="tab.key"
+              class="detail-tab-btn"
+              :class="{ 'tab-active': activeDetailTab === tab.key }"
+              @click="switchDetailTab(tab.key)"
+            >
+              <i :class="tab.icon"></i> {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="detailLoading" class="detail-loading">
+            <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+          </div>
+
+          <!-- Tab: Đăng ký -->
+          <div v-else-if="activeDetailTab === 'subscriptions'" class="detail-content">
+            <div v-if="userSubscriptions.length === 0" class="detail-empty">
+              <i class="fas fa-calendar-times"></i>
+              <p>Chưa có lịch sử đăng ký nào</p>
+            </div>
+            <table v-else class="detail-table">
+              <thead><tr><th>Gói tập</th><th>Ngày bắt đầu</th><th>Ngày kết thúc</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                <tr v-for="s in userSubscriptions" :key="s.id">
+                  <td>{{ s.plan_name || s.plan?.name || '—' }}</td>
+                  <td>{{ formatDate(s.start_date) }}</td>
+                  <td>{{ formatDate(s.end_date) }}</td>
+                  <td><span class="detail-badge" :class="s.status === 'active' ? 'badge-active' : 'badge-locked'">{{ s.status }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tab: Check-in -->
+          <div v-else-if="activeDetailTab === 'checkins'" class="detail-content">
+            <div v-if="userCheckins.length === 0" class="detail-empty">
+              <i class="fas fa-door-open"></i>
+              <p>Chưa có lịch sử check-in nào</p>
+            </div>
+            <table v-else class="detail-table">
+              <thead><tr><th>#</th><th>Thời gian vào</th><th>Thời gian ra</th><th>Ghi chú</th></tr></thead>
+              <tbody>
+                <tr v-for="(c, idx) in userCheckins" :key="c.id">
+                  <td>{{ idx + 1 }}</td>
+                  <td>{{ formatDateTime(c.check_in_time || c.checked_in_at) }}</td>
+                  <td>{{ formatDateTime(c.check_out_time || c.checked_out_at) }}</td>
+                  <td>{{ c.note || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tab: Chỉ số sức khỏe -->
+          <div v-else-if="activeDetailTab === 'health'" class="detail-content">
+            <div v-if="userHealthMetrics.length === 0" class="detail-empty">
+              <i class="fas fa-heartbeat"></i>
+              <p>Chưa có chỉ số sức khỏe nào</p>
+            </div>
+            <table v-else class="detail-table">
+              <thead><tr><th>Ngày đo</th><th>Cân nặng (kg)</th><th>Chiều cao (cm)</th><th>BMI</th><th>Mỡ cơ thể (%)</th></tr></thead>
+              <tbody>
+                <tr v-for="h in userHealthMetrics" :key="h.id">
+                  <td>{{ formatDate(h.recorded_at || h.date) }}</td>
+                  <td>{{ h.weight ?? '—' }}</td>
+                  <td>{{ h.height ?? '—' }}</td>
+                  <td>{{ h.bmi ?? '—' }}</td>
+                  <td>{{ h.body_fat ?? '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="showDetailModal = false">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Toast -->
     <transition name="toast-fade">
       <div class="toast-msg" v-if="toast.show">
@@ -331,28 +436,16 @@
 </template>
 
 <script>
+// Thêm import axios ở đầu script (nếu bạn dùng axios)
+import axios from 'axios';
+
 export default {
   name: 'QuanLyNguoiDung',
   data() {
-    const base = [
-      { id: 1,  code: '#SG-9821', name: 'Nguyễn Văn An',   email: 'an.nguyen@smartgym.ai',  role: 'ADMIN',   status: 'active' },
-      { id: 2,  code: '#SG-9745', name: 'Trần Thị Mai',     email: 'mai.tran@smartgym.ai',   role: 'MANAGER', status: 'active' },
-      { id: 3,  code: '#SG-9612', name: 'Lê Hoàng Long',    email: 'long.le@smartgym.ai',    role: 'STAFF',   status: 'active' },
-      { id: 4,  code: '#SG-9550', name: 'Phạm Thanh Hùng',  email: 'hung.pham@smartgym.ai',  role: 'MANAGER', status: 'active' },
-      { id: 5,  code: '#SG-9480', name: 'Đinh Thị Lan',     email: 'lan.dinh@smartgym.ai',   role: 'STAFF',   status: 'active' },
-      { id: 6,  code: '#SG-9401', name: 'Ngô Minh Tuấn',    email: 'tuan.ngo@smartgym.ai',   role: 'STAFF',   status: 'locked' },
-      { id: 7,  code: '#SG-9320', name: 'Vũ Thu Hương',     email: 'huong.vu@smartgym.ai',   role: 'MANAGER', status: 'active' },
-      { id: 8,  code: '#SG-9210', name: 'Bùi Đức Kiên',     email: 'kien.bui@smartgym.ai',   role: 'STAFF',   status: 'active' },
-      { id: 9,  code: '#SG-9100', name: 'Lý Thị Bích',      email: 'bich.ly@smartgym.ai',    role: 'ADMIN',   status: 'locked' },
-      { id: 10, code: '#SG-8990', name: 'Hoàng Văn Tài',    email: 'tai.hoang@smartgym.ai',  role: 'STAFF',   status: 'active' },
-      { id: 11, code: '#SG-8850', name: 'Đặng Thị Nhi',     email: 'nhi.dang@smartgym.ai',   role: 'STAFF',   status: 'active' },
-      { id: 12, code: '#SG-8720', name: 'Trịnh Công Minh',  email: 'minh.trinh@smartgym.ai', role: 'MANAGER', status: 'active' },
-    ]
     return {
-      accounts: base.map(a => ({
-        ...a,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(a.name)}&background=2d7a3a&color=ffffff&bold=true&size=40`,
-      })),
+      // 1. Khởi tạo danh sách bằng mảng rỗng thay vì dữ liệu cứng
+      accounts: [],
+      
       searchQuery: '',
       filterRole: '',
       filterStatus: '',
@@ -363,7 +456,7 @@ export default {
 
       // Create modal
       showCreateModal: false,
-      newAcc: { name: '', email: '', role: 'STAFF', password: '' },
+      newAcc: { name: '', email: '', role_id: null, password: '' },
       createErrors: { name: '', email: '', password: '' },
       showNewPw: false,
 
@@ -374,18 +467,42 @@ export default {
       showChangePw: false,
       showEditPw: false,
 
+      // Detail modal
+      showDetailModal: false,
+      detailUser: {},
+      detailLoading: false,
+      activeDetailTab: 'subscriptions',
+      detailTabs: [
+        { key: 'subscriptions', label: 'Đăng ký',         icon: 'fas fa-calendar-check' },
+        { key: 'checkins',      label: 'Check-in',         icon: 'fas fa-door-open' },
+        { key: 'health',        label: 'Chỉ số sức khỏe',  icon: 'fas fa-heartbeat' },
+      ],
+      userSubscriptions: [],
+      userCheckins: [],
+      userHealthMetrics: [],
+
       // Toast
       toast: { show: false, message: '', icon: '' },
     }
   },
+  
+  // 2. Gọi hàm lấy dữ liệu từ API ngay khi component được tạo
+  mounted() {
+    this.fetchAdminUsers();
+  },
+
   computed: {
-    totalAccounts() { return 1284 },
+    // Để nguyên các computed property (pagination, totalPages, ...)
+    totalAccounts() { return this.accounts.length },
     filteredAccounts() {
       const q = this.searchQuery.toLowerCase()
       return this.accounts.filter(a => {
-        const mq = !q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)
-        const mr = !this.filterRole || a.role === this.filterRole
-        const ms = !this.filterStatus || a.status === this.filterStatus
+        const code = a.code || String(a.id) || '';
+        const roleName = this.getRoleName(a);
+        const nameFallback = a.full_name || a.name || '';
+        const mq = !q || nameFallback.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || code.toLowerCase().includes(q)
+        const mr = !this.filterRole || roleName === this.filterRole
+        const ms = !this.filterStatus || a.state === this.filterStatus
         return mq && mr && ms
       })
     },
@@ -410,35 +527,76 @@ export default {
         pages.push(total)
       }
       return pages
-    },
+    }
   },
   watch: {
     filteredAccounts() { this.currentPage = 1 },
   },
   methods: {
+    // 3a. Lấy danh sách Users thông thường (resource index)
+    async fetchAccounts() {
+      try {
+        const response = await axios.get('/api/users');
+        const list = response.data.data || response.data;
+        this.accounts = list.map(a => ({
+          ...a,
+          avatar: a.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.full_name || a.name || 'User')}&background=2d7a3a&color=ffffff&bold=true&size=40`
+        }));
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách:", error);
+        this.showToast('fas fa-exclamation-circle', 'Không thể tải danh sách tài khoản!');
+      }
+    },
+
+    // 3b. Lấy danh sách Users qua route admin-get-user (có middleware viewAny)
+    async fetchAdminUsers() {
+      try {
+        const response = await axios.get('/api/users/admin-get-user?per_page=1000');
+        const list = response.data.data || response.data;
+        this.accounts = list.map(a => ({
+          ...a,
+          avatar: a.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.full_name || a.name || 'User')}&background=2d7a3a&color=ffffff&bold=true&size=40`
+        }));
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách (admin):", error);
+        this.showToast('fas fa-exclamation-circle', 'Không thể tải danh sách tài khoản!');
+      }
+    },
+
     // ---- Create ----
     openCreateModal() {
-      this.newAcc = { name: '', email: '', role: 'STAFF', password: '' }
+      this.newAcc = { name: '', email: '', role_id: null, password: '' }
       this.createErrors = { name: '', email: '', password: '' }
       this.showNewPw = false
       this.showCreateModal = true
     },
-    createAccount() {
+    
+    // 4. Hàm gọi API POST để thêm User mới
+    async createAccount() {
       let valid = true
       if (!this.newAcc.name.trim()) { this.createErrors.name = 'Vui lòng nhập họ và tên'; valid = false }
       if (!this.newAcc.email.trim()) { this.createErrors.email = 'Vui lòng nhập email'; valid = false }
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newAcc.email)) { this.createErrors.email = 'Email không hợp lệ'; valid = false }
       if (!this.newAcc.password.trim()) { this.createErrors.password = 'Vui lòng nhập mật khẩu'; valid = false }
+      
       if (!valid) return
-      const id = this.accounts.length + 1
-      this.accounts.unshift({
-        id, code: '#SG-' + (9000 - id),
-        name: this.newAcc.name, email: this.newAcc.email,
-        role: this.newAcc.role, status: 'active',
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(this.newAcc.name)}&background=2d7a3a&color=ffffff&bold=true&size=40`,
-      })
-      this.showCreateModal = false
-      this.showToast('fas fa-check-circle', 'Tạo tài khoản thành công!')
+
+      try {
+        const response = await axios.post('/api/users', this.newAcc);
+        
+        // Cập nhật lại danh sách sau khi thêm hoặc đẩy user trả về từ server vào List
+        this.accounts.unshift({
+          ...response.data.data,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(response.data.data.name)}&background=2d7a3a&color=ffffff&bold=true&size=40`
+        });
+
+        this.showCreateModal = false;
+        this.showToast('fas fa-check-circle', 'Tạo tài khoản thành công!');
+      } catch (error) {
+        console.error("Lỗi tạo user:", error);
+        // Có thể bắt lỗi Validation từ Laravel tại đây (error.response.data.errors)
+        this.showToast('fas fa-times-circle', 'Tạo tài khoản thất bại!');
+      }
     },
 
     // ---- Edit ----
@@ -453,11 +611,14 @@ export default {
       this.showEditModal = false
     },
     refreshAvatar() {
-      if (this.editAcc.name) {
-        this.editAcc.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(this.editAcc.name)}&background=2d7a3a&color=ffffff&bold=true&size=40`
+      const nm = this.editAcc.full_name || this.editAcc.name;
+      if (nm) {
+        this.editAcc.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nm)}&background=2d7a3a&color=ffffff&bold=true&size=40`
       }
     },
-    saveEdit() {
+
+    // 5. Hàm gọi API PUT để sửa User
+    async saveEdit() {
       let valid = true
       if (!this.editAcc.name.trim()) { this.editErrors.name = 'Vui lòng nhập họ và tên'; valid = false }
       if (!this.editAcc.email.trim()) { this.editErrors.email = 'Vui lòng nhập email'; valid = false }
@@ -467,32 +628,132 @@ export default {
           this.editErrors.password = 'Mật khẩu xác nhận không khớp'; valid = false
         }
       }
+      
       if (!valid) return
-      const idx = this.accounts.findIndex(a => a.id === this.editAcc.id)
-      if (idx !== -1) {
-        this.accounts[idx] = {
-          ...this.accounts[idx],
+
+      try {
+        // Nếu có nhập mật khẩu mới thì gửi lên, ngược lại loại bỏ trường password khỏi payload
+        const payload = {
           name: this.editAcc.name,
           email: this.editAcc.email,
-          role: this.editAcc.role,
-          status: this.editAcc.status,
-          avatar: this.editAcc.avatar,
+          role_id: this.editAcc.role_id,
+          state: this.editAcc.state
+        };
+        if (this.showChangePw && this.editAcc.newPassword) {
+          payload.password = this.editAcc.newPassword;
         }
+
+        const response = await axios.put(`/api/users/${this.editAcc.id}`, payload);
+        
+        // Cập nhật lại UI sau khi call API thành công
+        const idx = this.accounts.findIndex(a => a.id === this.editAcc.id)
+        if (idx !== -1) {
+          this.accounts[idx] = { ...this.accounts[idx], ...response.data.data };
+          this.refreshAvatar(); // refresh avatar nếu cần
+        }
+
+        this.showEditModal = false;
+        this.showToast('fas fa-check-circle', `Đã cập nhật tài khoản ${this.editAcc.name}`);
+      } catch (error) {
+        console.error("Lỗi cập nhật user:", error);
+        this.showToast('fas fa-times-circle', 'Cập nhật thất bại!');
       }
-      this.showEditModal = false
-      this.showToast('fas fa-check-circle', `Đã cập nhật tài khoản ${this.editAcc.name}`)
     },
 
     // ---- Actions ----
-    toggleLock(acc) {
-      acc.status = acc.status === 'active' ? 'locked' : 'active'
-      this.showToast(
-        acc.status === 'locked' ? 'fas fa-lock' : 'fas fa-lock-open',
-        acc.status === 'locked' ? `Đã khoá tài khoản ${acc.name}` : `Đã mở khoá tài khoản ${acc.name}`
-      )
+    // 6. Cập nhật trạng thái Khoá/Mở khoá gọi chung API PUT
+    async toggleLock(acc) {
+      const newStatus = acc.state === 'active' ? 'banned' : 'active';
+      try {
+        await axios.put(`/api/users/${acc.id}`, { state: newStatus });
+        acc.state = newStatus;
+        this.showToast(
+          acc.state === 'banned' ? 'fas fa-lock' : 'fas fa-lock-open',
+          acc.state === 'banned' ? `Đã khoá tài khoản ${acc.name}` : `Đã mở khoá tài khoản ${acc.name}`
+        );
+      } catch (error) {
+        this.showToast('fas fa-exclamation-triangle', 'Không thể đổi trạng thái tài khoản!');
+      }
     },
+
+    // 7. Xoá user — DELETE /api/users/{id}
+    async deleteAccount(acc) {
+      if (!confirm(`Bạn có chắc muốn xoá tài khoản "${acc.name}" không?`)) return;
+      try {
+        await axios.delete(`/api/users/${acc.id}`);
+        this.accounts = this.accounts.filter(a => a.id !== acc.id);
+        this.showToast('fas fa-trash', `Đã xoá tài khoản ${acc.name}`);
+      } catch (error) {
+        console.error('Lỗi xoá user:', error);
+        this.showToast('fas fa-times-circle', 'Xoá tài khoản thất bại!');
+      }
+    },
+
+    // 8. Mở modal chi tiết & tải dữ liệu tab đầu tiên
+    async openDetailModal(acc) {
+      this.detailUser = acc;
+      this.activeDetailTab = 'subscriptions';
+      this.userSubscriptions = [];
+      this.userCheckins = [];
+      this.userHealthMetrics = [];
+      this.showDetailModal = true;
+      await this.loadDetailTab('subscriptions', acc.id);
+    },
+
+    async switchDetailTab(tabKey) {
+      this.activeDetailTab = tabKey;
+      await this.loadDetailTab(tabKey, this.detailUser.id);
+    },
+
+    async loadDetailTab(tabKey, userId) {
+      this.detailLoading = true;
+      try {
+        if (tabKey === 'subscriptions') {
+          const res = await axios.get(`/api/users/${userId}/subscriptions`);
+          this.userSubscriptions = res.data.data || res.data;
+        } else if (tabKey === 'checkins') {
+          const res = await axios.get(`/api/users/${userId}/checkins`);
+          this.userCheckins = res.data.data || res.data;
+        } else if (tabKey === 'health') {
+          const res = await axios.get(`/api/users/${userId}/health-metrics`);
+          this.userHealthMetrics = res.data.data || res.data;
+        }
+      } catch (error) {
+        console.error(`Lỗi tải tab ${tabKey}:`, error);
+        this.showToast('fas fa-exclamation-circle', 'Không thể tải dữ liệu chi tiết!');
+      } finally {
+        this.detailLoading = false;
+      }
+    },
+
+    // Helpers định dạng ngày giờ
+    formatDate(val) {
+      if (!val) return '—';
+      return new Date(val).toLocaleDateString('vi-VN');
+    },
+    formatDateTime(val) {
+      if (!val) return '—';
+      return new Date(val).toLocaleString('vi-VN');
+    },
+    getRoleName(acc) {
+      if (acc.role_name) return acc.role_name.toUpperCase();
+      if (acc.role && acc.role.name) return acc.role.name.toUpperCase();
+      if (typeof acc.role === 'string') return acc.role.toUpperCase();
+      switch (Number(acc.role_id)) {
+        case 1: return 'ADMIN';
+        case 2: return 'MANAGER';
+        case 3: return 'STAFF';
+        case 4: return 'TRAINER';
+        case 5: return 'MEMBER';
+        default: return 'UNKNOWN';
+      }
+    },
+    getRoleClass(acc) {
+      return this.getRoleName(acc).toLowerCase();
+    },
+
     resetPassword(acc) {
-      this.showToast('fas fa-key', `Đã gửi yêu cầu đặt lại mật khẩu cho ${acc.name}`)
+      this.showToast('fas fa-key', `Đã gửi yêu cầu đặt lại mật khẩu cho ${acc.name}`);
     },
     resetFilter() {
       this.filterRole = ''; this.filterStatus = ''; this.searchQuery = ''
@@ -504,6 +765,7 @@ export default {
   },
 }
 </script>
+
 
 <style scoped>
 /* ===== PAGE ===== */
@@ -596,9 +858,11 @@ export default {
 .col-actions { white-space: nowrap; }
 .action-btn { width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; margin-right: 4px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s; }
 .action-btn:hover { transform: scale(1.15); }
-.action-btn.edit { background: #f0fdf4; color: #16a34a; }
-.action-btn.lock { background: #fef3c7; color: #d97706; }
-.action-btn.key  { background: #fdf4ff; color: #9333ea; }
+.action-btn.view   { background: #eff6ff; color: #2563eb; }
+.action-btn.edit   { background: #f0fdf4; color: #16a34a; }
+.action-btn.lock   { background: #fef3c7; color: #d97706; }
+.action-btn.key    { background: #fdf4ff; color: #9333ea; }
+.action-btn.delete { background: #fef2f2; color: #dc2626; }
 .no-data { text-align: center; padding: 48px; color: #94a3b8; }
 .no-data i { font-size: 2rem; margin-bottom: 10px; display: block; }
 .no-data p { font-size: 0.9rem; margin: 0; }
@@ -638,6 +902,35 @@ export default {
   overflow-y: auto;
   box-shadow: 0 24px 70px rgba(0,0,0,0.22);
 }
+.modal-box-wide { width: 700px; }
+
+/* Detail modal */
+.detail-icon { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+.text-muted { color: #94a3b8; }
+.detail-tabs {
+  display: flex; gap: 4px; padding: 12px 24px;
+  border-bottom: 1px solid #f1f5f9; background: #f8fafc;
+}
+.detail-tab-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border: 1.5px solid transparent; border-radius: 8px;
+  background: transparent; color: #64748b; font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.detail-tab-btn:hover { background: #e2e8f0; color: #1e293b; }
+.tab-active { background: #fff !important; border-color: #e2e8f0 !important; color: #0284c7 !important; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.detail-loading { display: flex; align-items: center; gap: 10px; padding: 40px; justify-content: center; color: #64748b; font-size: 0.9rem; }
+.detail-content { padding: 16px 24px 8px; }
+.detail-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 36px; color: #94a3b8; }
+.detail-empty i { font-size: 2rem; }
+.detail-empty p { font-size: 0.875rem; margin: 0; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.detail-table thead tr { background: #f8fafc; }
+.detail-table thead th { padding: 10px 12px; font-size: 0.71rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-align: left; border-bottom: 1.5px solid #e2e8f0; }
+.detail-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.12s; }
+.detail-table tbody tr:hover { background: #f0f9ff; }
+.detail-table tbody td { padding: 10px 12px; color: #334155; }
+.detail-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
 .modal-header {
   display: flex; align-items: flex-start; gap: 14px;
   padding: 22px 24px 18px;

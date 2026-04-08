@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from "vue-router"; // cài vue-router:
 
 const routes = [
     {
+        path: '/',
+        component: () => import('../components/admin/start.vue'),
+        meta: { layout: 'index' },
+    },
+    {
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
@@ -29,43 +34,99 @@ const routes = [
         component: () => import('../layout/wrapper/admin.vue'),
         meta: { layout: "admin" },
         children: [
-            {
-                path: '/admin',
-                component: () => import('../components/admin/admin.vue'),
-            },
+
             {
                 path: '/admin/quanlynguoidung',
                 component: () => import('../components/admin/quanlynguoidung.vue'),
-            }, 
-            {
-                path: '/admin/cus_mgr',
-                component: () => import('../components/admin/cus_mgr.vue'),
             },
-
+            {
+                path: '/admin/cau_hinh',
+                component: () => import('../components/admin/cau_hinh.vue'),
+            },
+            {
+                path: '/admin/nhat_ky',
+                component: () => import('../components/admin/nhat_ky.vue'),
+            },
             {
                 path: '/admin/config',
                 component: () => import('../components/admin/system_config.vue'),
             },
             {
-                path: '/admin/thietbi',
-                component: () => import('../components/admin/tab_thietbi.vue'),
-            },
-            {
                 path: '/admin/khuyenmai',
-                component: () => import('../components/admin/tab_khuyenmai.vue'),
+                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
             },
+
+            {
+                path: '/admin/audit_logs',
+                component: () => import('../components/admin/audit_logs.vue'),
+            }
 
         ]
     },
+
     {
         path: '/nhanvien',
         component: () => import('../layout/wrapper/nhanvien.vue'),
         meta: { layout: "nhanvien" },
         children: [
-
             {
                 path: '/nhanvien',
                 component: () => import('../components/nhanvien/nhanvien.vue'),
+            },
+            {
+                path: '/nhanvien/ho_so',
+                component: () => import('../components/nhanvien/ho_so.vue'),
+            },
+            {
+                path: '/nhanvien/quanlyhoivien',
+                component: () => import('../components/nhanvien/quanlyhoivien.vue'),
+            },
+            {
+                path: '/nhanvien/hop_dong',
+                component: () => import('../components/nhanvien/hop_dong.vue'),
+            },
+            {
+                path: '/nhanvien/checkin',
+                component: () => import('../components/nhanvien/checkin.vue'),
+            },
+            {
+                path: '/nhanvien/hoi_vien_moi',
+                component: () => import('../components/nhanvien/hoi_vien_moi.vue'),
+            },
+            {
+                path: '/nhanvien/thu_tien',
+                component: () => import('../components/nhanvien/thu_tien.vue'),
+            },
+            {
+                path: '/nhanvien/xuly_thanh_toan',
+                component: () => import('../components/nhanvien/xuly_thanh_toan.vue'),
+            },
+        ]
+    },
+    {
+        path: '/quanly',
+        component: () => import('../layout/wrapper/quanly.vue'),
+        meta: { layout: "quanly" },
+        children: [
+            {
+                path: '/quanly/baocao',
+                component: () => import('../components/quanly/trungtambaocaothongke.vue'),
+            },
+            {
+                path: '/quanly/goitap',
+                component: () => import('../components/quanly/goi_tap.vue'),
+            },
+            {
+                path: '/quanly/khuyenmai',
+                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
+            },
+            {
+                path: '/quanly/taikhoan',
+                component: () => import('../components/quanly/tai_khoan.vue'),
+            },
+            {
+                path: '/quanly/thietbi',
+                component: () => import('../components/quanly/thietbi.vue'),
             },
         ]
     },

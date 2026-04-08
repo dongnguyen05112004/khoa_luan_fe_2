@@ -1,7 +1,7 @@
 <template>
-  <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
+  <div class=" min-vh-100 d-flex align-items-center justify-content-center bg-light p-3 custom-font position-relative">
     
-    <div class="card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
+    <div class="mb-3 card shadow-lg border-0 overflow-hidden custom-card" style="max-width: 1050px; width: 100%;">
       <div class="row g-0 h-100">
         
         <div class="col-md-6 d-none d-md-flex flex-column justify-content-between p-5 text-white custom-bg-gradient">
@@ -99,9 +99,8 @@
         </div>
 
       </div>
-    </div>
-
-    <div class="position-absolute bottom-0 mb-4 d-flex gap-4 small text-muted">
+    </div> 
+    <div class="position-absolute bottom-0  mb-4 d-flex gap-4 small text-muted">
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Quy định</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Bảo mật</a>
        <a href="#" class="text-decoration-none text-muted custom-footer-link">Hỗ trợ</a>
@@ -116,6 +115,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
 const loading = ref(false)
@@ -125,6 +125,7 @@ const form = reactive({
   password: ''
 })
 
+const handleLogin = async () => {
 const handleLogin = async () => {
   errorMsg.value = ''
 
@@ -164,31 +165,26 @@ const handleLogin = async () => {
   font-family: 'Quicksand', sans-serif; 
 }
 
-/* Bo góc siêu lớn cho form */
 .custom-card { 
   border-radius: 2.5rem; 
   min-height: 600px; 
 }
 
-/* Gradient nền cột trái giống hình */
 .custom-bg-gradient { 
   background: linear-gradient(135deg, #2a4d3e 0%, #6035d0 100%); 
 }
 
-/* Badge (Tag) trong suốt */
 .custom-glass-badge {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Label text nhỏ xíu có khoảng cách chữ (Tracking) */
 .custom-label {
   font-size: 0.65rem;
   letter-spacing: 1px;
 }
 
-/* Biến tấu Input của Bootstrap thành dạng gạch chân */
 .custom-input-group { 
   border-bottom: 2px solid #e2e8f0; 
   transition: border-color 0.3s ease; 
