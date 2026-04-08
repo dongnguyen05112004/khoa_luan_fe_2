@@ -82,8 +82,12 @@
             </div>
 
             <div class="mt-5">
-              <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold text-white custom-btn-gradient border-0 tracking-wide">
-                ĐĂNG NHẬP
+              <button type="submit" class="btn w-100 rounded-pill py-3 fw-bold text-white custom-btn-gradient border-0 tracking-wide" :disabled="loading">
+                <span v-if="loading">
+                  <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  Đang đăng nhập...
+                </span>
+                <span v-else>ĐĂNG NHẬP</span>
               </button>
             </div>
           </form>
@@ -107,12 +111,14 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
+const loading = ref(false)
 
 const form = reactive({
   email: '',
@@ -120,51 +126,34 @@ const form = reactive({
 })
 
 const handleLogin = async () => {
+const handleLogin = async () => {
   errorMsg.value = ''
-  
-  // Không cần validate mật khẩu ở FE, việc báo lỗi sẽ được xử lý từ kết quả BE trả về
 
+  if (!form.email || !form.password) {
+    errorMsg.value = 'Vui lòng nhập email và mật khẩu.'
+    return
+  }
+
+  loading.value = true
   try {
-    const response = await axios.post('/api/login', form)
-    
-    // Đọc token và user từ response (tùy thuộc vào cấu trúc trả về của BE)
-    const resData = response.data.data || response.data;
-    const token = resData.token || resData.access_token || response.data.token;
-    const user = resData.user || resData;
+    const res = await axios.post('http://localhost:8000/api/login', {
+      email: form.email,
+      password: form.password,
+    })
 
-    if (token) {
-      // Lưu token vào localStorage để sử dụng cho các request sau
-      localStorage.setItem('token', token)
-      
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
-      }
+    const { token, user } = res.data
 
-      // Phân quyền chuyển hướng dựa vào role_id hoặc tên role
-      const roleId = user?.role_id;
-      const roleName = user?.role?.role_name || user?.role?.name || user?.role_name || String(user?.role || '');
+    // Lưu token và thông tin user vào localStorage
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
 
-      if (roleId === 1 || roleName.toUpperCase() === 'ADMIN') {
-        router.push('/admin/quanlynguoidung')
-      } else if (roleId === 2 || roleName.toUpperCase() === 'MANAGER') {
-        router.push('/quanly/baocao')
-      } else if (roleId === 3 || roleName.toUpperCase() === 'STAFF') {
-        router.push('/nhanvien')
-      } else {
-        // Khách hàng / Hội viên
-        router.push('/hosocanhan') 
-      }
-    } else {
-      errorMsg.value = 'Không nhận được phân quyền truy cập (Token missing).'
-    }
-
-  } catch (error) {
-    console.error('Lỗi Login API:', error)
-    if (error.response?.data?.message) {
-      errorMsg.value = error.response.data.message
-    } else {
-      errorMsg.value = 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'
-    }
+    // Chuyển hướng vào dashboard admin
+    router.push('/admin/thietbi')
+  } catch (err) {
+    const msg = err.response?.data?.message
+    errorMsg.value = msg || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+  } finally {
+    loading.value = false
   }
 }
 </script>
