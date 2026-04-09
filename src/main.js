@@ -8,8 +8,8 @@ import axios from 'axios'
 // Cấu hình axios toàn cục
 // Proxy Vite sẽ forward /api/* → http://localhost:8000
 // ============================================================
-axios.defaults.baseURL = ''          // để trống, dùng proxy của Vite
-axios.defaults.withCredentials = true // cần cho Sanctum cookie-based auth
+axios.defaults.baseURL = ''           // để trống, dùng proxy của Vite
+axios.defaults.withCredentials = false // dùng Bearer token, không cần cookie
 
 // Thay vì cấu hình token tĩnh 1 lần lúc tải trang, 
 // ta dùng Interceptor để luôn tự động lấy token mới nhất từ localStorage cho mọi request API
