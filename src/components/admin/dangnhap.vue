@@ -115,7 +115,6 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
 const loading = ref(false)
@@ -125,7 +124,6 @@ const form = reactive({
   password: ''
 })
 
-const handleLogin = async () => {
 const handleLogin = async () => {
   errorMsg.value = ''
 
