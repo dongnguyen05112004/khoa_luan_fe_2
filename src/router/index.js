@@ -40,21 +40,14 @@ const routes = [
                 component: () => import('../components/admin/quanlynguoidung.vue'),
             },
             {
-                path: '/admin/cau_hinh',
-                component: () => import('../components/admin/cau_hinh.vue'),
+                path: '/admin/config',
+                component: () => import('../components/admin/system_config.vue'),
             },
             {
                 path: '/admin/nhat_ky',
                 component: () => import('../components/admin/nhat_ky.vue'),
             },
-            {
-                path: '/admin/config',
-                component: () => import('../components/admin/system_config.vue'),
-            },
-            {
-                path: '/admin/khuyenmai',
-                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
-            },
+             
 
             {
                 path: '/admin/audit_logs',

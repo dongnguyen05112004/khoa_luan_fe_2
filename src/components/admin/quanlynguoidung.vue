@@ -620,8 +620,10 @@ export default {
     // 5. Hàm gọi API PUT để sửa User
     async saveEdit() {
       let valid = true
-      if (!this.editAcc.name.trim()) { this.editErrors.name = 'Vui lòng nhập họ và tên'; valid = false }
-      if (!this.editAcc.email.trim()) { this.editErrors.email = 'Vui lòng nhập email'; valid = false }
+      // Form dùng editAcc.full_name cho trường "Họ và tên"
+      const displayName = (this.editAcc.full_name || this.editAcc.name || '').trim();
+      if (!displayName) { this.editErrors.name = 'Vui lòng nhập họ và tên'; valid = false }
+      if (!(this.editAcc.email || '').trim()) { this.editErrors.email = 'Vui lòng nhập email'; valid = false }
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.editAcc.email)) { this.editErrors.email = 'Email không hợp lệ'; valid = false }
       if (this.showChangePw && this.editAcc.newPassword) {
         if (this.editAcc.newPassword !== this.editAcc.confirmPassword) {
@@ -632,9 +634,10 @@ export default {
       if (!valid) return
 
       try {
-        // Nếu có nhập mật khẩu mới thì gửi lên, ngược lại loại bỏ trường password khỏi payload
+        // Gửi cả full_name lẫn name để BE nhận được đúng field
         const payload = {
-          name: this.editAcc.name,
+          name: displayName,
+          full_name: displayName,
           email: this.editAcc.email,
           role_id: this.editAcc.role_id,
           state: this.editAcc.state
@@ -648,15 +651,19 @@ export default {
         // Cập nhật lại UI sau khi call API thành công
         const idx = this.accounts.findIndex(a => a.id === this.editAcc.id)
         if (idx !== -1) {
-          this.accounts[idx] = { ...this.accounts[idx], ...response.data.data };
-          this.refreshAvatar(); // refresh avatar nếu cần
+          this.accounts[idx] = { 
+            ...this.accounts[idx], 
+            ...response.data.data,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2d7a3a&color=ffffff&bold=true&size=40`
+          };
         }
 
         this.showEditModal = false;
-        this.showToast('fas fa-check-circle', `Đã cập nhật tài khoản ${this.editAcc.name}`);
+        this.showToast('fas fa-check-circle', `Đã cập nhật tài khoản ${displayName}`);
       } catch (error) {
         console.error("Lỗi cập nhật user:", error);
-        this.showToast('fas fa-times-circle', 'Cập nhật thất bại!');
+        const errMsg = error.response?.data?.message || 'Cập nhật thất bại!';
+        this.showToast('fas fa-times-circle', errMsg);
       }
     },
 

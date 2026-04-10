@@ -33,11 +33,12 @@
               </div>
               <div class="col-lg-4">
                 <label class="form-label very-small fw-bold text-secondary">LOGO THƯƠNG HIỆU</label>
-                <div class="upload-zone border border-dashed rounded d-flex flex-column align-items-center justify-content-center p-5 h-100 min-vh-25">
-                  <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                <label class="upload-zone border-dashed rounded d-flex flex-column align-items-center justify-content-center gap-1">
+                  <i class="fas fa-cloud-upload-alt fa-2x text-muted"></i>
                   <span class="small text-muted">Kéo thả hoặc Click để tải lên</span>
                   <span class="very-small text-muted">PNG, JPG (MAX 5MB)</span>
-                </div>
+                  <input type="file" accept="image/png,image/jpeg" class="d-none" />
+                </label>
               </div>
             </div>
           </div>
@@ -187,17 +188,20 @@ export default {
 .very-small { 
   font-size: 0.72rem; 
 }
-.upload-zone { 
-  border-style: dashed !important; 
-  border-color: #dee2e6 !important; 
-  background-color: #f8f9fa; 
-  cursor: pointer; 
+.upload-zone {
+  border: 2px dashed #dee2e6 !important;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  min-height: 148px;
+  transition: border-color 0.2s, background 0.2s;
+  border-radius: 10px;
 }
-.bg-success-subtle { 
-  background-color: #e8f5e9 !important; 
+.upload-zone:hover {
+  border-color: #2d7a3a !important;
+  background-color: #f0faf2;
 }
-.min-vh-25 { 
-  min-height: 180px; 
+.bg-success-subtle {
+  background-color: #e8f5e9 !important;
 }
 .form-check-input:checked { 
   background-color: #2d7a3a; 
