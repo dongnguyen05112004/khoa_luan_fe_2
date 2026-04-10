@@ -27,7 +27,7 @@
           <i class="fas fa-cogs nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
-        <router-link to="/admin" class="nav-item" exact-active-class="active">
+        <router-link to="/admin/nhat_ky" class="nav-item" exact-active-class="active">
           <i class="fas fa-clipboard-list nav-icon"></i>
           <span v-show="!sidebarCollapsed">Tra cứu nhật ký</span>
         </router-link>

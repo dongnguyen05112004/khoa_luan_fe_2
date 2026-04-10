@@ -46,13 +46,7 @@ const routes = [
             {
                 path: '/admin/nhat_ky',
                 component: () => import('../components/admin/nhat_ky.vue'),
-            },
-             
-
-            {
-                path: '/admin/audit_logs',
-                component: () => import('../components/admin/audit_logs.vue'),
-            }
+            }, 
 
         ]
     },
@@ -94,6 +88,11 @@ const routes = [
                 path: '/nhanvien/xuly_thanh_toan',
                 component: () => import('../components/nhanvien/xuly_thanh_toan.vue'),
             },
+            {
+                path: '/nhanvien/caidat',
+                component: () => import('../components/nhanvien/caidat.vue'),
+            },
+
         ]
     },
     {

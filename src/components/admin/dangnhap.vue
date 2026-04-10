@@ -145,8 +145,21 @@ const handleLogin = async () => {
     localStorage.setItem('token', token)
     localStorage.setItem('user', JSON.stringify(user))
 
-    // Chuyển hướng vào dashboard admin
-    router.push('/admin/thietbi')
+    // Chuyển hướng theo role
+    const roleName = user.role?.role_name?.toLowerCase().trim()
+
+    if (roleName === 'admin') {
+      router.push('/admin')
+    } else if (roleName === 'quản lý' || roleName === 'manager') {
+      router.push('/quanly')
+    } else if (roleName === 'nhân viên' || roleName === 'staff') {
+      router.push('/nhanvien')
+    } else if (roleName === 'pt') {
+      router.push('/nhanvien')
+    } else {
+      // Khách hàng hoặc role không xác định
+      router.push('/khachhang')
+    }
   } catch (err) {
     const msg = err.response?.data?.message
     errorMsg.value = msg || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
