@@ -81,6 +81,15 @@
             <i class="fas fa-bell"></i>
             <span class="notif-dot"></span>
           </button>
+          <!-- Đăng xuất -->
+          <button
+            class="btn btn-danger btn-sm d-flex align-items-center gap-2"
+            @click="handleLogout"
+            :disabled="loggingOut"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+            <span>{{ loggingOut ? 'Đang xuất...' : 'Đăng xuất' }}</span>
+          </button>
           <!-- Admin Avatar -->
           <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-1">
             <img src="https://ui-avatars.com/api/?name=He+Thong+Admin&background=2d7a3a&color=ffffff&bold=true&size=36" class="rounded-circle" alt="Admin" width="36" height="36" />
@@ -116,17 +125,41 @@
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
   name: 'QuanlyLayout',
   data() {
     return {
       sidebarCollapsed: false,
       showAiBubble: true,
+      loggingOut: false,
       stats: {
         totalUsers: 128,
         lockedAccounts: 3,
       },
     }
+  },
+  methods: {
+    async handleLogout() {
+      if (this.loggingOut) return
+      this.loggingOut = true
+      try {
+        const token = localStorage.getItem('token')
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/logout`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      } catch (err) {
+        console.warn('Logout API error:', err)
+      } finally {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        this.$router.push('/dangnhap')
+        this.loggingOut = false
+      }
+    },
   },
 }
 </script>
