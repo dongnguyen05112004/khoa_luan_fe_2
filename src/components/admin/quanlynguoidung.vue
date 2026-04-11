@@ -95,9 +95,7 @@
               </span>
             </td>
             <td class="col-actions">
-              <button class="action-btn view" title="Xem chi tiết" @click="openDetailModal(acc)">
-                <i class="fas fa-eye"></i>
-              </button>
+               
               <button class="action-btn edit" title="Chỉnh sửa" @click="openEditModal(acc)">
                 <i class="fas fa-pen"></i>
               </button>
