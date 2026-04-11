@@ -100,11 +100,7 @@
 
       </div>
     </div> 
-    <div class="position-absolute bottom-0  mb-4 d-flex gap-4 small text-muted">
-       <a href="#" class="text-decoration-none text-muted custom-footer-link">Quy định</a>
-       <a href="#" class="text-decoration-none text-muted custom-footer-link">Bảo mật</a>
-       <a href="#" class="text-decoration-none text-muted custom-footer-link">Hỗ trợ</a>
-    </div>
+     
 
   </div>
 </template>
@@ -149,7 +145,7 @@ const handleLogin = async () => {
     const roleName = user.role?.role_name?.toLowerCase().trim()
 
     if (roleName === 'admin') {
-      router.push('/admin')
+      router.push('/admin/quanlynguoidung')
     } else if (roleName === 'quản lý' || roleName === 'manager') {
       router.push('/quanly')
     } else if (roleName === 'nhân viên' || roleName === 'staff') {

@@ -52,13 +52,14 @@
           </nav>
         </div>
         <div class="header-right d-flex align-items-center gap-3">
-          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-filter"></i>
-            <span>Lọc dữ liệu</span>
-          </button>
-          <button class="btn btn-success btn-sm d-flex align-items-center gap-2">
-            <i class="fas fa-user-plus"></i>
-            <span>Thêm nhân sự</span>
+           
+          <button
+            class="btn btn-danger btn-sm d-flex align-items-center gap-2"
+            @click="handleLogout"
+            :disabled="loggingOut"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+            <span>{{ loggingOut ? 'Đang xuất...' : 'Đăng xuất' }}</span>
           </button>
           <!-- Admin Avatar -->
           <div class="admin-avatar-wrap d-flex align-items-center gap-2 ms-2">
@@ -102,17 +103,46 @@
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
   name: 'AdminLayout',
   data() {
     return {
       sidebarCollapsed: false,
       showAiBubble: true,
+      loggingOut: false,
       stats: {
         totalUsers: 128,
         lockedAccounts: 3,
       },
     }
+  },
+  methods: {
+    async handleLogout() {
+      if (this.loggingOut) return
+      this.loggingOut = true
+      try {
+        const token = localStorage.getItem('token')
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/logout`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+      } catch (err) {
+        // Dù API lỗi vẫn tiếp tục xóa local session
+        console.warn('Logout API error:', err)
+      } finally {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        this.$router.push('/dangnhap')
+        this.loggingOut = false
+      }
+    },
   },
 }
 </script>
