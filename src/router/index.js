@@ -3,8 +3,9 @@ import { createRouter, createWebHistory } from "vue-router"; // cài vue-router:
 const routes = [
     {
         path: '/',
-        component: () => import('../components/admin/start.vue'),
-        meta: { layout: 'index' },
+        name: 'LandingPage',
+        component: () => import('../components/home/LandingPage.vue'),
+        meta: { layout: 'blank' },
     },
     {
         path: "/dangnhap",
@@ -22,13 +23,27 @@ const routes = [
     //     meta: { layout: "blank" },
     // },
 
+    ,
+    {
+        path: "/forgot-password",
+        name: "ForgotPassword",
+        component: () => import("../components/home/ForgotPassword.vue"),
+        meta: { layout: "blank" },
+    },
 
+    {
+        path: "/reset-password",
+        name: "ResetPassword",
+        component: () => import("../components/home/ResetPassword.vue"),
+        meta: { layout: "blank" },
+    },
 
     {
         path: "/blank",
         component: () => import("../layout/wrapper/blank.vue"),
         meta: { layout: "blank" },
     },
+
     {
         path: '/admin',
         component: () => import('../layout/wrapper/admin.vue'),
@@ -46,7 +61,7 @@ const routes = [
             {
                 path: '/admin/nhat_ky',
                 component: () => import('../components/admin/nhat_ky.vue'),
-            }, 
+            }
 
         ]
     },
