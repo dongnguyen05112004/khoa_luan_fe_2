@@ -84,8 +84,13 @@
               </div>
             </div>
             <div class="create-footer">
-              <button class="btn-cancel" @click="showCreate=false">Huỷ</button>
-              <button class="btn-activate" @click="saveNew"><i class="fas fa-bolt"></i> Kích hoạt Chiến dịch</button>
+              <div class="save-error" v-if="saveError" style="color:#dc2626;font-size:.78rem;flex:1;">{{ saveError }}</div>
+              <button class="btn-cancel" @click="showCreate=false;saveError=''">Huỷ</button>
+              <button class="btn-activate" @click="saveNew" :disabled="saving">
+                <i class="fas fa-spinner fa-spin" v-if="saving"></i>
+                <i class="fas fa-bolt" v-else></i>
+                {{ saving ? 'Đang lưu...' : 'Kích hoạt Chiến dịch' }}
+              </button>
             </div>
           </div>
 
@@ -130,18 +135,18 @@
         <div class="list-stats">
           <div class="ls-card">
             <div class="ls-lbl">ĐANG HOẠT ĐỘNG</div>
-            <div class="ls-val">12</div>
-            <div class="ls-trend"><i class="fas fa-arrow-trend-up" style="color:#16a34a"></i> +2 trong tháng này</div>
+            <div class="ls-val">{{ loading ? '...' : statsActive }}</div>
+            <div class="ls-trend"><i class="fas fa-arrow-trend-up" style="color:#16a34a"></i> +{{ statsActive }} hiện tại</div>
           </div>
           <div class="ls-card">
-            <div class="ls-lbl">TỔNG LƯỢT TIẾP CẬN</div>
-            <div class="ls-val">45.2k</div>
-            <div class="ls-trend"><i class="fas fa-users" style="color:#2563eb"></i> Khán giả Toàn cầu</div>
+            <div class="ls-lbl">TỔNG CHIẾN DỊCH</div>
+            <div class="ls-val">{{ loading ? '...' : campaigns.length }}</div>
+            <div class="ls-trend"><i class="fas fa-tag" style="color:#2563eb"></i> Tất cả chiến dịch</div>
           </div>
           <div class="ls-card">
-            <div class="ls-lbl">TỶ LỆ CHUYỂN ĐỔI TRUNG BÌNH</div>
-            <div class="ls-val">8.4%</div>
-            <div class="ls-trend" style="color:#7c3aed"><i class="fas fa-bolt"></i> Đã tối ưu bởi AI</div>
+            <div class="ls-lbl">TỶ LỆ HOẠT ĐỘNG</div>
+            <div class="ls-val">{{ campaigns.length > 0 ? Math.round(statsActive / campaigns.length * 100) : 0 }}%</div>
+            <div class="ls-trend" style="color:#7c3aed"><i class="fas fa-bolt"></i> Tỷ lệ hoạt động</div>
           </div>
           <div class="ai-suggest-card">
             <div class="ais-hd"><i class="fas fa-robot" style="color:#7c3aed"></i> ĐỀ XUẤT TỪ AI</div>
@@ -152,7 +157,16 @@
 
         <!-- Table -->
         <div class="camp-table-wrap">
-          <table class="camp-table">
+          <!-- Error -->
+          <div v-if="errorMsg" style="padding:16px 20px;background:#fef2f2;color:#dc2626;font-size:.82rem;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-exclamation-triangle"></i> {{ errorMsg }}
+            <button @click="fetchPromotions" style="margin-left:auto;background:#fff;border:1.5px solid #fca5a5;border-radius:7px;color:#dc2626;font-size:.8rem;padding:5px 12px;cursor:pointer;"><i class="fas fa-redo"></i> Thử lại</button>
+          </div>
+          <!-- Loading -->
+          <div v-if="loading" style="text-align:center;padding:48px;color:#64748b;">
+            <i class="fas fa-spinner fa-spin" style="color:#7c3aed;margin-right:8px;"></i> Đang tải chiến dịch...
+          </div>
+          <table v-else class="camp-table">
             <thead>
               <tr>
                 <th>TÊN CHIẾN DỊCH</th>
@@ -164,6 +178,12 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="filteredCamps.length === 0">
+                <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;font-size:.85rem;">
+                  <i class="fas fa-tag" style="font-size:1.5rem;margin-bottom:8px;display:block;"></i>
+                  Chưa có chiến dịch nào. Hãy tạo chiến dịch mới!
+                </td>
+              </tr>
               <tr v-for="c in filteredCamps" :key="c.id">
                 <td>
                   <div class="tc-name-cell">
@@ -183,13 +203,12 @@
                       <input type="checkbox" :checked="c.active" @change="toggleStatus(c)"/>
                       <span class="toggle-slider"></span>
                     </label>
-                    <span class="tc-status-txt" :class="c.active?'st-on':'st-off'">{{ c.active?'Hoạt động':'Ngừng' }}</span>
+                    <span class="tc-status-txt" :class="c.active?'st-on':'st-off'">{{ c.active?'Hoạt động':'Ngưng' }}</span>
                   </div>
                 </td>
                 <td class="tc-actions">
-                  <button class="btn-act">edit</button>
-                  <button class="btn-act" style="color:#dc2626">delete</button>
-                  <button class="btn-act-primary">Xem Phân tích</button>
+                  <button class="btn-act btn-edit-act" @click="openEdit(c)"><i class="fas fa-pen"></i> sửa</button>
+                  <button class="btn-act" style="color:#dc2626" @click="deletePromo(c)"><i class="fas fa-trash"></i> xóa</button>
                 </td>
               </tr>
             </tbody>
@@ -198,12 +217,7 @@
 
         <!-- Pagination -->
         <div class="pagination-row">
-          <span class="pg-info">Đang hiển thị 1 đến {{ filteredCamps.length }} trên tổng số {{ campaigns.length }} chiến dịch</span>
-          <div class="pg-btns">
-            <button class="pg-btn active">1</button>
-            <button class="pg-btn">2</button>
-            <button class="pg-btn">3</button>
-          </div>
+          <span class="pg-info">Đang hiển thị {{ filteredCamps.length }} trên tổng số {{ campaigns.length }} chiến dịch</span>
         </div>
 
         <!-- AI Forecast Banner -->
@@ -224,101 +238,457 @@
       </div>
     </div>
 
-    <!-- ======= TAB: PHÂN TÍCH ======= -->
-    <TabKhuyenMaiPhanTich v-if="activeTab==='phantich'" />
 
     <!-- ======= TAB: LỊCH TRÌNH ======= -->
     <div v-if="activeTab==='lichtrinh'" class="lt-content">
       <div class="lt-head">
-        <h2 class="list-title">LỊCH TRÌNH CHIẾN DỊCH</h2>
+        <div>
+          <h2 class="list-title">LỊCH TRÌNH CHIẾN DỊCH</h2>
+          <p class="list-sub">Theo dõi tiến độ và trạng thái các chiến dịch đang chạy.</p>
+        </div>
         <div style="display:flex;gap:10px">
-          <button class="btn-cancel"><i class="fas fa-calendar-alt"></i> Tháng này</button>
-          <button class="btn-activate" style="padding:8px 16px"><i class="fas fa-plus"></i> Lên lịch mới</button>
+          <button class="btn-cancel" @click="filterMonth = !filterMonth">
+            <i class="fas fa-calendar-alt"></i> {{ filterMonth ? 'Tất cả' : 'Tháng này' }}
+          </button>
+          <button class="btn-activate" style="padding:8px 16px" @click="openScheduleCreate">
+            <i class="fas fa-plus"></i> Lên lịch mới
+          </button>
         </div>
       </div>
+
+      <!-- Empty state -->
+      <div v-if="filteredSchedule.length === 0" class="tl-empty">
+        <i class="fas fa-calendar-times"></i>
+        <p>Không có chiến dịch nào{{ filterMonth ? ' trong tháng này' : '' }}.</p>
+      </div>
+
       <div class="tl-list">
-        <div class="tl-item" v-for="(s,i) in schedule" :key="i">
+        <div class="tl-item" v-for="(s, i) in filteredSchedule" :key="s.id">
           <div class="tl-dot" :class="s.dotCls"></div>
           <div class="tl-card">
             <div class="tl-card-top">
               <span class="tl-date">{{ s.date }}</span>
+              <span class="tl-date" v-if="s.dateEnd" style="background:#e0f2fe;color:#0369a1">→ {{ s.dateEnd }}</span>
               <span class="tl-st" :class="s.stCls">{{ s.status }}</span>
+              <div class="tl-actions">
+                <button class="tl-btn-act" title="Chỉnh sửa" @click="openEdit(getCampaignById(s.id))">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button class="tl-btn-act tl-btn-del" title="Xóa" @click="deletePromo(getCampaignById(s.id))">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </div>
             <div class="tl-name">{{ s.name }}</div>
             <div class="tl-meta">
               <span><i class="fas fa-tag"></i> {{ s.code }}</span>
               <span><i class="fas fa-percent"></i> Giảm {{ s.disc }}%</span>
-              <span><i class="fas fa-users"></i> {{ s.reach }}</span>
+              <span v-if="s.usageLimit"><i class="fas fa-users"></i> Tối đa {{ s.usageLimit }} lượt</span>
+              <span v-if="s.description" class="tl-desc-tag"><i class="fas fa-info-circle"></i> {{ s.description }}</span>
             </div>
-            <div class="tl-prog-wrap"><div class="tl-prog" :style="{ width:s.prog+'%', background:s.pc }"></div></div>
+            <div class="tl-prog-wrap"><div class="tl-prog" :style="{ width: s.prog + '%', background: s.pc }"></div></div>
             <div class="tl-prog-lbl">Tiến độ: {{ s.prog }}%</div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- ===================================================== -->
+    <!-- MODAL: CHỈNH SỮA CHIẾN DỊCH                          -->
+    <!-- ===================================================== -->
+    <transition name="modal-km-fade">
+      <div class="km-overlay" v-if="showEditModal" @click.self="closeEdit">
+        <div class="km-modal">
+          <!-- Header -->
+          <div class="km-modal-header">
+            <h3 class="km-modal-title"><i class="fas fa-pen" style="color:#6366f1;margin-right:8px"></i>Chỉnh sửa Chiến dịch</h3>
+            <button class="km-modal-close" @click="closeEdit"><i class="fas fa-times"></i></button>
+          </div>
+          <!-- Body -->
+          <div class="km-modal-body">
+            <div class="edit-error" v-if="editError">{{ editError }}</div>
+            <div class="fg">
+              <label class="flbl">TÊN CHIẾN DỊCH <span style="color:#ef4444">*</span></label>
+              <input v-model="editForm.name" class="fi" placeholder="Tên chiến dịch" />
+            </div>
+            <div class="fg-row">
+              <div class="fg">
+                <label class="flbl">MÃ GIẢM GIÁ</label>
+                <input v-model="editForm.code" class="fi" placeholder="CODE" />
+              </div>
+              <div class="fg">
+                <label class="flbl">MỨC GIẢM (%)</label>
+                <div class="pct-wrap">
+                  <input v-model.number="editForm.discount" type="number" class="fi" min="0" max="100" />
+                  <span class="pct-sfx">%</span>
+                </div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="flbl">THỚI GIAN HIỆU LỰC</label>
+              <div class="date-row">
+                <div class="date-box"><i class="fas fa-calendar-alt dic"></i><input v-model="editForm.startDate" type="date" class="fi di" /></div>
+                <i class="fas fa-arrow-right darr"></i>
+                <div class="date-box"><i class="fas fa-calendar-alt dic"></i><input v-model="editForm.endDate" type="date" class="fi di" /></div>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="flbl">GIỚI HẠN SỬ DỤNG (lượt)</label>
+              <input v-model.number="editForm.usage_limit" type="number" class="fi" placeholder="Để trống nếu không giới hạn" min="0" />
+            </div>
+            <div class="fg">
+              <label class="flbl">MÔ TẢ</label>
+              <textarea v-model="editForm.desc" class="fta" rows="3" placeholder="Mô tả chiến dịch..."></textarea>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div class="km-modal-footer">
+            <button class="btn-cancel" @click="closeEdit">Hủy</button>
+            <button class="btn-activate" @click="submitEdit" :disabled="editing">
+              <i class="fas fa-spinner fa-spin" v-if="editing"></i>
+              <i class="fas fa-check" v-else></i>
+              {{ editing ? 'Đang lưu...' : 'Lưu thay đổi' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
-import TabKhuyenMaiPhanTich from './tab_khuyenmai_phantich.vue'
+import { promotionApi } from '@/services/promotionApi.js'
+
 export default {
   name: 'TabKhuyenMai',
-  components: { TabKhuyenMaiPhanTich },
+  components: {},
   data() {
     return {
       activeTab: 'tongquan',
       showCreate: false,
       search: '',
       condMenu: false,
+
+      // Loading states
+      loading: false,
+      errorMsg: '',
+      saving: false,
+      saveError: '',
+
+      // Edit modal
+      showEditModal: false,
+      editingId: null,
+      editForm: { name: '', code: '', discount: 20, startDate: '', endDate: '', usage_limit: '', desc: '' },
+      editing: false,
+      editError: '',
+
+      // Schedule filter
+      filterMonth: false,
       tabs: [
         { key: 'tongquan',  label: 'Tổng quan' },
-        { key: 'phantich',  label: 'Phân tích' },
         { key: 'lichtrinh', label: 'Lịch trình' },
       ],
-      form: { name:'', code:'PEAK24', discount:20, startDate:'', endDate:'', conditions:[{ key:'year', label:'Gói năm', icon:'fas fa-calendar-check' }], desc:'' },
+      form: {
+        name: '',
+        code: '',
+        discount: 20,
+        startDate: '',
+        endDate: '',
+        conditions: [{ key: 'year', label: 'Gói năm', icon: 'fas fa-calendar-check' }],
+        desc: '',
+        usage_limit: ''
+      },
       condOpts: [
-        { key:'year',      label:'Gói năm',          icon:'fas fa-calendar-check' },
-        { key:'month',     label:'Gói tháng',         icon:'fas fa-calendar-alt' },
-        { key:'new',       label:'Hội viên mới',      icon:'fas fa-user-plus' },
-        { key:'referral',  label:'Giới thiệu bạn bè', icon:'fas fa-user-friends' },
-        { key:'birthday',  label:'Sinh nhật',         icon:'fas fa-birthday-cake' },
-        { key:'pt',        label:'Gói PT',            icon:'fas fa-dumbbell' },
+        { key: 'year',     label: 'Gói năm',          icon: 'fas fa-calendar-check' },
+        { key: 'month',    label: 'Gói tháng',         icon: 'fas fa-calendar-alt' },
+        { key: 'new',      label: 'Hội viên mới',      icon: 'fas fa-user-plus' },
+        { key: 'referral', label: 'Giới thiệu bạn bè', icon: 'fas fa-user-friends' },
+        { key: 'birthday', label: 'Sinh nhật',         icon: 'fas fa-birthday-cake' },
+        { key: 'pt',       label: 'Gói PT',            icon: 'fas fa-dumbbell' },
       ],
-      suggestTags: ['DuyTri','TăngTrưởng_Q3','Sôm','ĐộcQuyền_SmartGym'],
-      campaigns: [
-        { id:1, name:'Cắt mỡ đón Tết 2024', target:'Thành viên cũ quay lại', code:'SHRED24', period:'01 Th01 – 31 Th01', discount:'GIẢM 25%', active:true,  color:'#2d7a3a' },
-        { id:2, name:'Bùng nổ vóc dáng hè', target:'Đối tượng: Sinh viên đại học', code:'SUMMER50', period:'01 Th06 – 31 Th08', discount:'Tặng $50', active:false, color:'#6366f1' },
-        { id:3, name:'Chương trình Giới thiệu Elite', target:'Top 10% Thành viên tích cực', code:'ELITEVIP', period:'Đang diễn ra', discount:'1 Tháng Miễn phí', active:true, color:'#2d7a3a' },
-      ],
-      schedule: [
-        { date:'01/04/2025', name:'Chiến dịch Bứt phá Hè', code:'SUMMER25', disc:30, status:'Đang chạy', stCls:'sl-green', dotCls:'dot-green', reach:'12,400', prog:62, pc:'#2d7a3a' },
-        { date:'15/04/2025', name:'Khuyến mãi Sinh nhật SmartGym', code:'BDAY25', disc:20, status:'Sắp diễn ra', stCls:'sl-blue', dotCls:'dot-blue', reach:'5,200', prog:0, pc:'#6366f1' },
-        { date:'01/05/2025', name:'Ưu đãi Tháng Lao Động', code:'LABOR25', disc:15, status:'Lên kế hoạch', stCls:'sl-yellow', dotCls:'dot-yellow', reach:'8,000', prog:0, pc:'#f59e0b' },
-        { date:'01/03/2025', name:'Win-back Email Q1', code:'WINBACK25', disc:25, status:'Đã kết thúc', stCls:'sl-gray', dotCls:'dot-gray', reach:'7,100', prog:100, pc:'#64748b' },
-      ],
+      suggestTags: ['DuyTri', 'TăngTrưởng_Q3', 'Sôm', 'ĐộcQuyền_SmartGym'],
+
+      // Dữ liệu từ API
+      campaigns: [],
+
+      // Lịch trình (dùng từ campaigns)
+      scheduleColors: ['#2d7a3a', '#6366f1', '#f59e0b', '#64748b', '#ec4899'],
     }
   },
+
   computed: {
     filteredCamps() {
       const q = this.search.toLowerCase()
-      return this.campaigns.filter(c => !q || c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
+      return this.campaigns.filter(c =>
+        !q || c.name.toLowerCase().includes(q) || (c.code || '').toLowerCase().includes(q)
+      )
+    },
+
+    // Thống kê từ API data
+    statsActive() {
+      return this.campaigns.filter(c => c.active).length
+    },
+
+    // Tạo lịch trình từ campaigns
+    schedule() {
+      return this.campaigns.map((c, i) => {
+        const now = new Date()
+        const start = c.start_date ? new Date(c.start_date) : null
+        const end = c.end_date ? new Date(c.end_date) : null
+
+        let status = 'Lên kế hoạch'
+        let stCls = 'sl-yellow'
+        let dotCls = 'dot-yellow'
+        let prog = 0
+        let pc = '#f59e0b'
+
+        if (start && end) {
+          if (now >= start && now <= end) {
+            status = 'Đang chạy'
+            stCls = 'sl-green'
+            dotCls = 'dot-green'
+            pc = '#2d7a3a'
+            const total = end - start
+            const elapsed = now - start
+            prog = Math.round((elapsed / total) * 100)
+          } else if (now > end) {
+            status = 'Đã kết thúc'
+            stCls = 'sl-gray'
+            dotCls = 'dot-gray'
+            pc = '#64748b'
+            prog = 100
+          } else {
+            status = 'Sắp diễn ra'
+            stCls = 'sl-blue'
+            dotCls = 'dot-blue'
+            pc = '#6366f1'
+          }
+        }
+
+        const dateLabel = c.start_date
+          ? new Date(c.start_date).toLocaleDateString('vi-VN')
+          : '—'
+
+        return {
+          id: c.id,
+          date: dateLabel,
+          dateEnd: c.end_date ? new Date(c.end_date).toLocaleDateString('vi-VN') : null,
+          name: c.name,
+          code: c.code || '—',
+          disc: c._raw?.discount || 0,
+          description: c.target !== 'Tất cả hội viên' ? c.target : '',
+          usageLimit: c.usage_limit || null,
+          status,
+          stCls,
+          dotCls,
+          reach: c.usage_limit ? `${c.usage_limit} lượt` : '—',
+          prog,
+          pc,
+        }
+      })
+    },
+
+    // Lịch trình lọc theo tháng hiện tại nếu filterMonth = true
+    filteredSchedule() {
+      if (!this.filterMonth) return this.schedule
+      const now = new Date()
+      return this.schedule.filter(s => {
+        const c = this.campaigns.find(x => x.id === s.id)
+        if (!c) return false
+        const start = c.start_date ? new Date(c.start_date) : null
+        const end   = c.end_date   ? new Date(c.end_date)   : null
+        if (!start) return false
+        return (
+          (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear()) ||
+          (end && end.getMonth() === now.getMonth() && end.getFullYear() === now.getFullYear()) ||
+          (start <= now && end && end >= now)
+        )
+      })
     },
   },
+
+  mounted() {
+    this.fetchPromotions()
+  },
+
   methods: {
-    addCond(o) {
-      if (!this.form.conditions.find(c=>c.key===o.key)) this.form.conditions.push({...o})
-      this.condMenu = false
+    // ─── Lấy danh sách khuyến mãi ────────────────────────────
+    async fetchPromotions() {
+      this.loading = true
+      this.errorMsg = ''
+      try {
+        const res = await promotionApi.getAll()
+        const data = res.data
+        const list = Array.isArray(data) ? data : (data.data || [])
+
+        this.campaigns = list.map((p, i) => this.mapPromotion(p, i))
+      } catch (err) {
+        console.error('fetchPromotions error:', err)
+        this.errorMsg = err?.response?.data?.message || err.message || 'Lỗi tải dữ liệu'
+      } finally {
+        this.loading = false
+      }
     },
-    toggleStatus(c) { c.active = !c.active },
-    saveNew() {
-      if (!this.form.name) return
-      this.campaigns.push({ id:Date.now(), name:this.form.name, target:'Tất cả hội viên', code:this.form.code||'NEW', period:this.form.startDate+' – '+this.form.endDate, discount:`GIẢM ${this.form.discount}%`, active:true, color:'#7c3aed' })
-      this.form = { name:'', code:'PEAK24', discount:20, startDate:'', endDate:'', conditions:[], desc:'' }
-      this.showCreate = false
+
+    // ─── Map API → định dạng FE ──────────────────────────────
+    mapPromotion(p, idx = 0) {
+      const colors = ['#2d7a3a', '#6366f1', '#f59e0b', '#ec4899', '#14b8a6']
+      const now = new Date()
+      const start = p.start_date ? new Date(p.start_date) : null
+      const end = p.end_date ? new Date(p.end_date) : null
+      const isActive = start && end ? (now >= start && now <= end) : true
+
+      const period = (p.start_date && p.end_date)
+        ? `${new Date(p.start_date).toLocaleDateString('vi-VN')} – ${new Date(p.end_date).toLocaleDateString('vi-VN')}`
+        : (p.start_date ? new Date(p.start_date).toLocaleDateString('vi-VN') : 'Đang diễn ra')
+
+      return {
+        id: p.id,
+        name: p.title || p.name,
+        target: p.description || 'Tất cả hội viên',
+        code: p.code || '—',
+        period,
+        discount: p.discount ? `GIẢM ${p.discount}%` : '—',
+        active: isActive,
+        color: colors[idx % colors.length],
+        // Raw fields
+        start_date: p.start_date,
+        end_date: p.end_date,
+        usage_limit: p.usage_limit,
+        _raw: p,
+      }
+    },
+
+    // ─── Lưu chiến dịch mới ──────────────────────────────────
+    async saveNew() {
+      if (!this.form.name) {
+        this.saveError = 'Vui lòng nhập tên chiến dịch.'
+        return
+      }
+      this.saving = true
+      this.saveError = ''
+      try {
+        const payload = {
+          title: this.form.name,
+          code: this.form.code || undefined,
+          discount: this.form.discount || undefined,
+          description: this.form.desc || undefined,
+          start_date: this.form.startDate || undefined,
+          end_date: this.form.endDate || undefined,
+          usage_limit: this.form.usage_limit || undefined,
+        }
+        const res = await promotionApi.create(payload)
+        const newPromo = res.data?.data ?? res.data
+        this.campaigns.unshift(this.mapPromotion(newPromo, 0))
+
+        // Reset form
+        this.form = { name: '', code: '', discount: 20, startDate: '', endDate: '', conditions: [], desc: '', usage_limit: '' }
+        this.showCreate = false
+      } catch (err) {
+        console.error('saveNew error:', err)
+        if (err?.response?.data?.errors) {
+          this.saveError = Object.values(err.response.data.errors).flat().join(', ')
+        } else {
+          this.saveError = err?.response?.data?.message || 'Lỗi khi lưu chiến dịch'
+        }
+      } finally {
+        this.saving = false
+      }
+    },
+
+    // ─── Xóa chiến dịch ──────────────────────────────────────
+    async deletePromo(c) {
+      if (!confirm(`Xóa chiến dịch "${c.name}"?`)) return
+      try {
+        await promotionApi.remove(c.id)
+        this.campaigns = this.campaigns.filter(x => x.id !== c.id)
+      } catch (err) {
+        alert(err?.response?.data?.message || 'Lỗi khi xóa chiến dịch')
+      }
+    },
+
+    // ─── Toggle trạng thái ──────────────────────────────────
+    async toggleStatus(c) {
+      c.active = !c.active
+    },
+
+    // ─── Mở modal chỉnh sửa ─────────────────────────────────
+    openEdit(c) {
+      if (!c) return
+      this.editingId = c.id
+      this.editError = ''
+      const raw = c._raw || {}
+      this.editForm = {
+        name:        raw.title       || c.name   || '',
+        code:        raw.code        || (c.code !== '—' ? c.code : '') || '',
+        discount:    raw.discount    != null ? raw.discount : 20,
+        startDate:   raw.start_date  ? raw.start_date.substring(0, 10) : '',
+        endDate:     raw.end_date    ? raw.end_date.substring(0, 10)   : '',
+        usage_limit: raw.usage_limit || '',
+        desc:        raw.description || '',
+      }
+      this.showEditModal = true
+    },
+
+    closeEdit() {
+      this.showEditModal = false
+      this.editingId = null
+      this.editError = ''
+    },
+
+    // ─── Gửi PUT /api/promotions/{id} ───────────────────────
+    async submitEdit() {
+      if (!this.editForm.name) {
+        this.editError = 'Vui lòng nhập tên chiến dịch.'
+        return
+      }
+      this.editing = true
+      this.editError = ''
+      try {
+        const payload = {
+          title:       this.editForm.name,
+          code:        this.editForm.code        || undefined,
+          discount:    this.editForm.discount    || undefined,
+          description: this.editForm.desc        || undefined,
+          start_date:  this.editForm.startDate   || undefined,
+          end_date:    this.editForm.endDate     || undefined,
+          usage_limit: this.editForm.usage_limit || undefined,
+        }
+        const res = await promotionApi.update(this.editingId, payload)
+        const updated = res.data?.data ?? res.data
+        const idx = this.campaigns.findIndex(x => x.id === this.editingId)
+        if (idx !== -1) this.campaigns.splice(idx, 1, this.mapPromotion(updated, idx))
+        this.closeEdit()
+      } catch (err) {
+        console.error('submitEdit error:', err)
+        this.editError = err?.response?.data?.errors
+          ? Object.values(err.response.data.errors).flat().join(', ')
+          : (err?.response?.data?.message || 'Lỗi khi cập nhật')
+      } finally {
+        this.editing = false
+      }
+    },
+
+    // ─── Lấy campaign theo id (dùng cho tab Lịch trình) ─────
+    getCampaignById(id) {
+      return this.campaigns.find(c => c.id === id) || null
+    },
+
+    // ─── Nút "Lên lịch mới": chuyển tab + mở form tạo ──────
+    openScheduleCreate() {
+      this.activeTab = 'tongquan'
+      this.$nextTick(() => { this.showCreate = true })
+    },
+
+    // ─── Điều kiện áp dụng ──────────────────────────────────
+    addCond(o) {
+      if (!this.form.conditions.find(c => c.key === o.key)) this.form.conditions.push({ ...o })
+      this.condMenu = false
     },
   },
 }
 </script>
+
 
 <style scoped>
 /* ======= ROOT ======= */
@@ -493,4 +863,108 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
 /* ======= TRANSITION ======= */
 .fade-enter-active,.fade-leave-active { transition:opacity .2s ease; }
 .fade-enter-from,.fade-leave-to { opacity:0; }
+
+/* ======= NÚT SỬA TRONG BẢNG ======= */
+.btn-edit-act { color:#6366f1 !important; }
+.btn-edit-act:hover { color:#4f46e5 !important; }
+
+/* ======= LỊCH TRÌNH - ACTIONS ======= */
+.tl-card-top { flex-wrap:wrap; }
+.tl-actions { margin-left:auto; display:flex; gap:4px; }
+.tl-btn-act {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #6366f1;
+  font-size: .72rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.tl-btn-act:hover { background:#ede9fe; border-color:#c4b5fd; }
+.tl-btn-del { color: #dc2626; }
+.tl-btn-del:hover { background:#fef2f2; border-color:#fca5a5; color:#dc2626; }
+.tl-desc-tag { font-style:italic; }
+
+/* Empty state cho lịch trình */
+.tl-empty {
+  text-align: center;
+  padding: 48px;
+  color: #94a3b8;
+}
+.tl-empty i { font-size: 2rem; margin-bottom: 10px; display: block; }
+.tl-empty p { font-size: .85rem; margin: 0; }
+
+/* ======= EDIT MODAL ======= */
+.km-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+.km-modal {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+  width: 560px;
+  max-width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.km-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.km-modal-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; display:flex; align-items:center; }
+.km-modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .85rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.km-modal-close:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+.km-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.km-modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.edit-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #dc2626;
+  font-size: .82rem;
+}
+
+/* modal transition */
+.modal-km-fade-enter-active, .modal-km-fade-leave-active { transition: opacity .2s ease; }
+.modal-km-fade-enter-from, .modal-km-fade-leave-to { opacity: 0; }
+.modal-km-fade-enter-active .km-modal, .modal-km-fade-leave-active .km-modal { transition: transform .2s ease; }
+.modal-km-fade-enter-from .km-modal { transform: scale(.95) translateY(16px); }
+.modal-km-fade-leave-to .km-modal { transform: scale(.95) translateY(16px); }
 </style>
