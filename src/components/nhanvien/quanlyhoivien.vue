@@ -7,10 +7,12 @@
         <h1 class="page-title">Quản lý hội viên</h1>
         <div class="header-badges">
           <span class="badge-members">
-            <i class="fas fa-plus"></i> {{ totalMembers.toLocaleString() }} Active Members
+            <i class="fas fa-users"></i> {{ (stats.total_active || 0).toLocaleString() }} Active Members
           </span>
-          <span class="badge-ai">
-            <i class="fas fa-robot"></i> AI INSIGHT: Retention up 12%
+          <span class="badge-ai" v-if="stats.retention_change !== null">
+            <i class="fas fa-robot"></i>
+            AI INSIGHT: Retention
+            {{ stats.retention_change >= 0 ? '+' : '' }}{{ stats.retention_change }}%
           </span>
         </div>
       </div>
@@ -33,7 +35,9 @@
             class="lookup-input"
             @keyup.enter="doSearch"
           />
-          <button class="btn-search" @click="doSearch">Search</button>
+          <button class="btn-search" @click="doSearch">
+            <i class="fas fa-search"></i> Search
+          </button>
         </div>
       </div>
 
@@ -54,16 +58,29 @@
       <!-- New Today -->
       <div class="new-today-card">
         <div class="new-today-label">NEW TODAY</div>
-        <div class="new-today-val">+{{ newToday }}</div>
+        <div class="new-today-val">+{{ stats.new_today }}</div>
         <div class="new-today-sub">
-          <i class="fas fa-arrow-up"></i> Higher than last Monday
+          <i class="fas fa-users"></i>
+          {{ stats.expiring_soon }} sắp hết hạn (7 ngày)
         </div>
       </div>
 
     </div>
 
+    <!-- ===== Loading / Error ===== -->
+    <div v-if="loading" class="feedback-row">
+      <div class="spinner"></div>
+      <span>Đang tải dữ liệu...</span>
+    </div>
+
+    <div v-else-if="fetchError" class="feedback-row error-row">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>{{ fetchError }}</span>
+      <button class="btn-retry" @click="loadAll">Thử lại</button>
+    </div>
+
     <!-- ===== Table ===== -->
-    <div class="table-card">
+    <div v-else class="table-card">
       <table class="hv-table">
         <thead>
           <tr>
@@ -77,47 +94,65 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="m in paginatedMembers" :key="m.id">
+          <tr v-for="m in members" :key="m.id">
             <td>
               <div class="member-cell">
                 <img
-                  :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=${m.avatarBg}&color=fff&bold=true&size=80`"
+                  :src="memberAvatar(m)"
                   class="member-avatar"
-                  :alt="m.name"
+                  :alt="m.full_name"
                 />
                 <div class="member-info">
-                  <div class="member-name">{{ m.name }}</div>
+                  <div class="member-name">{{ m.full_name }}</div>
                   <div class="member-email">{{ m.email }}</div>
                 </div>
               </div>
             </td>
             <td>
-              <div class="member-id">#{{ m.code }}</div>
-              <div class="member-phone">{{ m.phone }}</div>
+              <div class="member-id">#{{ m.card_number || m.e_number || m.id }}</div>
+              <div class="member-phone">{{ m.phone || '—' }}</div>
             </td>
             <td>
-              <span class="pkg-badge" :class="m.pkgClass">{{ m.package }}</span>
+              <span class="pkg-badge" :class="pkgClass(m.package)">
+                {{ m.package || 'Chưa có gói' }}
+              </span>
             </td>
             <td>
-              <div class="expiry-date" :class="{ 'expiry-red': m.expirySubClass === 'sub-expired' }">{{ m.expiry }}</div>
-              <div class="expiry-sub" :class="m.expirySubClass">{{ m.expirySub }}</div>
+              <div class="expiry-date" :class="{ 'expiry-red': isExpired(m) }">
+                {{ formatDate(m.end_date) }}
+              </div>
+              <div class="expiry-sub" :class="expirySubClass(m)">
+                {{ m.expiry_label || (isExpired(m) ? 'Expired' : '—') }}
+              </div>
             </td>
             <td>
-              <div class="checkin-time">{{ m.lastCheckin }}</div>
-              <div class="checkin-loc">{{ m.location }}</div>
+              <div class="checkin-time">{{ m.last_check_in_label || 'Chưa check-in' }}</div>
             </td>
             <td>
-              <span class="status-badge" :class="m.statusClass">{{ m.status }}</span>
+              <span class="status-badge" :class="statusClass(m.status)">
+                {{ statusLabel(m.status) }}
+              </span>
             </td>
             <td>
               <div class="action-btns">
-                <button class="action-btn" title="Xem hồ sơ"><i class="fas fa-eye"></i></button>
-                <button class="action-btn" title="Chỉnh sửa"><i class="fas fa-pen"></i></button>
-                <button class="action-btn danger" title="Khoá tài khoản"><i class="fas fa-ban"></i></button>
+                <button class="action-btn" title="Xem hồ sơ" @click="viewMember(m)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="action-btn" title="Chỉnh sửa" @click="editMember(m)">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button
+                  class="action-btn danger"
+                  :title="m.status === 'on_hold' ? 'Kích hoạt lại' : 'Khoá tài khoản'"
+                  @click="toggleHold(m)"
+                  :disabled="actionLoading === m.id"
+                >
+                  <i :class="m.status === 'on_hold' ? 'fas fa-check-circle' : 'fas fa-ban'"></i>
+                </button>
               </div>
             </td>
           </tr>
-          <tr v-if="paginatedMembers.length === 0">
+          <tr v-if="members.length === 0">
             <td colspan="7" class="empty-row">
               <i class="fas fa-search"></i> Không tìm thấy hội viên phù hợp.
             </td>
@@ -128,10 +163,11 @@
       <!-- Pagination inside card -->
       <div class="pagination-bar">
         <span class="pagination-info">
-          Showing {{ pageStart }} to {{ pageEnd }} of {{ filteredMembers.length.toLocaleString() }} members
+          Showing {{ pagination.from || 0 }} to {{ pagination.to || 0 }}
+          of {{ (pagination.total || 0).toLocaleString() }} members
         </span>
         <div class="pagination-controls">
-          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
+          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
             <i class="fas fa-chevron-left"></i>
           </button>
           <button
@@ -139,184 +175,243 @@
             :key="p"
             class="page-btn"
             :class="{ active: currentPage === p }"
-            @click="currentPage = p"
+            @click="changePage(p)"
           >{{ p }}</button>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </div>
     </div>
 
+    <!-- ===== Toast ===== -->
+    <transition name="toast-fade">
+      <div v-if="toast.show" class="toast" :class="toast.type">
+        <i :class="toast.type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+        {{ toast.message }}
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script>
+import { memberApi } from '@/services/memberApi'
+
+const AVATAR_COLORS = ['e67e22','6366f1','ec4899','14b8a6','8b5cf6','0ea5e9','d97706','16a34a','f43f5e','a855f7','0284c7','db2777']
+
 export default {
   name: 'QuanLyHoiVien',
   data() {
     return {
+      // ---- Data từ API ----
+      members: [],
+      stats: {
+        total_active: 0,
+        new_today: 0,
+        expiring_soon: 0,
+        total_members: 0,
+        retention_change: null,
+      },
+      pagination: {
+        total: 0,
+        from: 0,
+        to: 0,
+        last_page: 1,
+      },
+
+      // ---- UI State ----
+      loading: false,
+      fetchError: null,
+      actionLoading: null,
+
+      // ---- Filters ----
       searchQ: '',
       activeStatus: 'all',
       currentPage: 1,
-      perPage: 8,
-      newToday: 14,
-      totalMembers: 1284,
+      perPage: 10,
+
       statusFilters: [
         { key: 'all',     label: 'All',     cls: 'sf-all'     },
         { key: 'active',  label: 'Active',  cls: 'sf-active'  },
         { key: 'expired', label: 'Expired', cls: 'sf-expired' },
-        { key: 'onhold',  label: 'On-hold', cls: 'sf-onhold'  },
+        { key: 'on_hold', label: 'On-hold', cls: 'sf-onhold'  },
       ],
-      members: [
-        {
-          id: 1, name: 'Nguyễn Minh Anh', avatarBg: 'e67e22',
-          phone: '090 123 4567', email: 'minhanh.ng@gmail.com', code: 'PC-9021',
-          package: 'Elite Platinum', pkgClass: 'pkg-elite',
-          expiry: 'Dec 15, 2024', expirySub: '6 months left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Today, 08:45 AM', location: 'District 1 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 2, name: 'Trần Hoàng Long', avatarBg: '6366f1',
-          phone: '098 765 4321', email: 'long.th@gmail.com', code: 'PC-8842',
-          package: 'Personal Training', pkgClass: 'pkg-personal',
-          expiry: 'Oct 28, 2023', expirySub: 'Expired', expirySubClass: 'sub-expired',
-          lastCheckin: '2 weeks ago', location: 'District 3 Center',
-          status: 'EXPIRED', statusClass: 'st-expired',
-        },
-        {
-          id: 3, name: 'Lê Thu Thảo', avatarBg: 'ec4899',
-          phone: '081 565 1122', email: 'thao.le@gmail.com', code: 'PC-7721',
-          package: 'Standard Plus', pkgClass: 'pkg-standard',
-          expiry: 'Jan 30, 2024', expirySub: 'Membership Frozen', expirySubClass: 'sub-frozen',
-          lastCheckin: '1 month ago', location: 'Online App',
-          status: 'ON-HOLD', statusClass: 'st-onhold',
-        },
-        {
-          id: 4, name: 'Phạm Quốc Hùng', avatarBg: '14b8a6',
-          phone: '032 999 8808', email: 'hung.pg@gmail.com', code: 'PC-4412',
-          package: 'Elite Platinum', pkgClass: 'pkg-elite',
-          expiry: 'Jul 02, 2025', expirySub: '1 year+ left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Yesterday, 06:12 PM', location: 'District 1 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 5, name: 'Hoàng Thị Lan', avatarBg: '8b5cf6',
-          phone: '097 333 4455', email: 'lan.ht@gmail.com', code: 'PC-5531',
-          package: 'Standard Plus', pkgClass: 'pkg-standard',
-          expiry: 'Mar 10, 2025', expirySub: '5 months left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Today, 07:20 AM', location: 'District 7 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 6, name: 'Vũ Đức Minh', avatarBg: '0ea5e9',
-          phone: '090 112 2334', email: 'minh.vd@gmail.com', code: 'PC-3308',
-          package: 'Personal Training', pkgClass: 'pkg-personal',
-          expiry: 'Sep 01, 2023', expirySub: 'Expired', expirySubClass: 'sub-expired',
-          lastCheckin: '1 month ago', location: 'District 3 Center',
-          status: 'EXPIRED', statusClass: 'st-expired',
-        },
-        {
-          id: 7, name: 'Bùi Thúy Nga', avatarBg: 'd97706',
-          phone: '093 445 5667', email: 'nga.bt@gmail.com', code: 'PC-6612',
-          package: 'Elite Platinum', pkgClass: 'pkg-elite',
-          expiry: 'Nov 20, 2025', expirySub: '1 year+ left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Today, 09:55 AM', location: 'District 1 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 8, name: 'Đinh Công Sơn', avatarBg: '16a34a',
-          phone: '096 778 9900', email: 'son.dc@gmail.com', code: 'PC-2201',
-          package: 'Standard Plus', pkgClass: 'pkg-standard',
-          expiry: 'Feb 14, 2024', expirySub: 'Expires soon', expirySubClass: 'sub-warn',
-          lastCheckin: 'Yesterday, 05:30 PM', location: 'Online App',
-          status: 'ON-HOLD', statusClass: 'st-onhold',
-        },
-        {
-          id: 9, name: 'Ngô Anh Khoa', avatarBg: 'f43f5e',
-          phone: '091 234 5678', email: 'khoa.na@gmail.com', code: 'PC-1190',
-          package: 'Elite Platinum', pkgClass: 'pkg-elite',
-          expiry: 'Aug 05, 2025', expirySub: '10 months left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Today, 06:00 AM', location: 'District 7 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 10, name: 'Trương Thị Mai', avatarBg: 'a855f7',
-          phone: '099 876 5432', email: 'mai.tt@gmail.com', code: 'PC-0088',
-          package: 'Personal Training', pkgClass: 'pkg-personal',
-          expiry: 'Jun 30, 2025', expirySub: '9 months left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Yesterday, 08:00 AM', location: 'District 1 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 11, name: 'Đặng Văn Tú', avatarBg: '0284c7',
-          phone: '089 111 2233', email: 'tu.dv@gmail.com', code: 'PC-0055',
-          package: 'Standard Plus', pkgClass: 'pkg-standard',
-          expiry: 'Apr 20, 2025', expirySub: '4 months left', expirySubClass: 'sub-ok',
-          lastCheckin: 'Today, 10:30 AM', location: 'District 1 Center',
-          status: 'ACTIVE', statusClass: 'st-active',
-        },
-        {
-          id: 12, name: 'Phùng Thị Hoa', avatarBg: 'db2777',
-          phone: '077 345 6789', email: 'hoa.pt@gmail.com', code: 'PC-0022',
-          package: 'Personal Training', pkgClass: 'pkg-personal',
-          expiry: 'May 15, 2024', expirySub: 'Expired', expirySubClass: 'sub-expired',
-          lastCheckin: '3 weeks ago', location: 'Online App',
-          status: 'EXPIRED', statusClass: 'st-expired',
-        },
-      ],
+
+      // ---- Toast ----
+      toast: { show: false, message: '', type: 'success' },
     }
   },
+
   computed: {
-    filteredMembers() {
-      let list = this.members
-      const q = this.searchQ.trim().toLowerCase()
-      if (q) {
-        list = list.filter(m =>
-          m.name.toLowerCase().includes(q) ||
-          m.code.toLowerCase().includes(q) ||
-          m.phone.replace(/\s/g, '').includes(q.replace(/\s/g, ''))
-        )
-      }
-      if (this.activeStatus !== 'all') {
-        const map = { active: 'ACTIVE', expired: 'EXPIRED', onhold: 'ON-HOLD' }
-        list = list.filter(m => m.status === map[this.activeStatus])
-      }
-      return list
-    },
     totalPages() {
-      return Math.max(1, Math.ceil(this.filteredMembers.length / this.perPage))
-    },
-    paginatedMembers() {
-      const start = (this.currentPage - 1) * this.perPage
-      return this.filteredMembers.slice(start, start + this.perPage)
-    },
-    pageStart() {
-      return this.filteredMembers.length === 0 ? 0 : (this.currentPage - 1) * this.perPage + 1
-    },
-    pageEnd() {
-      return Math.min(this.currentPage * this.perPage, this.filteredMembers.length)
+      return this.pagination.last_page || 1
     },
     visiblePages() {
       const pages = []
-      for (let i = 1; i <= Math.min(this.totalPages, 3); i++) {
-        pages.push(i)
-      }
+      const start = Math.max(1, this.currentPage - 2)
+      const end   = Math.min(this.totalPages, start + 4)
+      for (let i = start; i <= end; i++) pages.push(i)
       return pages
     },
   },
+
+  mounted() {
+    this.loadAll()
+  },
+
   methods: {
+    /* ──────── DATA LOADING ──────── */
+    async loadAll() {
+      this.loading = true
+      this.fetchError = null
+      try {
+        const [listRes, statsRes] = await Promise.all([
+          memberApi.getAll({
+            search:   this.searchQ.trim() || undefined,
+            status:   this.activeStatus !== 'all' ? this.activeStatus : undefined,
+            per_page: this.perPage,
+            page:     this.currentPage,
+          }),
+          memberApi.getStats(),
+        ])
+
+        // Danh sách (Laravel paginator format)
+        const pg = listRes.data
+        this.members = pg.data ?? []
+        this.pagination = {
+          total:     pg.total     ?? 0,
+          from:      pg.from      ?? 0,
+          to:        pg.to        ?? 0,
+          last_page: pg.last_page ?? 1,
+        }
+
+        // Stats
+        const s = statsRes.data
+        this.stats = {
+          total_active:     s.total_active     ?? 0,
+          new_today:        s.new_today        ?? 0,
+          expiring_soon:    s.expiring_soon    ?? 0,
+          total_members:    s.total_members    ?? 0,
+          retention_change: s.retention_change ?? null,
+        }
+      } catch (err) {
+        console.error(err)
+        this.fetchError = err?.response?.data?.message || 'Không thể kết nối đến server. Vui lòng kiểm tra backend.'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /* ──────── SEARCH / FILTER ──────── */
     doSearch() {
       this.currentPage = 1
+      this.loadAll()
     },
     setStatus(key) {
       this.activeStatus = key
       this.currentPage = 1
+      this.loadAll()
+    },
+    changePage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.currentPage = page
+      this.loadAll()
+    },
+
+    /* ──────── ACTIONS ──────── */
+    viewMember(m) {
+      // TODO: thêm route /nhanvien/hoivien/:id vào router khi có trang chi tiết
+      this.showToast(`Chi tiết hội viên: ${m.full_name} (ID: ${m.id})`, 'success')
+    },
+    editMember(m) {
+      // TODO: thêm route /nhanvien/hoivien/:id/edit vào router khi có trang chỉnh sửa
+      this.showToast(`Chỉnh sửa: ${m.full_name} — chức năng đang phát triển.`, 'success')
+    },
+    async toggleHold(m) {
+      const newStatus = m.status === 'on_hold' ? 'active' : 'on_hold'
+      const label     = newStatus === 'on_hold' ? 'khoá' : 'kích hoạt lại'
+      if (!confirm(`Bạn có muốn ${label} tài khoản của ${m.full_name}?`)) return
+
+      this.actionLoading = m.id
+      try {
+        await memberApi.updateStatus(m.id, newStatus)
+        this.showToast(`Đã ${label} tài khoản thành công.`, 'success')
+        await this.loadAll()
+      } catch (err) {
+        this.showToast(err?.response?.data?.message || 'Có lỗi xảy ra.', 'error')
+      } finally {
+        this.actionLoading = null
+      }
+    },
+
+    /* ──────── UI HELPERS ──────── */
+    memberAvatar(m) {
+      if (m.profile_picture) return m.profile_picture
+      if (m.avatar)          return m.avatar
+      const name = encodeURIComponent(m.full_name || m.name || '?')
+      const colorIdx = (m.id || 0) % AVATAR_COLORS.length
+      const bg = AVATAR_COLORS[colorIdx]
+      return `https://ui-avatars.com/api/?name=${name}&background=${bg}&color=fff&bold=true&size=80`
+    },
+
+    pkgClass(pkg) {
+      if (!pkg) return 'pkg-standard'
+      const lower = pkg.toLowerCase()
+      if (lower.includes('elite') || lower.includes('platinum')) return 'pkg-elite'
+      if (lower.includes('personal') || lower.includes('vip'))    return 'pkg-personal'
+      return 'pkg-standard'
+    },
+
+    isExpired(m) {
+      return m.status === 'expired' || (m.end_date && new Date(m.end_date) < new Date())
+    },
+
+    expirySubClass(m) {
+      const label = (m.expiry_label || '').toLowerCase()
+      if (m.status === 'expired' || label.includes('ago')) return 'sub-expired'
+      if (label.includes('day'))    return 'sub-warn'
+      if (m.status === 'on_hold')   return 'sub-frozen'
+      return 'sub-ok'
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return '—'
+      const d = new Date(dateStr)
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' })
+    },
+
+    statusClass(status) {
+      return {
+        active:  'st-active',
+        expired: 'st-expired',
+        on_hold: 'st-onhold',
+        banned:  'st-banned',
+      }[status] || 'st-expired'
+    },
+
+    statusLabel(status) {
+      return {
+        active:  'ACTIVE',
+        expired: 'EXPIRED',
+        on_hold: 'ON-HOLD',
+        banned:  'BANNED',
+      }[status] || status?.toUpperCase() || '—'
+    },
+
+    showToast(message, type = 'success') {
+      this.toast = { show: true, message, type }
+      setTimeout(() => { this.toast.show = false }, 3000)
     },
   },
+
   watch: {
-    searchQ() { this.currentPage = 1 },
+    searchQ(val) {
+      if (val === '') {
+        this.currentPage = 1
+        this.loadAll()
+      }
+    },
   },
 }
 </script>
@@ -453,6 +548,9 @@ export default {
   cursor: pointer;
   font-family: inherit;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .btn-search:hover { background: #245f2e; }
 
@@ -486,7 +584,7 @@ export default {
   border: 1.5px solid #bbf7d0;
   border-radius: 12px;
   padding: 13px 20px;
-  min-width: 145px;
+  min-width: 155px;
 }
 .new-today-label {
   font-size: 0.62rem;
@@ -505,12 +603,46 @@ export default {
 }
 .new-today-sub {
   font-size: 0.72rem;
-  color: #16a34a;
+  color: #64748b;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 4px;
 }
+
+/* ===== LOADING / ERROR ===== */
+.feedback-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+.error-row { color: #dc2626; }
+.btn-retry {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-retry:hover { background: #fecaca; }
+
+/* Spinner */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2d7a3a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== TABLE CARD ===== */
 .table-card {
@@ -608,7 +740,6 @@ export default {
 
 /* Check-in */
 .checkin-time   { font-size: 0.83rem; color: #334155; font-weight: 500; margin-bottom: 2px; }
-.checkin-loc    { font-size: 0.72rem; color: #94a3b8; }
 
 /* Status badge */
 .status-badge {
@@ -623,6 +754,7 @@ export default {
 .st-active  { background: #dcfce7; color: #16a34a; }
 .st-expired { background: #fee2e2; color: #dc2626; }
 .st-onhold  { background: #fef3c7; color: #b45309; }
+.st-banned  { background: #f1f5f9; color: #475569; }
 
 /* Actions */
 .action-btns { display: flex; gap: 6px; }
@@ -640,8 +772,9 @@ export default {
   justify-content: center;
   transition: all 0.15s;
 }
-.action-btn:hover        { background: #f0fdf4; border-color: #2d7a3a; color: #2d7a3a; }
-.action-btn.danger:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.action-btn:hover:not(:disabled)        { background: #f0fdf4; border-color: #2d7a3a; color: #2d7a3a; }
+.action-btn.danger:hover:not(:disabled) { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 
 /* Empty */
 .empty-row {
@@ -699,6 +832,29 @@ export default {
   font-weight: 700;
 }
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+}
+.toast.success { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+.toast.error   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+
+.toast-fade-enter-active,
+.toast-fade-leave-active { transition: all 0.3s ease; }
+.toast-fade-enter-from,
+.toast-fade-leave-to    { opacity: 0; transform: translateY(12px); }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {

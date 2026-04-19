@@ -14,13 +14,13 @@
 
       <!-- Stat Cards -->
       <div class="stat-cards">
-        <div class="stat-card">
+        <router-link to="/nhanvien/quanlyhoivien" class="stat-card stat-card-link">
           <div class="stat-icon stat-icon-green"><i class="fas fa-users"></i></div>
           <div class="stat-body">
             <div class="stat-num">{{ stats.totalMembers }}<span class="stat-badge badge-up">+8%</span></div>
             <div class="stat-label">TỔNG HỘI VIÊN</div>
           </div>
-        </div>
+        </router-link>
         <div class="stat-card">
           <div class="stat-icon stat-icon-teal"><i class="fas fa-calendar-check"></i></div>
           <div class="stat-body">
@@ -397,6 +397,18 @@ export default {
 }
 .badge-up   { background: #e8f5e9; color: #2d7a3a; }
 .badge-warn { background: #fff3e0; color: #f57c00; }
+
+/* Clickable stat card */
+.stat-card-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.stat-card-link:hover {
+  box-shadow: 0 6px 20px rgba(45, 122, 58, 0.18) !important;
+  transform: translateY(-3px) !important;
+  border-color: #a5d6b0 !important;
+}
 
 /* Panels */
 .dash-panel {

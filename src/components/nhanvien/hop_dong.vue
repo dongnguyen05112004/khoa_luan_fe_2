@@ -1,6 +1,14 @@
 <template>
   <div class="hd-page">
 
+    <!-- ===== Toast Notification ===== -->
+    <transition name="toast-slide">
+      <div v-if="toast" class="hd-toast" :class="toast.type === 'error' ? 'toast-error' : 'toast-success'">
+        <i :class="toast.type === 'error' ? 'fas fa-times-circle' : 'fas fa-check-circle'"></i>
+        {{ toast.msg }}
+      </div>
+    </transition>
+
     <!-- ===== Page Header ===== -->
     <div class="page-header">
       <div>
@@ -125,12 +133,23 @@
                   </td>
                   <td>
                     <div class="action-btns">
-                      <button class="action-btn" title="Xem chi tiết"><i class="fas fa-eye"></i></button>
-                      <button class="action-btn" title="Chỉnh sửa"><i class="fas fa-pen"></i></button>
+                      <button
+                        class="action-btn"
+                        :class="{ 'action-btn-selected': selectedContractId === c.id }"
+                        title="Chọn để gia hạn / hủy"
+                        @click="selectContract(c)"
+                      ><i class="fas fa-hand-pointer"></i></button>
+                      <button class="action-btn" title="Xem chi tiết" @click="viewDetail(c)"><i class="fas fa-eye"></i></button>
+                      <button class="action-btn action-btn-danger" title="Xóa" @click="doRemove(c)"><i class="fas fa-trash-alt"></i></button>
                     </div>
                   </td>
                 </tr>
-                <tr v-if="paginatedContracts.length === 0">
+                <tr v-if="loading">
+                  <td colspan="6" class="empty-row">
+                    <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                  </td>
+                </tr>
+                <tr v-else-if="paginatedContracts.length === 0">
                   <td colspan="6" class="empty-row">
                     <i class="fas fa-file-contract"></i> Không tìm thấy hợp đồng phù hợp.
                   </td>
@@ -170,19 +189,32 @@
           <div class="side-card-title">
             <i class="fas fa-sync-alt"></i> Gia hạn Hợp đồng
           </div>
+          <!-- Hiển thị hợp đồng đang được chọn -->
+          <div v-if="selectedContractId" class="selected-info">
+            <i class="fas fa-check-circle"></i>
+            Đã chọn: {{ contracts.find(c => c.id === selectedContractId)?.contractId || '#—' }}
+          </div>
+          <div v-else class="selected-hint">
+            <i class="fas fa-info-circle"></i>
+            Nhấn <i class="fas fa-hand-pointer"></i> trong bảng để chọn hợp đồng
+          </div>
           <div class="side-field">
-            <div class="side-label">NEW PACKAGE SELECTION</div>
-            <select class="side-select" v-model="renewPackage">
-              <option v-for="pkg in packages" :key="pkg" :value="pkg">{{ pkg }}</option>
+            <div class="side-label">GÓI GIA HẠN <span style="color:#ef4444">*</span></div>
+            <select class="side-select" v-model="selectedPlanId">
+              <option value="">-- Chọn gói --</option>
+              <option v-for="p in plans" :key="p.id" :value="p.id">{{ p.plan_name }} ({{ p.duration_days }}d)</option>
             </select>
           </div>
           <div class="side-field">
-            <div class="side-label">NEW START DATE</div>
+            <div class="side-label">NGÀY BẮT ĐẦU MỚI <span style="color:#ef4444">*</span></div>
             <div class="date-input-wrap">
               <input type="date" class="side-date" v-model="renewDate" />
             </div>
           </div>
-          <button class="btn-renew" @click="doRenew">Gia hạn hợp đồng</button>
+          <button class="btn-renew" :disabled="renewLoading" @click="doRenew">
+            <i v-if="renewLoading" class="fas fa-spinner fa-spin"></i>
+            <span v-else>Gia hạn hợp đồng</span>
+          </button>
         </div>
 
         <!-- Hủy hợp đồng -->
@@ -215,108 +247,151 @@
       </div>
     </div>
 
+    <!-- ===== Modal Chi Tiết Hợp Đồng ===== -->
+    <transition name="modal-fade">
+      <div v-if="showDetail" class="modal-overlay" @click.self="closeDetail">
+        <div class="modal-box">
+          <div class="modal-head">
+            <span class="modal-title">Chi tiết Hợp đồng</span>
+            <button class="modal-close" @click="closeDetail"><i class="fas fa-times"></i></button>
+          </div>
+          <div v-if="detailLoading" class="modal-body" style="text-align:center;padding:40px">
+            <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:#16a34a"></i>
+            <p style="margin-top:12px;color:#64748b">Đang tải...</p>
+          </div>
+          <div v-else-if="detailContract" class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">CONTRACT ID</div>
+                <div class="detail-value mono">{{ detailContract.contractId }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">TRẠNG THÁI</div>
+                <div class="detail-value"><span class="status-badge" :class="detailContract.statusClass">{{ detailContract.status }}</span></div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">HỘI VIÊN</div>
+                <div class="detail-value">{{ detailContract.memberName }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">GÓI DỊCH VỤ</div>
+                <div class="detail-value">{{ detailContract.package }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">NGÀY BẮT ĐẦU</div>
+                <div class="detail-value">{{ detailContract.startDate }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">NGÀY HẾT HẠN</div>
+                <div class="detail-value cc-red">{{ detailContract.expiryDate }}</div>
+              </div>
+              <div class="detail-item" v-if="detailContract.price">
+                <div class="detail-label">GIÁ TRỊ HỢP ĐỒNG</div>
+                <div class="detail-value">{{ Number(detailContract.price).toLocaleString('vi-VN') }} đ</div>
+              </div>
+            </div>
+            <!-- Thanh tiến trình -->
+            <div class="lifecycle-row" style="margin-top:16px">
+              <span class="lifecycle-label">Tiến trình hợp đồng</span>
+              <span class="lifecycle-pct">{{ calcProgress(detailContract._start, detailContract._end) }}%</span>
+            </div>
+            <div class="lifecycle-bar">
+              <div class="lifecycle-fill" :style="{ width: calcProgress(detailContract._start, detailContract._end) + '%' }"></div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn-modal-select" @click="selectContract(detailContract); closeDetail()">
+              <i class="fas fa-hand-pointer"></i> Chọn để gia hạn / hủy
+            </button>
+            <button class="btn-modal-close" @click="closeDetail">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script>
+import axios from 'axios'
+import { contractApi } from '@/services/contractApi'
+
+// Màu avatar ngẫu nhiên cho mỗi hội viên
+const AVATAR_COLORS = ['f59e0b','16a34a','14b8a6','ec4899','6366f1','8b5cf6','0ea5e9','d97706','a855f7','ef4444']
+
 export default {
   name: 'HopDong',
   data() {
     return {
+      // ── Trạng thái loading / lỗi ──────────────────────────────────
+      loading: false,
+      error: null,
+      toast: null,          // { msg, type: 'success'|'error' }
+      toastTimer: null,
+
+      // ── Danh sách hợp đồng (từ API) ──────────────────────────────
+      contracts: [],
+      totalFromApi: 0,      // tổng bản ghi server trả về
+      serverPage: 1,        // trang hiện tại trên server (per_page mặc định)
+
+      // ── Tìm kiếm / lọc / phân trang ──────────────────────────────
       searchQ: '',
       activeTab: 'all',
       currentPage: 1,
       perPage: 5,
-      renewPackage: 'Platinum Performance (12m)',
-      renewDate: '2026-04-03',
-      cancelReason: '',
-      packages: [
-        'Platinum Performance (12m)',
-        'Elite Performance 12M',
-        'Standard Plus 3M',
-        'Flex Standard 1M',
-      ],
+
+      // ── Hợp đồng hiện tại (widget trái-trên) ─────────────────────
       currentContract: {
-        memberName: 'Trần Hoàng Nam',
-        package: 'Platinum Performance (12m)',
-        startDate: '15 Jan 2023',
-        endDate: '15 Jan 2024',
-        progress: 85,
-        warningMsg: 'Contract expires in 22 days . Recommend immediate renewal protocol.',
+        memberName: '—',
+        package: '—',
+        startDate: '—',
+        endDate: '—',
+        progress: 0,
+        warningMsg: '',
       },
+
+      // ── Stats (tổng quan) ─────────────────────────────────────────
+      stats: null,
+
+      // ── Tabs ──────────────────────────────────────────────────────
       tabs: [
-        { key: 'all',     label: 'Tất cả', cls: 'tab-all'     },
-        { key: 'active',  label: 'Active',  cls: 'tab-active'  },
-        { key: 'expired', label: 'Expired', cls: 'tab-expired' },
-        { key: 'pending', label: 'Pending', cls: 'tab-pending' },
+        { key: 'all',       label: 'Tất cả',   cls: 'tab-all'       },
+        { key: 'active',    label: 'Active',    cls: 'tab-active'    },
+        { key: 'expired',   label: 'Expired',   cls: 'tab-expired'   },
+        { key: 'cancelled', label: 'Cancelled', cls: 'tab-pending'   },
       ],
-      contracts: [
-        {
-          id: 1, contractId: '#CN-2542', memberName: 'Lina Sterling', avatarBg: 'f59e0b',
-          package: 'Flex Standard 1M', status: 'EXPIRED', statusClass: 'st-expired',
-          expiryDate: 'Oct 26, 2023',
-        },
-        {
-          id: 2, contractId: '#CN-2599', memberName: 'Robert Wade', avatarBg: '16a34a',
-          package: 'Elite Performance 12M', status: 'ACTIVE', statusClass: 'st-active',
-          expiryDate: 'Dec 01, 2024',
-        },
-        {
-          id: 3, contractId: '#CN-2601', memberName: 'Trần Hoàng Nam', avatarBg: '14b8a6',
-          package: 'Platinum Performance 12M', status: 'ACTIVE', statusClass: 'st-active',
-          expiryDate: '15 Jan 2024',
-        },
-        {
-          id: 4, contractId: '#CN-2614', memberName: 'Lê Thu Thảo', avatarBg: 'ec4899',
-          package: 'Standard Plus 3M', status: 'PENDING', statusClass: 'st-pending',
-          expiryDate: '30 Jan 2024',
-        },
-        {
-          id: 5, contractId: '#CN-2620', memberName: 'Nguyễn Minh Anh', avatarBg: 'f59e0b',
-          package: 'Elite Platinum 12M', status: 'ACTIVE', statusClass: 'st-active',
-          expiryDate: '15 Dec 2024',
-        },
-        {
-          id: 6, contractId: '#CN-2635', memberName: 'Phạm Quốc Hùng', avatarBg: '6366f1',
-          package: 'Standard Plus 3M', status: 'EXPIRED', statusClass: 'st-expired',
-          expiryDate: '01 Sep 2023',
-        },
-        {
-          id: 7, contractId: '#CN-2650', memberName: 'Hoàng Thị Lan', avatarBg: '8b5cf6',
-          package: 'Elite Performance 12M', status: 'ACTIVE', statusClass: 'st-active',
-          expiryDate: '10 Mar 2025',
-        },
-        {
-          id: 8, contractId: '#CN-2667', memberName: 'Vũ Đức Minh', avatarBg: '0ea5e9',
-          package: 'Flex Standard 1M', status: 'PENDING', statusClass: 'st-pending',
-          expiryDate: '05 Feb 2024',
-        },
-        {
-          id: 9, contractId: '#CN-2680', memberName: 'Bùi Thúy Nga', avatarBg: 'd97706',
-          package: 'Platinum Performance 12M', status: 'ACTIVE', statusClass: 'st-active',
-          expiryDate: '20 Nov 2025',
-        },
-        {
-          id: 10, contractId: '#CN-2701', memberName: 'Đinh Công Sơn', avatarBg: 'a855f7',
-          package: 'Standard Plus 3M', status: 'EXPIRED', statusClass: 'st-expired',
-          expiryDate: '14 Feb 2024',
-        },
-      ],
+
+      // ── Modal chi tiết ────────────────────────────────────────────
+      showDetail: false,
+      detailContract: null,
+      detailLoading: false,
+
+      // ── Gia hạn ───────────────────────────────────────────────────
+      selectedContractId: null,   // id hợp đồng đang chọn
+      selectedPlanId: '',          // plan_id bắt buộc theo BE
+      renewDate: new Date().toISOString().slice(0, 10),
+      renewLoading: false,
+      plans: [],                  // danh sách gói duy nhất từ contracts
+
+      // ── Hủy hợp đồng ──────────────────────────────────────────────
+      cancelReason: '',
     }
   },
+
   computed: {
+    // ── Lọc phía client (trên dữ liệu đã fetch) ──────────────────
     filteredContracts() {
       let list = this.contracts
       const q = this.searchQ.trim().toLowerCase()
       if (q) {
         list = list.filter(c =>
-          c.memberName.toLowerCase().includes(q) ||
-          c.contractId.toLowerCase().includes(q)
+          (c.memberName || '').toLowerCase().includes(q) ||
+          (c.contractId || '').toLowerCase().includes(q)
         )
       }
       if (this.activeTab !== 'all') {
-        const map = { active: 'ACTIVE', expired: 'EXPIRED', pending: 'PENDING' }
-        list = list.filter(c => c.status === map[this.activeTab])
+        const map = { active: 'active', expired: 'expired', cancelled: 'cancelled' }
+        list = list.filter(c => c.rawStatus === map[this.activeTab])
       }
       return list
     },
@@ -329,29 +404,317 @@ export default {
     },
     visiblePages() {
       const pages = []
-      for (let i = 1; i <= Math.min(this.totalPages, 3); i++) pages.push(i)
+      const total = this.totalPages
+      let start = Math.max(1, this.currentPage - 1)
+      let end   = Math.min(total, start + 2)
+      if (end - start < 2) start = Math.max(1, end - 2)
+      for (let i = start; i <= end; i++) pages.push(i)
       return pages
     },
   },
+
   methods: {
+    // ── Helpers ─────────────────────────────────────────────────────
+    showToast(msg, type = 'success') {
+      if (this.toastTimer) clearTimeout(this.toastTimer)
+      this.toast = { msg, type }
+      this.toastTimer = setTimeout(() => { this.toast = null }, 3500)
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return '—'
+      const d = new Date(dateStr)
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    },
+
+    statusClass(status) {
+      const map = { active: 'st-active', expired: 'st-expired', cancelled: 'st-pending', pending: 'st-pending' }
+      return map[status] || 'st-pending'
+    },
+
+    statusLabel(status) {
+      const map = { active: 'ACTIVE', expired: 'EXPIRED', cancelled: 'CANCELLED', pending: 'PENDING' }
+      return map[status] || status?.toUpperCase() || '—'
+    },
+
+    avatarColor(id) {
+      return AVATAR_COLORS[(id || 0) % AVATAR_COLORS.length]
+    },
+
+    /** Tính % tiến trình hợp đồng */
+    calcProgress(start, end) {
+      if (!start || !end) return 0
+      const s = new Date(start).getTime()
+      const e = new Date(end).getTime()
+      const now = Date.now()
+      if (now >= e) return 100
+      if (now <= s) return 0
+      return Math.round(((now - s) / (e - s)) * 100)
+    },
+
+    /** Tính số ngày còn lại */
+    daysLeft(endDate) {
+      if (!endDate) return null
+      const diff = new Date(endDate).getTime() - Date.now()
+      return Math.ceil(diff / 86400000)
+    },
+
+    /** Map 1 bản ghi API → object dùng trong template
+     *
+     * BE (formatContract) trả về các field phẳng (flat):
+     *   member_name, plan_id, package (= plan_name), start_date, end_date ...
+     * Không có object lồng user{} hay plan{}
+     */
+    mapContract(c) {
+      // BE trả về member_name (flat) - không phải user.name
+      const memberName = c.member_name
+        || c.user?.full_name || c.user?.name
+        || `Hội viên #${c.user_id}`
+      // BE trả về 'package' = plan_name, hoặc nếu raw thì c.plan.plan_name
+      const pkg = c.package
+        || c.plan?.plan_name || c.plan?.name
+        || `Gói #${c.plan_id}`
+      const rawStatus = c.status || 'pending'
+      return {
+        id:           c.id,
+        contractId:   c.contract_number || `#CN-${String(c.id).padStart(4, '0')}`,
+        memberName,
+        avatarBg:     this.avatarColor(c.id),
+        package:      pkg,
+        status:       this.statusLabel(rawStatus),
+        rawStatus,
+        statusClass:  this.statusClass(rawStatus),
+        startDate:    this.formatDate(c.start_date),
+        expiryDate:   this.formatDate(c.end_date),
+        price:        c.price,
+        lifecycle:    c.lifecycle,
+        daysLeft:     c.days_left,
+        expiryWarning: c.expiry_warning,
+        // raw dates để tính toán
+        _start: c.start_date,
+        _end:   c.end_date,
+      }
+    },
+
+    // ── FETCH danh sách hợp đồng ─────────────────────────────────
+    async fetchContracts() {
+      this.loading = true
+      this.error = null
+      try {
+        const params = { per_page: 100 }                // lấy đủ để lọc client
+        if (this.activeTab !== 'all') params.status = this.activeTab
+
+        const res = await contractApi.getAll(params)
+        const data = res.data
+
+        // BE trả về { data: [...], meta: { total, ... } } hoặc mảng trực tiếp
+        const list = Array.isArray(data) ? data
+                   : (data.data ?? data.contracts ?? [])
+
+        this.contracts = list.map(c => this.mapContract(c))
+        this.totalFromApi = data.meta?.total ?? list.length
+
+        // Build danh sách gói duy nhất từ dữ liệu trả về
+        this.buildPlansList(list)
+
+        // Cập nhật widget "hợp đồng hiện tại" (lấy hợp đồng active đầu tiên)
+        const active = this.contracts.find(c => c.rawStatus === 'active')
+        if (active) {
+          const days = this.daysLeft(active._end)
+          this.currentContract = {
+            memberName: active.memberName,
+            package:    active.package,
+            startDate:  active.startDate,
+            endDate:    active.expiryDate,
+            progress:   this.calcProgress(active._start, active._end),
+            warningMsg: days !== null && days <= 30
+              ? `Hợp đồng hết hạn trong ${days} ngày. Khuyến nghị gia hạn ngay.`
+              : '',
+          }
+        }
+      } catch (err) {
+        console.error('[HopDong] fetchContracts:', err)
+        this.error = err.response?.data?.message || 'Không thể tải danh sách hợp đồng.'
+        this.showToast(this.error, 'error')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // ── FETCH stats tổng quan ─────────────────────────────────────
+    async fetchStats() {
+      try {
+        const res = await contractApi.getStats()
+        this.stats = res.data
+      } catch (err) {
+        console.warn('[HopDong] fetchStats (bỏ qua):', err.message)
+      }
+    },
+
+    // ── XEM CHI TIẾT ─────────────────────────────────────────────
+    async viewDetail(contract) {
+      this.showDetail   = true
+      this.detailLoading = true
+      this.detailContract = contract   // hiển thị ngay dữ liệu cũ trước
+      try {
+        const res = await contractApi.getOne(contract.id)
+        const raw = res.data?.contract ?? res.data
+        if (raw) this.detailContract = { ...contract, ...this.mapContract(raw), _raw: raw }
+      } catch (err) {
+        this.showToast('Không thể tải chi tiết hợp đồng.', 'error')
+      } finally {
+        this.detailLoading = false
+      }
+    },
+
+    closeDetail() {
+      this.showDetail = false
+      this.detailContract = null
+    },
+
+    // ── BUILD DANH SÁCH GÓI (fallback: trích từ contracts) ────────
+    buildPlansList(rawList) {
+      const seen = new Set()
+      const plans = []
+      rawList.forEach(c => {
+        // BE formatContract dùng plan_id + package (= plan_name)
+        // raw list có thể có c.plan.plan_name hoặc c.package
+        const id   = c.plan_id
+        const name = c.plan?.plan_name || c.package
+        const dur  = c.plan?.duration_days
+        if (id && name && !seen.has(id)) {
+          seen.add(id)
+          plans.push({ id, plan_name: name, duration_days: dur || '' })
+        }
+      })
+      // Chỉ ghi đè nếu chưa load từ /membership-plans/active
+      if (plans.length > 0 && this.plans.length === 0) this.plans = plans
+    },
+
+    // ── FETCH danh sách gói từ /api/membership-plans/active ────────
+    async fetchPlans() {
+      try {
+        const res = await axios.get('/api/membership-plans/active')
+        const list = Array.isArray(res.data) ? res.data : (res.data.data ?? [])
+        if (list.length > 0) this.plans = list   // [{ id, plan_name, duration_days, price }]
+      } catch (err) {
+        console.warn('[HopDong] fetchPlans (fallback sang buildPlansList):', err.message)
+      }
+    },
+
+    // ── GIA HẠN ──────────────────────────────────────────────────
+    async doRenew() {
+      // Validate
+      if (!this.selectedContractId) {
+        this.showToast('Vui lòng nhấn ☝ để chọn hợp đồng cần gia hạn.', 'error')
+        return
+      }
+      if (!this.selectedPlanId) {
+        this.showToast('Vui lòng chọn gói gia hạn.', 'error')
+        return
+      }
+      if (!this.renewDate) {
+        this.showToast('Vui lòng chọn ngày bắt đầu mới.', 'error')
+        return
+      }
+
+      const chosen = this.contracts.find(c => c.id === this.selectedContractId)
+      const planName = this.plans.find(p => p.id == this.selectedPlanId)?.plan_name
+        || `Gói #${this.selectedPlanId}`
+      const confirm = window.confirm(
+        `Xác nhận gia hạn hợp đồng ${chosen?.contractId}?\n` +
+        `Gói: ${planName}\n` +
+        `Ngày bắt đầu mới: ${this.renewDate}`
+      )
+      if (!confirm) return
+
+      this.renewLoading = true
+      try {
+        // BE yêu cầu: plan_id* (bắt buộc), new_start_date* (bắt buộc)
+        const payload = {
+          plan_id:        Number(this.selectedPlanId),
+          new_start_date: this.renewDate,
+        }
+        await contractApi.renew(this.selectedContractId, payload)
+        this.showToast('Gia hạn hợp đồng thành công!', 'success')
+        // Reset form
+        this.selectedContractId = null
+        this.selectedPlanId = ''
+        this.renewDate = new Date().toISOString().slice(0, 10)
+        // Reload danh sách
+        await this.fetchContracts()
+      } catch (err) {
+        const msg = err.response?.data?.message
+          || err.response?.data?.errors
+          || 'Gia hạn thất bại.'
+        this.showToast(typeof msg === 'object' ? JSON.stringify(msg) : msg, 'error')
+      } finally {
+        this.renewLoading = false
+      }
+    },
+
+    // ── HỦY HỢP ĐỒNG ─────────────────────────────────────────────
+    async doCancel() {
+      const id = this.selectedContractId
+      if (!id) {
+        this.showToast('Vui lòng chọn hợp đồng cần hủy từ danh sách.', 'error')
+        return
+      }
+      if (!this.cancelReason.trim() || this.cancelReason.trim().length < 5) {
+        this.showToast('Lý do hủy phải có ít nhất 5 ký tự.', 'error')
+        return
+      }
+      try {
+        await contractApi.cancel(id, this.cancelReason.trim())
+        this.showToast('Đã hủy hợp đồng thành công.', 'success')
+        this.cancelReason = ''
+        this.selectedContractId = null
+        await this.fetchContracts()
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Hủy hợp đồng thất bại.'
+        this.showToast(msg, 'error')
+      }
+    },
+
+    // ── XÓA HỢP ĐỒNG ─────────────────────────────────────────────
+    async doRemove(contract) {
+      if (!confirm(`Xác nhận xóa hợp đồng ${contract.contractId}?`)) return
+      try {
+        await contractApi.remove(contract.id)
+        this.showToast(`Đã xóa hợp đồng ${contract.contractId}.`, 'success')
+        this.contracts = this.contracts.filter(c => c.id !== contract.id)
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Xóa hợp đồng thất bại.'
+        this.showToast(msg, 'error')
+      }
+    },
+
+    // ── CHỌN HỢP ĐỒNG để gia hạn / hủy ─────────────────────────
+    selectContract(contract) {
+      this.selectedContractId = contract.id
+      this.renewDate = new Date().toISOString().slice(0, 10)
+      this.cancelReason = ''
+      this.showToast(`Đã chọn: ${contract.contractId} – ${contract.memberName}`, 'success')
+    },
+
+    // ── TAB + PAGINATION ──────────────────────────────────────────
     setTab(key) {
       this.activeTab = key
       this.currentPage = 1
     },
-    doRenew() {
-      alert(`Gia hạn thành công!\nGói: ${this.renewPackage}\nNgày bắt đầu: ${this.renewDate}`)
-    },
-    doCancel() {
-      if (!this.cancelReason.trim()) {
-        alert('Vui lòng nhập lý do hủy hợp đồng.')
-        return
-      }
-      alert(`Đã gửi yêu cầu hủy hợp đồng.\nLý do: ${this.cancelReason}`)
-      this.cancelReason = ''
-    },
   },
+
   watch: {
-    searchQ() { this.currentPage = 1 },
+    searchQ()    { this.currentPage = 1 },
+    activeTab()  { this.currentPage = 1 },
+  },
+
+  async mounted() {
+    await Promise.all([
+      this.fetchContracts(),
+      this.fetchStats(),
+      this.fetchPlans(),   // load danh sách gói cho dropdown gia hạn
+    ])
   },
 }
 </script>
@@ -780,7 +1143,9 @@ export default {
   transition: all 0.2s;
   margin-top: 4px;
 }
-.btn-renew:hover { background: #133a1b; transform: translateY(-1px); }
+.btn-renew:hover:not(:disabled) { background: #133a1b; transform: translateY(-1px); }
+.btn-renew:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
 
 /* Cancel card */
 .cancel-card { border: 1.5px solid #fecaca; }
@@ -844,11 +1209,156 @@ export default {
 .billing-sub   { font-size: 0.73rem; color: #16a34a; margin-top: 1px; }
 .billing-arrow { color: #16a34a; font-size: 0.78rem; margin-left: auto; }
 
+/* ===== ACTION BUTTON VARIANTS ===== */
+.action-btn-selected {
+  background: #dcfce7 !important;
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+}
+.action-btn-danger:hover { background: #fee2e2 !important; border-color: #ef4444 !important; color: #dc2626 !important; }
+
+/* ===== SELECTED CONTRACT INFO ===== */
+.selected-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 12px;
+}
+.selected-info i  { color: #16a34a; }
+.selected-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  color: #0369a1;
+  margin-bottom: 12px;
+}
+.selected-hint i { font-size: 0.75rem; }
+
+/* ===== TOAST ===== */
+.hd-toast {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  min-width: 220px;
+  max-width: 380px;
+  pointer-events: none;
+}
+.toast-success { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
+.toast-error   { background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; }
+.toast-slide-enter-active, .toast-slide-leave-active { transition: all 0.3s ease; }
+.toast-slide-enter-from, .toast-slide-leave-to { opacity: 0; transform: translateX(40px); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-title { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+.modal-close {
+  width: 30px; height: 30px;
+  border: none; background: #f1f5f9;
+  border-radius: 50%; color: #64748b;
+  font-size: 0.8rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: #fee2e2; color: #dc2626; }
+.modal-body { padding: 22px; }
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+.detail-item {}
+.detail-label {
+  font-size: 0.61rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.detail-value { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+.detail-value.mono { font-family: 'Courier New', monospace; font-size: 0.85rem; }
+.modal-foot {
+  display: flex;
+  gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid #f1f5f9;
+  justify-content: flex-end;
+}
+.btn-modal-select {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  background: #1a4d24; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 0.84rem; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-modal-select:hover { background: #133a1b; }
+.btn-modal-close {
+  padding: 9px 18px;
+  background: #f1f5f9; color: #475569;
+  border: none; border-radius: 8px;
+  font-size: 0.84rem; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-modal-close:hover { background: #e2e8f0; }
+.modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.25s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.modal-fade-enter-from .modal-box, .modal-fade-leave-to .modal-box { transform: scale(0.95); }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .hd-page   { padding: 16px; }
   .hd-layout { flex-direction: column; }
   .hd-sidebar { width: 100%; }
+  .detail-grid { grid-template-columns: 1fr; }
 }
 
 </style>
