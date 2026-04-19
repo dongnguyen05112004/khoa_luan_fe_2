@@ -8,16 +8,26 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav mx-auto">
-            <li class="nav-item"><a class="nav-link active fw-medium" href="#">Home</a></li>
-            <li class="nav-item"><a class="nav-link text-muted" href="#">Plans</a></li>
-            <li class="nav-item"><a class="nav-link text-muted" href="#">About</a></li>
+            <li class="nav-item">
+              <a class="nav-link fw-medium" :class="{ active: activeSection === 'home' }" href="#home" @click.prevent="scrollTo('home')">Home</a>
+            </li>
+            
+            <li class="nav-item">
+              <a class="nav-link fw-medium" :class="{ active: activeSection === 'about', 'text-muted': activeSection !== 'about' }" href="#about" @click.prevent="scrollTo('about')">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link fw-medium" :class="{ active: activeSection === 'plans', 'text-muted': activeSection !== 'plans' }" href="#plans" @click.prevent="scrollTo('plans')">Plans</a>
+            </li>
           </ul>
-          <button class="btn btn-kinetic-green rounded-pill px-4 fw-medium">Login</button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-kinetic-green rounded-pill px-4 fw-medium" @click="goToSignup">Sign Up</button>
+            <button class="btn btn-kinetic-green rounded-pill px-4 fw-medium" @click="goToLogin">Login</button>
+          </div>
         </div>
       </div>
     </nav>
 
-    <section class="hero-section position-relative d-flex align-items-center">
+    <section id="home" class="hero-section position-relative d-flex align-items-center">
       <div class="container position-relative z-1">
         <div class="row">
           <div class="col-lg-6 hero-content">
@@ -55,7 +65,7 @@
       </div>
     </section>
 
-    <section class="py-5 bg-light-gray section-padding">
+    <section id="about" class="py-5 bg-light-gray section-padding">
       <div class="container">
         <div class="row align-items-center">
           <div class="col-lg-5 mb-5 mb-lg-0">
@@ -101,7 +111,7 @@
       </div>
     </section>
 
-    <section class="py-5 section-padding bg-light-gray">
+    <section id="plans" class="py-5 section-padding bg-light-gray">
       <div class="container text-center">
         <h2 class="display-6 fw-bold text-dark mb-3">Choose Your Tier</h2>
         <p class="text-muted mb-5">Investment in your physical peak requires a plan that matches your ambition.<br>No hidden fees, only pure performance.</p>
@@ -179,6 +189,48 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const goToLogin = () => router.push('/dangnhap')
+const goToSignup = () => router.push('/dangky')
+
+const activeSection = ref('home')
+let rafId = null
+
+const scrollTo = (sectionId) => {
+  const el = document.getElementById(sectionId)
+  if (el) {
+    const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 70
+    const top = el.getBoundingClientRect().top + window.scrollY - navbarHeight
+    window.scrollTo({ top, behavior: 'smooth' })
+    activeSection.value = sectionId
+  }
+}
+
+const updateActiveSection = () => {
+  const sections = ['home', 'about', 'plans']
+  const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 70
+  let current = 'home'
+  for (const id of sections) {
+    const el = document.getElementById(id)
+    if (el) {
+      const top = el.getBoundingClientRect().top - navbarHeight - 60
+      if (top <= 0) current = id
+    }
+  }
+  activeSection.value = current
+  rafId = null
+}
+
+const handleScroll = () => {
+  if (rafId) return
+  rafId = requestAnimationFrame(updateActiveSection)
+}
+
+onMounted(() => window.addEventListener('scroll', handleScroll))
+onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 </script>
 
 <style scoped>
@@ -202,6 +254,15 @@
   background-color: #2c5c37;
   color: white;
 }
+.btn-outline-kinetic-green {
+  background-color: transparent;
+  color: var(--kinetic-green);
+  border: 2px solid var(--kinetic-green);
+}
+.btn-outline-kinetic-green:hover {
+  background-color: var(--kinetic-green);
+  color: white;
+}
 
 .text-purple { color: var(--kinetic-purple) !important; }
 .bg-purple { background-color: var(--kinetic-purple) !important; }
@@ -217,18 +278,28 @@
 .fs-xs { font-size: 0.75rem; }
 
 /* --- Navbar --- */
-.nav-link.active {
-  color: var(--kinetic-green) !important;
+.nav-link {
   position: relative;
+  color: #6c757d;
+  transition: color 0.3s ease;
 }
-.nav-link.active::after {
+.nav-link::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 10%;
-  width: 80%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
   height: 2px;
   background-color: var(--kinetic-green);
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+}
+.nav-link.active {
+  color: var(--kinetic-green) !important;
+}
+.nav-link.active::after {
+  width: 70%;
 }
 
 /* --- Hero Section --- */

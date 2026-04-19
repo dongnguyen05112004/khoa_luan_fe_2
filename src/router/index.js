@@ -11,12 +11,12 @@ const routes = [
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
-    },
-    // {
-    //     path: "/dangky",
-    //     component: () => import("../components/dang/dangky.vue"),
-    //     meta: { layout: "blank" },
-    // }, 
+    }, 
+    {
+        path: "/dangky",
+        component: () => import("../components/admin/dangky.vue"),
+        meta: { layout: "blank" },
+    }, 
     // {
     //     path: "/home",
     //     component: () => import("../components/trangchu/trangchu.vue"),

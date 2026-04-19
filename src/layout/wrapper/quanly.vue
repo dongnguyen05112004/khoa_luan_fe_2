@@ -57,30 +57,11 @@
       <!-- Top Header -->
       <header class="top-header">
         <div class="header-left">
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item text-muted small">ADMIN</li>
-              <li class="breadcrumb-item active small">QUẢN TRỊ HỆ THỐNG</li>
-            </ol>
-          </nav>
+           
         </div>
         <div class="header-right d-flex align-items-center gap-3">
           <!-- Stat chips -->
-          <div class="header-stat-chip">
-            <i class="fas fa-users"></i>
-            <span class="chip-value">{{ stats.totalUsers }}</span>
-            <span class="chip-label">Người dùng</span>
-          </div>
-          <div class="header-stat-chip chip-danger">
-            <i class="fas fa-user-lock"></i>
-            <span class="chip-value">{{ stats.lockedAccounts }}</span>
-            <span class="chip-label">Bị khóa</span>
-          </div>
-          <!-- Notification bell -->
-          <button class="header-icon-btn" title="Thông báo hệ thống">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
-          </button>
+           
           <!-- Đăng xuất -->
           <button
             class="btn btn-danger btn-sm d-flex align-items-center gap-2"

@@ -87,29 +87,12 @@
       <header class="top-header">
         <div class="header-left">
           <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item text-muted small">HỘI VIÊN</li>
-              <li class="breadcrumb-item active small">TRANG CÁ NHÂN</li>
-            </ol>
+             
           </nav>
         </div>
         <div class="header-right d-flex align-items-center gap-3">
           <!-- Stat chips -->
-          <div class="header-stat-chip chip-blue">
-            <i class="fas fa-fire"></i>
-            <span class="chip-value">{{ stats.workoutsThisMonth }}</span>
-            <span class="chip-label">Buổi tháng này</span>
-          </div>
-          <div class="header-stat-chip chip-green">
-            <i class="fas fa-id-card"></i>
-            <span class="chip-value">{{ stats.daysLeft }}</span>
-            <span class="chip-label">Ngày còn lại</span>
-          </div>
-          <!-- Notification bell -->
-          <button class="header-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
-          </button>
+           
           <!-- Đăng xuất -->
           <button
             class="btn btn-danger btn-sm d-flex align-items-center gap-2"
