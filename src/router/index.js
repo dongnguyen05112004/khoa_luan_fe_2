@@ -143,21 +143,44 @@ const routes = [
         meta: { layout: "khachhang" },
         children: [
             {
-                path: '/chisosuckhoe',
+                path: '',
+                redirect: '/khachhang/ho_so',
+            },
+            // ── NHÓM 2: Tài khoản & Hồ sơ ──
+            {
+                path: 'ho_so',
+                component: () => import('../components/khachhang/ho_so.vue'),
+            },
+            {
+                path: 'chi_so_suc_khoe',
                 component: () => import('../components/khachhang/chisosuckhoe.vue'),
             },
+            // ── NHÓM 3: Dịch vụ & Tiện ích ──
             {
-                path: '/histori',
-                component: () => import('../components/khachhang/histori.vue'),
+                path: 'qr_checkin',
+                component: () => import('../components/khachhang/qr.vue'),
             },
             {
-                path: '/tientrinhtapluyen',
+                path: 'mua_dich_vu',
+                component: () => import('../components/khachhang/mua_goi.vue'),
+            },
+            {
+                path: 'hop_dong',
+                component: () => import('../components/khachhang/lich_su_checkin.vue'),
+            },
+            // ── NHÓM 4: Theo dõi tiến trình ──
+            {
+                path: 'bieu_do_suc_khoe',
+                component: () => import('../components/khachhang/suc_khoe.vue'),
+            },
+            {
+                path: 'giam_sat_muc_tieu',
+                component: () => import('../components/khachhang/muc_tieu.vue'),
+            },
+            {
+                path: 'phan_hoi_ai',
                 component: () => import('../components/khachhang/tientrinhtapluyen.vue'),
             },
-            {
-                path: '/hosocanhan',
-                component: () => import('../components/khachhang/hosocanhan.vue'),
-            }
         ]
     },
 ]
