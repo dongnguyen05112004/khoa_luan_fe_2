@@ -261,13 +261,11 @@ export default {
 
   data() {
     const today = new Date()
-    const weekAgo = new Date(today)
-    weekAgo.setDate(today.getDate() - 7)
     return {
       // Filter state được gửi lên API
       search: '',
       filterCategory: '',
-      dateFrom: weekAgo.toISOString().slice(0, 10),
+      dateFrom: '',
       dateTo: today.toISOString().slice(0, 10),
 
       // API data
@@ -295,6 +293,7 @@ export default {
 
   mounted() {
     this.fetchLogs()
+    this.fetchStats()
   },
 
   computed: {
@@ -338,7 +337,6 @@ export default {
         const params = {
           page: this.currentPage,
           per_page: this.perPage,
-          with_stats: 1 // Yêu cầu API đính kèm stats Today và High Severity
         }
 
         if (this.search) params.search = this.search.trim()
@@ -360,14 +358,8 @@ export default {
           to: data.to || 0,
           last_page: data.last_page || 1
         }
-
-        // Cập nhật hệ thống stats
-        if (data.stats) {
-          this.totalToday = data.stats.total_today || 0
-          this.highSeverity = data.stats.high_severity || 0
-        }
         
-        // Lưu giữ Action Server gần nhất dựa vào record đầu tiên
+        // Lưu giữ Action gần nhất dựa vào record đầu tiên (chỉ khi trang 1, không filter)
         if (this.logs.length && this.currentPage === 1 && !this.search && !this.filterCategory) {
           const first = this.logs[0]
           this.lastAction = {
@@ -380,6 +372,23 @@ export default {
         this.error = err.response?.data?.message || 'Không thể tải dữ liệu. Vui lòng thử lại.'
       } finally {
         this.loading = false
+      }
+    },
+
+    /* ── Fetch Stats riêng biệt (không bị lọc theo ngày) ── */
+    async fetchStats() {
+      try {
+        const token = localStorage.getItem('auth_token')
+        const { data } = await axios.get('/api/activity-logs', {
+          params: { page: 1, per_page: 1, with_stats: 1 },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (data.stats) {
+          this.totalToday   = data.stats.total_today   || 0
+          this.highSeverity = data.stats.high_severity || 0
+        }
+      } catch (err) {
+        console.error('Lỗi tải stats:', err)
       }
     },
 
