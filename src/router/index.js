@@ -142,45 +142,49 @@ const routes = [
         component: () => import('../layout/wrapper/khachhang.vue'),
         meta: { layout: "khachhang" },
         children: [
-            {
-                path: '',
-                redirect: '/khachhang/ho_so',
-            },
             // ── NHÓM 2: Tài khoản & Hồ sơ ──
             {
-                path: 'ho_so',
-                component: () => import('../components/khachhang/ho_so.vue'),
+                path: 'ho_so_ca_nhan',
+                name: 'HoSoCaNhan',
+                component: () => import('../components/khachhang/hosocanhan.vue'),
             },
             {
                 path: 'chi_so_suc_khoe',
+                name: 'ChiSoSucKhoe',
                 component: () => import('../components/khachhang/chisosuckhoe.vue'),
             },
             // ── NHÓM 3: Dịch vụ & Tiện ích ──
             {
                 path: 'qr_checkin',
+                name: 'QrCheckin',
                 component: () => import('../components/khachhang/qr.vue'),
             },
             {
                 path: 'mua_dich_vu',
-                component: () => import('../components/khachhang/mua_goi.vue'),
+                name: 'MuaDichVu',
+                component: () => import('../components/khachhang/mua_dichvu.vue'),
             },
             {
                 path: 'hop_dong',
-                component: () => import('../components/khachhang/lich_su_checkin.vue'),
+                name: 'KhachHangHopDong',
+                component: () => import('../components/khachhang/hop_dong.vue'),
             },
             // ── NHÓM 4: Theo dõi tiến trình ──
             {
                 path: 'bieu_do_suc_khoe',
-                component: () => import('../components/khachhang/suc_khoe.vue'),
+                name: 'BieuDoSucKhoe',
+                component: () => import('../components/khachhang/bieu_do_suc_khoe.vue'),
             },
             {
                 path: 'giam_sat_muc_tieu',
-                component: () => import('../components/khachhang/muc_tieu.vue'),
+                name: 'GiamSatMucTieu',
+                component: () => import('../components/khachhang/giam_sat_muc_tieu.vue'),
             },
             {
                 path: 'phan_hoi_ai',
-                component: () => import('../components/khachhang/tientrinhtapluyen.vue'),
-            },
+                name: 'PhanHoiAi',
+                component: () => import('../components/khachhang/phan_hoi_ai.vue'),
+            }
         ]
     },
 ]

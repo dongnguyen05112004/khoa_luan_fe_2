@@ -25,15 +25,11 @@
         <div class="nav-section-label" v-show="!sidebarCollapsed">TÀI KHOẢN & HỒ SƠ</div>
         <div class="nav-divider" v-show="sidebarCollapsed"></div>
 
-        <router-link to="/khachhang/ho_so" class="nav-item" active-class="active">
+        <router-link to="/khachhang/ho_so_ca_nhan" class="nav-item" active-class="active">
           <i class="fas fa-user-circle nav-icon"></i>
           <span v-show="!sidebarCollapsed">Hồ sơ cá nhân</span>
         </router-link>
-
-        <router-link to="/khachhang/chi_so_suc_khoe" class="nav-item" active-class="active">
-          <i class="fas fa-weight nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Chỉ số sức khỏe</span>
-        </router-link>
+ 
 
         <!-- ── NHÓM 3: Dịch vụ & tiện ích ── -->
         <div class="nav-section-label" v-show="!sidebarCollapsed">DỊCH VỤ & TIỆN ÍCH</div>
@@ -120,7 +116,7 @@
     </div>
 
     <!-- AI Floating Chat Bubble -->
-    <div class="ai-bubble" v-if="showAiBubble">
+    <!-- <div class="ai-bubble" v-if="showAiBubble">
       <div class="ai-bubble-header">
         <span class="ai-icon"><i class="fas fa-robot"></i></span>
         <strong>AI GỢI Ý CHO BẠN</strong>
@@ -129,10 +125,8 @@
       <p class="ai-bubble-text">
         Bạn đã tập đủ 3 buổi tuần này! AI đề xuất bài tập phục hồi nhẹ vào ngày mai để tối ưu kết quả.
       </p>
-    </div>
-    <button class="ai-fab" v-else @click="showAiBubble = true" title="AI Assistant">
-      <i class="fas fa-robot"></i>
-    </button>
+    </div> -->
+     
   </div>
 </template>
 
@@ -338,5 +332,14 @@ export default {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+.ai-fab:hover { transform: scale(1.1); }
+/* Animation cho phép thu gọn / phình ra của AI Bubble */
+.ai-fade-enter-active, .ai-fade-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-fade-enter-from, .ai-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
 }
 </style>
