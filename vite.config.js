@@ -13,7 +13,6 @@ export default defineConfig({
   server: {
     proxy: {
       // Forward /api/* và /sanctum/* sang Laravel backend
-      // Đổi target nếu BE chạy ở địa chỉ khác (VD: http://localhost/khoaluan_be/public)
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
@@ -27,4 +26,3 @@ export default defineConfig({
     },
   },
 })
-

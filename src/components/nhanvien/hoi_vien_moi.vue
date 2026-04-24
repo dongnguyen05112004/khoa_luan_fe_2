@@ -166,68 +166,186 @@
 </template>
 
 <script>
+import { memberApi } from '@/services/memberApi'
+
 export default {
   name: 'HoiVienMoi',
   data() {
     return {
+      // ── BMI ──
       bmi: null,
       bmiLabel: '',
+
+      // ── Form data ──
       form: {
-        name: '',
-        phone: '',
-        email: '',
-        goal: '',
-        medical: '',
-        weight: 70,
-        height: 175,
-        package: 'platinum12',
-        startDate: '',
+        // Thông tin cá nhân
+        full_name:   '',
+        phone:       '',
+        email:       '',
+        password:    '',          // auto-generate nếu không nhập
+        gender:      '',
+        date_of_birth: '',
+        // Sức khoẻ
+        weight:      70,
+        height:      175,
+        health_notes: '',         // tiền sử y tế
+        // Gói dịch vụ
+        plan_id:     null,
+        promotion_id: null,
+        start_date:  new Date().toISOString().slice(0, 10),
+        payment_method: 'cash',
       },
-      packageFees: {
-        platinum12: 12500000,
-        gold6: 7500000,
-        silver3: 4000000,
-        basic1: 1500000,
-      },
-      fee: 12500000,
+
+      // ── Danh sách gói / khuyến mãi từ API ──
+      plans:      [],
+      promotions: [],
+
+      // ── UI state ──
+      loading:      false,
+      submitting:   false,
+      error:        null,
+      successMsg:   null,
     }
   },
-  mounted() {
-    this.calcBmi()
+
+  computed: {
+    selectedPlan() {
+      return this.plans.find(p => p.id === this.form.plan_id) || null
+    },
+    /** Giá sau khi áp khuyến mãi */
+    finalPrice() {
+      if (!this.selectedPlan) return 0
+      const base = parseFloat(this.selectedPlan.price) || 0
+      const promo = this.promotions.find(p => p.id === this.form.promotion_id)
+      if (promo && promo.discount > 0) {
+        return base * (1 - promo.discount / 100)
+      }
+      return base
+    },
+    /** Ngày kết thúc tự tính dựa trên duration_days */
+    endDate() {
+      if (!this.selectedPlan || !this.form.start_date) return ''
+      const start = new Date(this.form.start_date)
+      start.setDate(start.getDate() + (this.selectedPlan.duration_days || 0))
+      return start.toISOString().slice(0, 10)
+    },
   },
+
+  async mounted() {
+    this.calcBmi()
+    await this.loadFormData()
+  },
+
   methods: {
+    // ── Load dữ liệu cho dropdown ──
+    async loadFormData() {
+      this.loading = true
+      try {
+        const [plansRes, promoRes] = await Promise.all([
+          memberApi.getActivePlans(),
+          memberApi.getActivePromotions(),
+        ])
+        this.plans      = plansRes.data  || []
+        this.promotions = promoRes.data  || []
+        // Chọn gói đầu tiên mặc định
+        if (this.plans.length > 0) {
+          this.form.plan_id = this.plans[0].id
+        }
+      } catch (err) {
+        console.error('[HoiVienMoi] loadFormData:', err)
+        this.error = 'Không thể tải dữ liệu gói tập. Vui lòng thử lại.'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // ── Tính BMI ──
     calcBmi() {
       const w = parseFloat(this.form.weight)
       const h = parseFloat(this.form.height)
       if (w > 0 && h > 0) {
         const bmiVal = w / Math.pow(h / 100, 2)
         this.bmi = bmiVal.toFixed(1)
-        if (bmiVal < 18.5) this.bmiLabel = 'Thiếu cân'
-        else if (bmiVal < 25) this.bmiLabel = 'Bình thường'
-        else if (bmiVal < 30) this.bmiLabel = 'Thừa cân'
-        else this.bmiLabel = 'Béo phì'
+        if (bmiVal < 18.5)      this.bmiLabel = 'Thiếu cân'
+        else if (bmiVal < 25)   this.bmiLabel = 'Bình thường'
+        else if (bmiVal < 30)   this.bmiLabel = 'Thừa cân'
+        else                    this.bmiLabel = 'Béo phì'
       } else {
         this.bmi = null
         this.bmiLabel = ''
       }
     },
-    updateFee() {
-      this.fee = this.packageFees[this.form.package] || 0
-    },
+
     formatCurrency(val) {
-      return val.toLocaleString('vi-VN') + 'đ'
+      return Number(val).toLocaleString('vi-VN') + 'đ'
     },
+
     cancel() {
       this.$router.push('/nhanvien')
     },
-    submit() {
-      // TODO: gọi API lưu hội viên
-      alert('Lưu hồ sơ thành công!')
-      this.$router.push('/nhanvien')
+
+    // ── Validate form ──
+    validate() {
+      if (!this.form.full_name.trim())  return 'Vui lòng nhập họ tên.'
+      if (!this.form.phone.trim())      return 'Vui lòng nhập số điện thoại.'
+      if (!this.form.email.trim())      return 'Vui lòng nhập địa chỉ email.'
+      if (!/\S+@\S+\.\S+/.test(this.form.email)) return 'Email không hợp lệ.'
+      return null
+    },
+
+    // ── Submit: gọi POST /api/members ──
+    async submit() {
+      this.error = null
+      this.successMsg = null
+
+      const errMsg = this.validate()
+      if (errMsg) { this.error = errMsg; return }
+
+      this.submitting = true
+      try {
+        // Build payload theo MemberController@store
+        const payload = {
+          // User fields (name = email prefix nếu không có)
+          name:       this.form.email.split('@')[0],
+          email:      this.form.email,
+          password:   this.form.password || Math.random().toString(36).slice(-8),
+          full_name:  this.form.full_name,
+          phone:      this.form.phone,
+          gender:     this.form.gender   || undefined,
+          // Member profile
+          date_of_birth: this.form.date_of_birth || undefined,
+          health_notes:  this.form.health_notes  || undefined,
+          join_date:     this.form.start_date,
+          // Gói tập (nếu có chọn)
+          ...(this.form.plan_id ? {
+            plan_id:      this.form.plan_id,
+            promotion_id: this.form.promotion_id || undefined,
+            start_date:   this.form.start_date,
+            end_date:     this.endDate,
+            price:        this.finalPrice,
+          } : {}),
+        }
+
+        await memberApi.create(payload)
+
+        this.successMsg = `Đã tạo hội viên ${this.form.full_name} thành công!`
+        setTimeout(() => this.$router.push('/nhanvien'), 1500)
+      } catch (err) {
+        const errors = err.response?.data?.errors
+        if (errors) {
+          // Laravel validation errors
+          this.error = Object.values(errors).flat().join(' | ')
+        } else {
+          this.error = err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
+        }
+      } finally {
+        this.submitting = false
+      }
     },
   },
 }
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
