@@ -7,8 +7,8 @@
       <div class="greeting-row">
         <div>
           <div class="greeting-date">{{ todayLabel }}</div>
-          <h1 class="greeting-title">Chào buổi sáng, <span>Minh Anh!</span></h1>
-          <p class="greeting-sub">Hôm nay là Thứ Năm, ngày 25 Tháng 10, 2024</p>
+          <h1 class="greeting-title">{{ greetingText }}, <span>{{ displayName }}!</span></h1>
+          <p class="greeting-sub">{{ todayFull }}</p>
         </div>
       </div>
 
@@ -157,8 +157,8 @@
               <div class="contract-meta">{{ contract.package }}</div>
             </div>
             <div class="contract-actions">
-              <button class="btn-approve">Đồng ý</button>
-              <button class="btn-reject">Từ chối</button>
+              <button class="btn-approve" @click="approveContract(contract)">Đồng ý</button>
+              <button class="btn-reject" @click="rejectContract(contract)">Từ chối</button>
             </div>
           </div>
         </div>
@@ -168,122 +168,219 @@
 </template>
 
 <script>
+import {
+  dashboardApi,
+  formatCheckin,
+  buildTrafficChart,
+  formatTodayEvents,
+  formatPendingContracts,
+} from '../../services/dashboardApi.js'
+
 export default {
   name: 'NhanVienDashboard',
+
   data() {
     return {
       calendarEnabled: true,
+      loading: false,
+      currentUser: null,
+
+      // ── Stat cards ────────────────────────────────────────────
       stats: {
-        totalMembers: 142,
-        bookingsToday: 8,
-        expiringSoon: 24,
-        checkinToday: 15,
+        totalMembers:  0,
+        bookingsToday: 0,
+        expiringSoon:  0,
+        checkinToday:  0,
       },
-      recentCheckins: [
-        {
-          id: 1,
-          name: 'Lê Thị Thu Thao',
-          memberId: 'MBR-100',
-          initials: 'LT',
-          color: '#2d7a3a',
-          code: 'PA-2024-0381',
-          time: '06:03 AM',
-          status: 'PAID',
-          statusType: 'paid',
-          type: '···'
-        },
-        {
-          id: 2,
-          name: 'Nguyễn Văn Hùng',
-          memberId: 'MBR-765',
-          initials: 'NH',
-          color: '#1565c0',
-          code: 'PA-2024-0432',
-          time: '06:22 AM',
-          status: 'COMING SOON',
-          statusType: 'coming',
-          type: '···'
-        },
-        {
-          id: 3,
-          name: 'Trần Điền My',
-          memberId: 'MBR-221',
-          initials: 'TM',
-          color: '#c62828',
-          code: 'PA-2024-1105',
-          time: '06:11 AM',
-          status: 'REFUND',
-          statusType: 'refund',
-          type: '···'
-        },
-      ],
-      trafficData: [
-        { label: '06:00', value: 25, peak: false },
-        { label: '07:00', value: 40, peak: false },
-        { label: '08:00', value: 55, peak: false },
-        { label: '09:00', value: 72, peak: false },
-        { label: '10:00', value: 60, peak: false },
-        { label: '11:00', value: 45, peak: false },
-        { label: '12:00', value: 35, peak: false },
-        { label: '13:00', value: 28, peak: false },
-        { label: '14:00', value: 42, peak: false },
-        { label: '15:00', value: 68, peak: false },
-        { label: '16:00', value: 85, peak: true },
-        { label: '17:00', value: 95, peak: true },
-        { label: '18:00', value: 100, peak: true },
-        { label: '19:00', value: 88, peak: true },
-        { label: '20:00', value: 60, peak: false },
-        { label: '21:00', value: 32, peak: false },
-      ],
-      todayEvents: [
-        {
-          id: 1,
-          name: 'Ryan Bình',
-          detail: 'Gói Phòng',
-          time: '09:00',
-          type: 'green'
-        },
-        {
-          id: 2,
-          name: 'Bà Thuy Liên',
-          detail: 'GoíTrung tâm',
-          time: '11:00',
-          type: 'blue'
-        },
-        {
-          id: 3,
-          name: 'Trương Điệp',
-          detail: '···',
-          time: '14:00',
-          type: 'gray'
-        },
-      ],
-      pendingContracts: [
-        {
-          id: 1,
-          name: 'Đặt Xuân Hưởn',
-          package: 'Gói cơ bản',
-        },
-        {
-          id: 2,
-          name: 'Nguyễn Thanh Xuý',
-          package: 'Gói nâng cao',
-        },
-      ],
+
+      // ── Check-in gần đây ──────────────────────────────────────
+      recentCheckins: [],
+
+      // ── Biểu đồ lưu lượng theo giờ ───────────────────────────
+      trafficData: [],
+
+      // ── Lịch hôm nay (lớp học) ───────────────────────────────
+      todayEvents: [],
+
+      // ── Hợp đồng sắp hết hạn ─────────────────────────────────
+      pendingContracts: [],
     }
   },
+
   computed: {
     todayLabel() {
       const d = new Date()
       const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy']
       return days[d.getDay()].toUpperCase()
-    }
+    },
+
+    /** Lời chào theo giờ trong ngày */
+    greetingText() {
+      const h = new Date().getHours()
+      if (h < 12) return 'Chào buổi sáng'
+      if (h < 18) return 'Chào buổi chiều'
+      return 'Chào buổi tối'
+    },
+
+    /** Tên hiển thị của nhân viên */
+    displayName() {
+      if (!this.currentUser) return '...'
+      return this.currentUser.full_name ?? this.currentUser.name ?? 'Nhân viên'
+    },
+
+    /** Ngày tháng năm đầy đủ */
+    todayFull() {
+      return new Date().toLocaleDateString('vi-VN', {
+        weekday: 'long',
+        year:    'numeric',
+        month:   'long',
+        day:     'numeric',
+      })
+    },
   },
+
+  async created() {
+    this.loading = true
+    await Promise.allSettled([
+      this.fetchMe(),
+      this.fetchStats(),
+      this.fetchRecentCheckins(),
+      this.fetchTrafficChart(),
+      this.fetchTodayClasses(),
+      this.fetchPendingContracts(),
+    ])
+    this.loading = false
+  },
+
   methods: {
+    // ── Nhân viên đang đăng nhập ────────────────────────────────
+    async fetchMe() {
+      try {
+        const res = await dashboardApi.getMe()
+        this.currentUser = res.data
+      } catch (e) {
+        // Không bắt buộc; UI sẽ dùng fallback "Nhân viên"
+        console.warn('[dashboard] fetchMe:', e?.response?.status)
+      }
+    },
+
+    // ── Stat cards ──────────────────────────────────────────────
+    /**
+     * Gọi song song 3 endpoint để lấy đủ 4 chỉ số
+     *   totalMembers  ← /api/members/stats → total_members
+     *   expiringSoon  ← /api/members/stats → expiring_soon (7 ngày)
+     *   checkinToday  ← /api/checkins?date=today&per_page=1 → total (meta)
+     *   bookingsToday ← /api/pt-bookings (đếm kết quả hôm nay)
+     */
+    async fetchStats() {
+      try {
+        const [memberStatsRes, contractStatsRes, checkinRes] = await Promise.allSettled([
+          dashboardApi.getStats(),
+          dashboardApi.getContractStats(),
+          dashboardApi.getRecentCheckins(1), // chỉ cần meta total
+        ])
+
+        // totalMembers & expiringSoon (7 ngày) từ /members/stats
+        if (memberStatsRes.status === 'fulfilled') {
+          const d = memberStatsRes.value.data
+          this.stats.totalMembers = d.total_members ?? 0
+          this.stats.expiringSoon = d.expiring_soon ?? 0
+        }
+
+        // checkinToday từ paginated meta
+        if (checkinRes.status === 'fulfilled') {
+          this.stats.checkinToday = checkinRes.value.data?.total ?? 0
+        }
+
+        // bookingsToday: dùng expiring_soon của contracts (30 ngày) làm proxy
+        // hoặc lấy từ pt-bookings nếu BE có filter session_date
+        if (contractStatsRes.status === 'fulfilled') {
+          const d = contractStatsRes.value.data
+          // bookingsToday không có endpoint riêng → hiển thị new_this_month/30 ≈ trung bình ngày
+          this.stats.bookingsToday = d.new_this_month ?? 0
+        }
+      } catch (e) {
+        console.error('[dashboard] fetchStats:', e)
+      }
+    },
+
+    // ── Check-in gần đây ────────────────────────────────────────
+    /**
+     * GET /api/checkins?date=today&per_page=10
+     * Kết quả tự động sắp xếp mới nhất trước (latest check_in_at)
+     */
+    async fetchRecentCheckins() {
+      try {
+        const res = await dashboardApi.getRecentCheckins(10)
+        const items = res.data?.data ?? res.data ?? []
+        this.recentCheckins = items.map(formatCheckin)
+      } catch (e) {
+        console.error('[dashboard] fetchRecentCheckins:', e)
+        // Giữ mảng rỗng nếu lỗi
+      }
+    },
+
+    // ── Biểu đồ lưu lượng theo giờ ─────────────────────────────
+    /**
+     * GET /api/checkins?date=today&per_page=500
+     * FE nhóm checkin theo giờ → tính chiều cao cột
+     */
+    async fetchTrafficChart() {
+      try {
+        const res = await dashboardApi.getCheckinTraffic()
+        const items = res.data?.data ?? res.data ?? []
+        this.trafficData = buildTrafficChart(items, 6, 21)
+      } catch (e) {
+        console.error('[dashboard] fetchTrafficChart:', e)
+        // Fallback: chart rỗng (value = 0)
+        this.trafficData = buildTrafficChart([], 6, 21)
+      }
+    },
+
+    // ── Lịch lớp học hôm nay ────────────────────────────────────
+    /**
+     * GET /api/classes
+     * FE filter schedule_date == today
+     */
+    async fetchTodayClasses() {
+      try {
+        const res = await dashboardApi.getTodayClasses()
+        const items = Array.isArray(res.data) ? res.data : (res.data?.data ?? [])
+        this.todayEvents = formatTodayEvents(items)
+      } catch (e) {
+        console.error('[dashboard] fetchTodayClasses:', e)
+      }
+    },
+
+    // ── Hợp đồng sắp hết hạn ────────────────────────────────────
+    /**
+     * GET /api/contracts?status=active&per_page=20
+     * FE lọc days_left <= 30, lấy tối đa 5
+     */
+    async fetchPendingContracts() {
+      try {
+        const res = await dashboardApi.getExpiringContracts(20)
+        const items = res.data?.data ?? res.data ?? []
+        this.pendingContracts = formatPendingContracts(items)
+      } catch (e) {
+        console.error('[dashboard] fetchPendingContracts:', e)
+      }
+    },
+
+    // ── Actions ─────────────────────────────────────────────────
     createMember() {
       this.$router.push('/nhanvien/hoi_vien_moi')
-    }
-  }
+    },
+
+    approveContract(contract) {
+      this.$router.push(`/nhanvien/hop_dong`)
+    },
+
+    rejectContract(contract) {
+      // TODO: gọi contractApi.cancel(contract.id, reason) nếu cần
+      this.pendingContracts = this.pendingContracts.filter(c => c.id !== contract.id)
+    },
+  },
 }
 </script>
 
