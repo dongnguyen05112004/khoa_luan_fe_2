@@ -149,10 +149,38 @@
       </div>
     </div>
 
+    <!-- Modal Xác Nhận Mật Khẩu -->
+    <div v-if="showPasswordModal" class="modal-backdrop fade show" style="background-color: rgba(0,0,0,0.5); z-index: 1050;"></div>
+    <div v-if="showPasswordModal" class="modal d-block" tabindex="-1" style="z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-light border-0">
+            <h5 class="modal-title fw-bold text-danger">
+              <i class="fas fa-exclamation-triangle me-2"></i>Xác nhận quản trị
+            </h5>
+            <button type="button" class="btn-close" @click="showPasswordModal = false"></button>
+          </div>
+          <div class="modal-body p-4">
+            <p class="text-muted small mb-3">Vui lòng nhập mật khẩu tài khoản Admin để xác nhận lưu tất cả các thay đổi cấu hình hệ thống.</p>
+            <div class="input-group bg-light rounded overflow-hidden border">
+              <span class="input-group-text bg-transparent border-0 text-muted">
+                <i class="fas fa-lock"></i>
+              </span>
+              <input type="password" class="form-control border-0 bg-transparent shadow-none" v-model="adminPassword" placeholder="Nhập mật khẩu của bạn..." @keyup.enter="confirmSave">
+            </div>
+          </div>
+          <div class="modal-footer border-0 p-4 pt-0">
+            <button type="button" class="btn btn-light fw-bold" @click="showPasswordModal = false">Hủy</button>
+            <button type="button" class="btn btn-danger fw-bold px-4" @click="confirmSave">Xác nhận Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer class="sticky-bottom bg-white border-top p-3 mx-n4 mb-n4 mt-5 d-flex justify-content-between align-items-center shadow-lg">
       <span class="very-small text-muted"><i class="fas fa-info-circle me-1"></i>Mọi thay đổi sẽ có hiệu lực ngay lập tức trên toàn hệ thống</span>
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary px-4 fw-bold small">Khôi phục mặc định</button>
+        <button class="btn btn-outline-secondary px-4 fw-bold small" @click="restoreDefaults">Khôi phục mặc định</button>
         <button class="btn btn-success px-4 fw-bold small" @click="save">Lưu tất cả thay đổi</button>
       </div>
     </footer>
@@ -160,26 +188,94 @@
 </template>
 
 <script>
+import axios from 'axios';
+
+const DEFAULT_CONFIG = {
+  gymName: 'SmartGym Elite Fitness Center',
+  slogan: 'Nơi khởi nguồn sức mạnh',
+  hotline: '1900 8888',
+  lang: 'vi',
+  timezone: '7',
+  checkIn: 120,
+  maxReg: 500,
+  audit: true,
+  ai: true,
+  apiKey: 'sk-gemini-8v2k3l9n0x7m1p4q5r6t8u9w0z'
+};
+
 export default {
   data() {
     return {
       showKey: false,
-      config: {
-        gymName: 'SmartGym Elite Fitness Center',
-        slogan: '',
-        hotline: '1900 8888',
-        lang: 'vi',
-        timezone: '7',
-        checkIn: 120,
-        maxReg: 500,
-        audit: true,
-        ai: true,
-        apiKey: 'sk-gemini-8v2k3l9n0x7m1p4q5r6t8u9w0z'
-      }
+      showPasswordModal: false,
+      adminPassword: '',
+      config: { ...DEFAULT_CONFIG }
     }
   },
+  mounted() {
+    this.fetchConfig();
+  },
   methods: {
-    save() { alert("Đã cập nhật hệ thống!"); }
+    async fetchConfig() {
+      try {
+        const { data } = await axios.get('/api/system-settings');
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            if (this.config.hasOwnProperty(item.setting_key)) {
+              if (item.setting_value === 'true') {
+                this.config[item.setting_key] = true;
+              } else if (item.setting_value === 'false') {
+                this.config[item.setting_key] = false;
+              } else {
+                this.config[item.setting_key] = item.setting_value;
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải cấu hình:', error);
+      }
+    },
+    restoreDefaults() {
+      if (confirm('Bạn có chắc chắn muốn khôi phục về các cài đặt mặc định ban đầu? Bạn sẽ cần nhập mật khẩu để hệ thống tiến hành lưu lại.')) {
+        this.config = { ...DEFAULT_CONFIG };
+        this.save(); // Tự động bật modal yêu cầu mật khẩu để lưu lên DB
+      }
+    },
+    save() { 
+      this.adminPassword = '';
+      this.showPasswordModal = true; 
+    },
+    async confirmSave() {
+      if (!this.adminPassword) {
+        alert('Vui lòng nhập mật khẩu xác nhận.');
+        return;
+      }
+      try {
+        const settingsPayload = Object.keys(this.config).map(key => {
+          return {
+            setting_key: key,
+            setting_value: String(this.config[key])
+          };
+        });
+
+        const res = await axios.post('/api/system-settings/bulk-update', {
+          settings: settingsPayload,
+          password: this.adminPassword
+        });
+
+        alert(res.data.message || 'Cập nhật cấu hình thành công!');
+        this.showPasswordModal = false;
+        this.fetchConfig();
+      } catch (error) {
+        if (error.response && error.response.data && error.response.data.message) {
+          alert('Lỗi: ' + error.response.data.message);
+        } else {
+          alert('Đã xảy ra lỗi khi cập nhật hệ thống.');
+        }
+        console.error(error);
+      }
+    }
   }
 }
 </script>

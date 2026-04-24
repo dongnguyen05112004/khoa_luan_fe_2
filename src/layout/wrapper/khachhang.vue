@@ -20,75 +20,55 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-        <!-- Hồ sơ cá nhân -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">HỒ SƠ CÁ NHÂN</div>
+
+        <!-- ── NHÓM 2: Quản lý tài khoản & hồ sơ ── -->
+        <div class="nav-section-label" v-show="!sidebarCollapsed">TÀI KHOẢN & HỒ SƠ</div>
         <div class="nav-divider" v-show="sidebarCollapsed"></div>
 
-        <router-link to="/khachhang/ho_so" class="nav-item" active-class="active">
-          <i class="fas fa-user nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Xem / Cập nhật thông tin</span>
+        <router-link to="/khachhang/ho_so_ca_nhan" class="nav-item" active-class="active">
+          <i class="fas fa-user-circle nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Hồ sơ cá nhân</span>
         </router-link>
+ 
 
-        <!-- Dịch vụ -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">DỊCH VỤ</div>
+        <!-- ── NHÓM 3: Dịch vụ & tiện ích ── -->
+        <div class="nav-section-label" v-show="!sidebarCollapsed">DỊCH VỤ & TIỆN ÍCH</div>
         <div class="nav-divider" v-show="sidebarCollapsed"></div>
 
-        <router-link to="/khachhang/goi_tap" class="nav-item" active-class="active">
-          <i class="fas fa-box-open nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Xem gói tập</span>
+        <router-link to="/khachhang/qr_checkin" class="nav-item" active-class="active">
+          <i class="fas fa-qrcode nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Tự check-in QR</span>
         </router-link>
 
-        <router-link to="/khachhang/mua_goi" class="nav-item" active-class="active">
-          <i class="fas fa-shopping-cart nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Mua gói</span>
+        <router-link to="/khachhang/mua_dich_vu" class="nav-item" active-class="active">
+          <i class="fas fa-shopping-bag nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Mua dịch vụ</span>
         </router-link>
 
-        <router-link to="/khachhang/khuyen_mai" class="nav-item" active-class="active">
-          <i class="fas fa-tags nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Xem khuyến mãi</span>
+        <router-link to="/khachhang/hop_dong" class="nav-item" active-class="active">
+          <i class="fas fa-file-contract nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Quản lý hợp đồng</span>
         </router-link>
 
-        <!-- Tiến trình tập luyện -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">TIẾN TRÌNH TẬP LUYỆN</div>
+        <!-- ── NHÓM 4: Theo dõi tiến trình ── -->
+        <div class="nav-section-label" v-show="!sidebarCollapsed">THEO DÕI TIẾN TRÌNH</div>
         <div class="nav-divider" v-show="sidebarCollapsed"></div>
 
-        <router-link to="/khachhang/suc_khoe" class="nav-item" active-class="active">
-          <i class="fas fa-heartbeat nav-icon"></i>
+        <router-link to="/khachhang/bieu_do_suc_khoe" class="nav-item" active-class="active">
+          <i class="fas fa-chart-line nav-icon"></i>
           <span v-show="!sidebarCollapsed">Biểu đồ sức khỏe</span>
         </router-link>
 
-        <router-link to="/khachhang/muc_tieu" class="nav-item" active-class="active">
+        <router-link to="/khachhang/giam_sat_muc_tieu" class="nav-item" active-class="active">
           <i class="fas fa-bullseye nav-icon"></i>
-          <span v-show="!sidebarCollapsed">So sánh mục tiêu</span>
+          <span v-show="!sidebarCollapsed">Giám sát mục tiêu</span>
         </router-link>
 
-        <!-- Hoạt động -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">HOẠT ĐỘNG</div>
-        <div class="nav-divider" v-show="sidebarCollapsed"></div>
-
-        <router-link to="/khachhang/lich_tap" class="nav-item" active-class="active">
-          <i class="fas fa-calendar-alt nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Lịch tập</span>
+        <router-link to="/khachhang/phan_hoi_ai" class="nav-item" active-class="active">
+          <i class="fas fa-robot nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Phản hồi từ AI</span>
         </router-link>
 
-        <router-link to="/khachhang/lich_su_checkin" class="nav-item" active-class="active">
-          <i class="fas fa-history nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Lịch sử check-in</span>
-        </router-link>
-
-        <!-- Tiện ích -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">TIỆN ÍCH</div>
-        <div class="nav-divider" v-show="sidebarCollapsed"></div>
-
-        <router-link to="/khachhang/qr" class="nav-item" active-class="active">
-          <i class="fas fa-qrcode nav-icon"></i>
-          <span v-show="!sidebarCollapsed">QR check-in</span>
-        </router-link>
-
-        <router-link to="/khachhang/thong_bao" class="nav-item" active-class="active">
-          <i class="fas fa-bell nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Nhận thông báo</span>
-        </router-link>
       </nav>
 
       <!-- Version badge at bottom -->
@@ -103,29 +83,12 @@
       <header class="top-header">
         <div class="header-left">
           <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-              <li class="breadcrumb-item text-muted small">HỘI VIÊN</li>
-              <li class="breadcrumb-item active small">TRANG CÁ NHÂN</li>
-            </ol>
+             
           </nav>
         </div>
         <div class="header-right d-flex align-items-center gap-3">
           <!-- Stat chips -->
-          <div class="header-stat-chip chip-blue">
-            <i class="fas fa-fire"></i>
-            <span class="chip-value">{{ stats.workoutsThisMonth }}</span>
-            <span class="chip-label">Buổi tháng này</span>
-          </div>
-          <div class="header-stat-chip chip-green">
-            <i class="fas fa-id-card"></i>
-            <span class="chip-value">{{ stats.daysLeft }}</span>
-            <span class="chip-label">Ngày còn lại</span>
-          </div>
-          <!-- Notification bell -->
-          <button class="header-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
-          </button>
+           
           <!-- Đăng xuất -->
           <button
             class="btn btn-danger btn-sm d-flex align-items-center gap-2"
@@ -153,7 +116,7 @@
     </div>
 
     <!-- AI Floating Chat Bubble -->
-    <div class="ai-bubble" v-if="showAiBubble">
+    <!-- <div class="ai-bubble" v-if="showAiBubble">
       <div class="ai-bubble-header">
         <span class="ai-icon"><i class="fas fa-robot"></i></span>
         <strong>AI GỢI Ý CHO BẠN</strong>
@@ -162,10 +125,8 @@
       <p class="ai-bubble-text">
         Bạn đã tập đủ 3 buổi tuần này! AI đề xuất bài tập phục hồi nhẹ vào ngày mai để tối ưu kết quả.
       </p>
-    </div>
-    <button class="ai-fab" v-else @click="showAiBubble = true" title="AI Assistant">
-      <i class="fas fa-robot"></i>
-    </button>
+    </div> -->
+     
   </div>
 </template>
 
@@ -371,5 +332,14 @@ export default {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+.ai-fab:hover { transform: scale(1.1); }
+/* Animation cho phép thu gọn / phình ra của AI Bubble */
+.ai-fade-enter-active, .ai-fade-leave-active {
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ai-fade-enter-from, .ai-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
 }
 </style>

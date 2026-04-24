@@ -77,7 +77,7 @@
              <div class="d-flex justify-content-between align-items-center mt-2">
                 <div class="form-text text-muted mt-2" style="font-size: 0.65rem;">Tối thiểu 8 ký tự (chữ & số)</div>
                 
-                  <a href="#" class="text-decoration-none text-muted fw-bold custom-forgot-link">Quên mật khẩu?</a>
+                  <a href="#" class="text-decoration-none text-muted fw-bold custom-forgot-link" @click.prevent="goToForgotPassword">Quên mật khẩu?</a>
              </div>
             </div>
 
@@ -94,7 +94,7 @@
 
           <div class="text-center mt-5 small">
             <span class="text-muted">Chưa có tài khoản?</span>
-            <a href="#" class="text-decoration-none fw-bold custom-register-link ms-1">Đăng ký hội viên</a>
+            <a href="#" class="text-decoration-none fw-bold custom-register-link ms-1" @click.prevent="goToRegister">Đăng ký hội viên</a>
           </div>
         </div>
 
@@ -114,6 +114,9 @@ const router = useRouter()
 const showPassword = ref(false)
 const errorMsg = ref('')
 const loading = ref(false)
+
+const goToForgotPassword = () => router.push('/forgot-password')
+const goToRegister = () => router.push('/dangky')
 
 const form = reactive({
   email: '',

@@ -3,32 +3,47 @@ import { createRouter, createWebHistory } from "vue-router"; // cài vue-router:
 const routes = [
     {
         path: '/',
-        component: () => import('../components/admin/start.vue'),
-        meta: { layout: 'index' },
+        name: 'LandingPage',
+        component: () => import('../components/home/LandingPage.vue'),
+        meta: { layout: 'blank' },
     },
     {
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
-    },
-    // {
-    //     path: "/dangky",
-    //     component: () => import("../components/dang/dangky.vue"),
-    //     meta: { layout: "blank" },
-    // }, 
+    }, 
+    {
+        path: "/dangky",
+        component: () => import("../components/admin/dangky.vue"),
+        meta: { layout: "blank" },
+    }, 
     // {
     //     path: "/home",
     //     component: () => import("../components/trangchu/trangchu.vue"),
     //     meta: { layout: "blank" },
     // },
 
+    ,
+    {
+        path: "/forgot-password",
+        name: "ForgotPassword",
+        component: () => import("../components/home/ForgotPassword.vue"),
+        meta: { layout: "blank" },
+    },
 
+    {
+        path: "/reset-password",
+        name: "ResetPassword",
+        component: () => import("../components/home/ResetPassword.vue"),
+        meta: { layout: "blank" },
+    },
 
     {
         path: "/blank",
         component: () => import("../layout/wrapper/blank.vue"),
         meta: { layout: "blank" },
     },
+
     {
         path: '/admin',
         component: () => import('../layout/wrapper/admin.vue'),
@@ -46,7 +61,7 @@ const routes = [
             {
                 path: '/admin/nhat_ky',
                 component: () => import('../components/admin/nhat_ky.vue'),
-            }, 
+            }
 
         ]
     },
@@ -127,21 +142,48 @@ const routes = [
         component: () => import('../layout/wrapper/khachhang.vue'),
         meta: { layout: "khachhang" },
         children: [
+            // ── NHÓM 2: Tài khoản & Hồ sơ ──
             {
-                path: '/chisosuckhoe',
+                path: 'ho_so_ca_nhan',
+                name: 'HoSoCaNhan',
+                component: () => import('../components/khachhang/hosocanhan.vue'),
+            },
+            {
+                path: 'chi_so_suc_khoe',
+                name: 'ChiSoSucKhoe',
                 component: () => import('../components/khachhang/chisosuckhoe.vue'),
             },
+            // ── NHÓM 3: Dịch vụ & Tiện ích ──
             {
-                path: '/histori',
-                component: () => import('../components/khachhang/histori.vue'),
+                path: 'qr_checkin',
+                name: 'QrCheckin',
+                component: () => import('../components/khachhang/qr.vue'),
             },
             {
-                path: '/tientrinhtapluyen',
-                component: () => import('../components/khachhang/tientrinhtapluyen.vue'),
+                path: 'mua_dich_vu',
+                name: 'MuaDichVu',
+                component: () => import('../components/khachhang/mua_dichvu.vue'),
             },
             {
-                path: '/hosocanhan',
-                component: () => import('../components/khachhang/hosocanhan.vue'),
+                path: 'hop_dong',
+                name: 'KhachHangHopDong',
+                component: () => import('../components/khachhang/hop_dong.vue'),
+            },
+            // ── NHÓM 4: Theo dõi tiến trình ──
+            {
+                path: 'bieu_do_suc_khoe',
+                name: 'BieuDoSucKhoe',
+                component: () => import('../components/khachhang/bieu_do_suc_khoe.vue'),
+            },
+            {
+                path: 'giam_sat_muc_tieu',
+                name: 'GiamSatMucTieu',
+                component: () => import('../components/khachhang/giam_sat_muc_tieu.vue'),
+            },
+            {
+                path: 'phan_hoi_ai',
+                name: 'PhanHoiAi',
+                component: () => import('../components/khachhang/phan_hoi_ai.vue'),
             }
         ]
     },
