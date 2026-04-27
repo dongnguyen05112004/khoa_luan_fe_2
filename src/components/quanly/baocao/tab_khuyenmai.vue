@@ -148,10 +148,28 @@
             <div class="ls-val">{{ campaigns.length > 0 ? Math.round(statsActive / campaigns.length * 100) : 0 }}%</div>
             <div class="ls-trend" style="color:#7c3aed"><i class="fas fa-bolt"></i> Tỷ lệ hoạt động</div>
           </div>
-          <div class="ai-suggest-card">
-            <div class="ais-hd"><i class="fas fa-robot" style="color:#7c3aed"></i> ĐỀ XUẤT TỪ AI</div>
-            <p class="ais-txt">Chạy khuyến mãi "Chuẩn bị cho mùa hè" để đạt tương tác cao.</p>
-            <a href="#" class="ais-link">Khám phá chiến lược <i class="fas fa-arrow-right"></i></a>
+          <!-- AI Unified Card (Matching theme) -->
+          <div class="ai-card-unified">
+            <div class="ai-card-header-unified">
+              <div class="ai-avatar-unified">
+                <i class="fas fa-brain"></i>
+              </div>
+              <div class="ai-title-unified">
+                <strong v-if="aiReport">{{ aiReport.title }}</strong>
+                <strong v-else>Phân tích từ SmartGym AI</strong>
+              </div>
+              <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+                <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+                {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
+              </button>
+            </div>
+
+            <div v-if="aiReport">
+              <div class="ai-rec-diagnosis-unified">{{ (aiReport.ai_diagnosis || '').substring(0, 100) }}...</div>
+            </div>
+            <div v-else class="ai-empty-unified" style="padding: 15px;">
+              Chưa có phân tích AI cho chiến dịch.
+            </div>
           </div>
         </div>
 
@@ -262,8 +280,8 @@
         <p>Không có chiến dịch nào{{ filterMonth ? ' trong tháng này' : '' }}.</p>
       </div>
 
-      <div class="tl-list">
-        <div class="tl-item" v-for="(s, i) in filteredSchedule" :key="s.id">
+      <div v-else class="tl-list">
+        <div class="tl-item" v-for="s in filteredSchedule" :key="s.id">
           <div class="tl-dot" :class="s.dotCls"></div>
           <div class="tl-card">
             <div class="tl-card-top">
@@ -325,7 +343,7 @@
               </div>
             </div>
             <div class="fg">
-              <label class="flbl">THỚI GIAN HIỆU LỰC</label>
+              <label class="flbl">THỜI GIAN HIỆU LỰC</label>
               <div class="date-row">
                 <div class="date-box"><i class="fas fa-calendar-alt dic"></i><input v-model="editForm.startDate" type="date" class="fi di" /></div>
                 <i class="fas fa-arrow-right darr"></i>
@@ -361,6 +379,7 @@ import { promotionApi } from '@/services/promotionApi.js'
 
 export default {
   name: 'TabKhuyenMai',
+  props: ['aiReport', 'isAiLoading'],
   components: {},
   data() {
     return {
@@ -475,7 +494,7 @@ export default {
           dateEnd: c.end_date ? new Date(c.end_date).toLocaleDateString('vi-VN') : null,
           name: c.name,
           code: c.code || '—',
-          disc: c._raw?.discount || 0,
+          disc: c._raw?.discount ?? 0,
           description: c.target !== 'Tất cả hội viên' ? c.target : '',
           usageLimit: c.usage_limit || null,
           status,
@@ -492,17 +511,23 @@ export default {
     filteredSchedule() {
       if (!this.filterMonth) return this.schedule
       const now = new Date()
+      const curM = now.getMonth()
+      const curY = now.getFullYear()
+
       return this.schedule.filter(s => {
-        const c = this.campaigns.find(x => x.id === s.id)
+        const c = this.campaigns.find(x => x.id == s.id)
         if (!c) return false
+        
         const start = c.start_date ? new Date(c.start_date) : null
         const end   = c.end_date   ? new Date(c.end_date)   : null
         if (!start) return false
-        return (
-          (start.getMonth() === now.getMonth() && start.getFullYear() === now.getFullYear()) ||
-          (end && end.getMonth() === now.getMonth() && end.getFullYear() === now.getFullYear()) ||
-          (start <= now && end && end >= now)
-        )
+
+        // Kiểm tra xem có rơi vào tháng hiện tại không
+        const startInMonth = (start.getMonth() === curM && start.getFullYear() === curY)
+        const endInMonth   = (end && end.getMonth() === curM && end.getFullYear() === curY)
+        const ongoing      = (start <= now && (!end || end >= now))
+        
+        return startInMonth || endInMonth || ongoing
       })
     },
   },
@@ -598,6 +623,7 @@ export default {
 
     // ─── Xóa chiến dịch ──────────────────────────────────────
     async deletePromo(c) {
+      if (!c) return
       if (!confirm(`Xóa chiến dịch "${c.name}"?`)) return
       try {
         await promotionApi.remove(c.id)
@@ -886,6 +912,70 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
 .tl-btn-del { color: #dc2626; }
 .tl-btn-del:hover { background:#fef2f2; border-color:#fca5a5; color:#dc2626; }
 .tl-desc-tag { font-style:italic; }
+
+/* AI Unified Card Style - KINETIC DARK VERSION */
+.ai-card-unified {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #fff;
+}
+.ai-card-header-unified {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-avatar-unified {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+}
+.ai-title-unified {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+}
+.btn-generate-ai-unified {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s;
+  outline: none !important;
+}
+.ai-rec-diagnosis-unified {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 3px solid #6366f1;
+}
+.ai-empty-unified {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
 
 /* Empty state cho lịch trình */
 .tl-empty {

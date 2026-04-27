@@ -98,35 +98,37 @@
         </div>
       </div>
 
-      <!-- AI panel -->
-      <div class="ai-panel">
-        <div class="ai-panel-head">
-          <i class="fas fa-robot"></i>
-          <strong>BẢNG PHÂN TÍCH SÂU TỪ AI</strong>
+      <!-- AI Unified Card -->
+      <div class="ai-card-unified">
+        <div class="ai-card-header-unified">
+          <div class="ai-avatar-unified">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div class="ai-title-unified">
+            <strong v-if="aiReport">{{ aiReport.title }}</strong>
+            <strong v-else>Phân tích từ SmartGym AI</strong>
+          </div>
+          <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+            <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+            {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
+          </button>
         </div>
-        <div class="ai-highlight">
-          <div class="ai-hl-title"><i class="fas fa-fire text-orange"></i> Gói VIP: Tăng trưởng nhanh</div>
-          <div class="ai-hl-sub">vượt mục tiêu 15% so với tháng trước</div>
-        </div>
-        <p class="ai-desc">Dữ liệu cho thấy xu hướng hội viên dịch chuyển từ <strong>Cơ bản → VIP</strong> đang tăng mạnh ở nhóm khách hàng trẻ (18–25 tuổi).</p>
-        <div class="ai-quote">"Dự báo: Doanh thu từ PT 1-kèm-1 sẽ tăng thêm 8% nếu áp dụng các gói chiều sâu vào mùa cao điểm."</div>
 
-        <div class="ai-strategy-head"><i class="fas fa-chess"></i> CHIẾN LƯỢC ĐỀ XUẤT</div>
-        <div class="strategy-item">
-          <div class="strategy-row">
-            <strong>Đề xuất: Tạo gói Combo mùa hè mới</strong>
-            <span class="stag orange">Tác động cao</span>
+        <div v-if="aiReport">
+          <div class="ai-rec-diagnosis-unified">{{ aiReport.ai_diagnosis }}</div>
+          <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
+            <div class="suggestion-hd">CHIẾN LƯỢC ĐỀ XUẤT:</div>
+            <div class="suggestion-item-unified" v-for="(tip, i) in aiReport.ai_suggestions.split('\n')" :key="i">
+              <template v-if="tip.trim()">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ tip.replace(/^- /, '').replace(/^\* /, '') }}</span>
+              </template>
+            </div>
           </div>
-          <p class="strategy-desc">Combo Cơ bản + 3 buổi PT miễn phí cho khách hàng mới gia hạn.</p>
         </div>
-        <div class="strategy-item danger">
-          <div class="strategy-row">
-            <strong>Cảnh báo rời bỏ</strong>
-            <span class="stag red">Nghiêm trọng</span>
-          </div>
-          <p class="strategy-desc">Tỷ lệ này gói PT tăng 0 khung gói cao điểm do thiếu hút nhân sự HLV.</p>
+        <div v-else class="ai-empty-unified">
+          Chưa có phân tích AI. Nhấn "Cập nhật AI" để Gemini đánh giá hiệu quả kinh doanh các gói tập.
         </div>
-        <button class="btn-strategy">Khởi tạo chiến lược AI chi tiết</button>
 
         <div class="coso-card">
           <div class="coso-label">Cơ sở tiêu biểu</div>
@@ -141,6 +143,7 @@
 <script>
 export default {
   name: 'TabGoiTap',
+  props: ['aiReport', 'isAiLoading'],
   data() {
     return {
       barData: [
@@ -198,26 +201,95 @@ export default {
 .impact-title { font-size:.88rem; font-weight:700; margin-bottom:8px; }
 .impact-body { font-size:.8rem; line-height:1.6; color:#bbf7d0; margin:0 0 12px; }
 .impact-link { font-size:.75rem; color:#4ade80; text-decoration:none; }
-/* AI Panel */
-.ai-panel { background:#fff; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.06); border:1.5px solid #ede9fe; display:flex; flex-direction:column; gap:12px; }
-.ai-panel-head { display:flex; align-items:center; gap:8px; font-size:.8rem; font-weight:700; color:#7c3aed; }
-.ai-highlight { background:#f0fdf4; border-radius:10px; padding:10px 14px; border-left:3px solid #16a34a; }
-.ai-hl-title { font-size:.82rem; font-weight:700; color:#1e293b; }
-.ai-hl-sub { font-size:.72rem; color:#94a3b8; margin-top:2px; }
-.text-orange { color:#f97316; }
-.ai-desc { font-size:.78rem; color:#475569; line-height:1.6; margin:0; }
-.ai-quote { background:#f8fafc; border-left:3px solid #7c3aed; padding:10px 12px; font-size:.76rem; color:#475569; line-height:1.5; border-radius:0 6px 6px 0; font-style:italic; }
-.ai-strategy-head { display:flex; align-items:center; gap:6px; font-size:.72rem; font-weight:700; color:#64748b; letter-spacing:.4px; }
-.strategy-item { border-radius:10px; padding:10px 12px; background:#f8fafc; }
-.strategy-item.danger { background:#fff5f5; }
-.strategy-row { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-.strategy-row strong { font-size:.78rem; color:#1e293b; }
-.stag { font-size:.65rem; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; }
-.stag.orange { background:#ffedd5; color:#c2410c; }
-.stag.red    { background:#fee2e2; color:#dc2626; }
-.strategy-desc { font-size:.73rem; color:#64748b; margin:5px 0 0; }
-.btn-strategy { background:#1e293b; color:#fff; border:none; border-radius:8px; padding:10px 14px; font-size:.78rem; font-weight:600; cursor:pointer; text-align:center; }
-.btn-strategy:hover { opacity:.88; }
+
+/* AI Unified Card Style - KINETIC DARK VERSION */
+.ai-card-unified {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #fff;
+}
+.ai-card-header-unified {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-avatar-unified {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+}
+.ai-title-unified {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+}
+.btn-generate-ai-unified {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s;
+  outline: none !important;
+}
+.ai-rec-diagnosis-unified {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 3px solid #6366f1;
+}
+.ai-suggestions-unified {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suggestion-hd {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.suggestion-item-unified {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+.suggestion-item-unified i {
+  color: #4ade80;
+  margin-top: 2px;
+  font-size: 0.9rem;
+}
+.ai-empty-unified {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
 .coso-card { background:#f0fdf4; border-radius:10px; padding:12px 14px; }
 .coso-label { font-size:.65rem; color:#94a3b8; font-weight:600; }
 .coso-val { font-size:1rem; font-weight:800; color:#1e293b; margin:2px 0; }

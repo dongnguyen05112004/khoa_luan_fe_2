@@ -63,32 +63,51 @@
     </div>
     <!-- ===== TAB CONTENT (non-tongquan tabs) ===== -->
     <transition name="tab-fade" mode="out-in">
-      <component :is="currentTabComponent" :key="activeTab" v-if="currentTabComponent" />
+      <component 
+        :is="currentTabComponent" 
+        :key="activeTab" 
+        v-if="currentTabComponent" 
+        :ai-report="aiReport"
+        :is-ai-loading="isAiLoading"
+        @generate-ai-report="generateAiReport"
+      />
     </transition>
 
     <!-- ===== TỔNG QUAN INLINE ===== -->
-    <div v-if="showInlineDashboard">
-    <div class="ai-section">
-      <div class="ai-text-block">
-        <div class="ai-section-title">
-          <i class="fas fa-robot ai-icon-hd"></i>
-          <strong>Trí tuệ Nhân tạo SmartGym – Tổng quan</strong>
-        </div>
-        <p class="ai-body">
-          Doanh thu tháng này tăng <strong>+12%</strong> so với tháng trước, chủ yếu từ gói PT và hội viên mới.
-          AI ghi nhận tỷ lệ gia hạn đạt <strong>78.4%</strong> — cao nhất trong 6 tháng gần đây. Lượt check-in tập
-          trung khung giờ <strong>17:00 – 19:00</strong>, đề xuất bố trí thêm PT vào giờ cao điểm để tối ưu trải nghiệm
-          và tăng tỉ lệ hài lòng. Báo cáo AI cập nhật theo thời gian thực từ dữ liệu hệ thống.
-        </p>
-        <div class="ai-actions">
-          <button class="btn-ai-primary"><i class="fas fa-robot"></i> Tư vấn chiến lược AI</button>
-          <button class="btn-ai-outline"><i class="fas fa-file-export"></i> Xuất báo cáo chi tiết</button>
-        </div>
-      </div>
-      <div class="ai-icon-right">
-        <div class="ai-glow-circle">
+    <div v-if="showInlineDashboard" class="inline-dashboard">
+    <div class="ai-card-unified">
+      <div class="ai-card-header-unified">
+        <div class="ai-avatar-unified">
           <i class="fas fa-brain"></i>
         </div>
+        <div class="ai-title-unified">
+          <strong v-if="aiReport">{{ aiReport.title }}</strong>
+          <strong v-else>Phân tích chiến lược từ SmartGym AI</strong>
+        </div>
+        <button class="btn-generate-ai-unified" @click="generateAiReport" :disabled="isAiLoading">
+          <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+          {{ isAiLoading ? 'Đang phân tích...' : 'Tư vấn chiến lược AI' }}
+        </button>
+      </div>
+
+      <div v-if="aiReport">
+        <div class="ai-rec-diagnosis-unified">{{ aiReport.ai_diagnosis }}</div>
+        <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
+          <div class="suggestion-hd">ĐỀ XUẤT CHIẾN LƯỢC:</div>
+          <div class="suggestion-item-unified" v-for="(tip, i) in aiReport.ai_suggestions.split('\n')" :key="i">
+            <template v-if="tip.trim()">
+              <i class="fas fa-check-circle"></i>
+              <span>{{ tip.replace(/^- /, '').replace(/^\* /, '') }}</span>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div v-else class="ai-empty-unified">
+        Chưa có báo cáo AI. Hãy nhấn nút "Tư vấn chiến lược AI" để Gemini phân tích dữ liệu vận hành tháng này.
+      </div>
+
+      <div class="ai-footer-unified">
+        <button class="btn-ai-outline-unified"><i class="fas fa-file-export"></i> Xuất báo cáo chi tiết</button>
       </div>
     </div>
 
@@ -205,12 +224,15 @@ import TabGoiTap      from './baocao/tab_goitap.vue'
 import TabKhuyenMai   from './baocao/tab_khuyenmai.vue'
 import TabPhanHoi     from './baocao/tab_phanhoi.vue'
 import TabBaoCao      from './baocao/tab_baocao.vue'
+import axios from 'axios';
 
 export default {
   name: 'AdminDashboard',
   components: { TabGiuChan, TabGoiTap, TabKhuyenMai, TabPhanHoi, TabBaoCao },
   data() {
     return {
+      aiReport: null,
+      isAiLoading: false,
       activeTab: 'tongquan',
       chartMode: 'thang',
       navTabs: [
@@ -278,6 +300,11 @@ export default {
       ],
     }
   },
+  watch: {
+    activeTab() {
+      this.fetchLatestAiReport();
+    }
+  },
   computed: {
     currentTabComponent() {
       const map = {
@@ -308,7 +335,68 @@ export default {
       return `0,160 ${pts} 500,160`
     },
   },
+  mounted() {
+    this.fetchLatestAiReport();
+  },
   methods: {
+    async fetchLatestAiReport() {
+      try {
+        const typeMap = {
+          tongquan: 'Business Report',
+          giuchan: 'Retention Analysis',
+          goitap: 'Subscription Analysis',
+          khuyenmai: 'Promotion Analysis',
+          phanhoi: 'Feedback Analysis',
+          baocao: 'Equipment Analysis'
+        };
+        const currentType = typeMap[this.activeTab] || 'Business Report';
+
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
+          params: { type: currentType, per_page: 1 },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Reset if no report found for this tab
+        this.aiReport = null;
+
+        if (res.data && res.data.data && res.data.data.length > 0) {
+          this.aiReport = res.data.data[0];
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy báo cáo AI', error);
+      }
+    },
+    async generateAiReport() {
+      this.isAiLoading = true;
+      try {
+        const typeMap = {
+          tongquan: 'Business Report',
+          giuchan: 'Retention Analysis',
+          goitap: 'Subscription Analysis',
+          khuyenmai: 'Promotion Analysis',
+          phanhoi: 'Feedback Analysis',
+          baocao: 'Equipment Analysis'
+        };
+        const currentType = typeMap[this.activeTab] || 'Business Report';
+
+        const token = localStorage.getItem('token');
+        const res = await axios.post('http://127.0.0.1:8000/api/admin/manager-report', 
+          { type: currentType }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (res.data && res.data.data) {
+          this.aiReport = res.data.data;
+          alert(`Đã tạo phân tích ${currentType} bằng AI thành công!`);
+        }
+      } catch (error) {
+        console.error('Lỗi khi tạo báo cáo AI', error);
+        alert(error.response?.data?.message || 'Có lỗi xảy ra khi tạo báo cáo AI');
+      } finally {
+        this.isAiLoading = false;
+      }
+    },
     heatColor(val) {
       // Light to dark green gradient
       const r = Math.round(255 - val * (255 - 20))
@@ -332,6 +420,12 @@ export default {
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
   color: #1e293b;
+}
+
+.inline-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* ============================
@@ -814,6 +908,209 @@ export default {
   color: #4ade80;
   font-weight: 600;
 }
+
+/* AI Unified Card Style - KINETIC DARK VERSION */
+.ai-card-unified {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 28px;
+  padding: 32px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.2),
+    0 4px 15px rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+}
+
+.ai-card-unified::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ai-card-header-unified {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  z-index: 1;
+}
+
+.ai-avatar-unified {
+  width: 56px; height: 56px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.ai-title-unified {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.ai-title-unified strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.ai-title-unified::after {
+  content: 'SỨC MẠNH TỪ GEMINI AI';
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #818cf8;
+  letter-spacing: 0.2em;
+  margin-top: 4px;
+}
+
+.btn-generate-ai-unified {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 14px;
+  padding: 12px 24px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  outline: none !important;
+}
+
+.btn-generate-ai-unified:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 25px rgba(99, 102, 241, 0.5);
+}
+
+.btn-generate-ai-unified:active { transform: scale(0.98); }
+
+.ai-rec-diagnosis-unified {
+  font-size: 1rem;
+  color: #e2e8f0;
+  line-height: 1.8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 24px 28px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 5px;
+  backdrop-filter: blur(5px);
+  z-index: 1;
+}
+
+.ai-suggestions-unified {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 1;
+}
+
+.suggestion-hd {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestion-hd::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(255,255,255,0.1);
+}
+
+.suggestion-item-unified {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+
+.suggestion-item-unified:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateX(6px);
+  color: #fff;
+}
+
+.suggestion-item-unified i {
+  color: #4ade80;
+  margin-top: 4px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 5px rgba(74, 222, 128, 0.5));
+}
+
+.ai-empty-unified {
+  text-align: center;
+  padding: 50px 30px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 24px;
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+}
+
+.ai-footer-unified {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  z-index: 1;
+}
+
+.btn-ai-outline-unified {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #e2e8f0 !important;
+  border-radius: 12px;
+  padding: 10px 22px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  outline: none !important;
+}
+
+.btn-ai-outline-unified:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.inline-dashboard { display:flex; flex-direction:column; gap:20px; }
 
 /* ============================
    RESPONSIVE
