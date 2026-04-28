@@ -187,6 +187,7 @@ const routes = [
             }
         ]
     },
+    
     {
         path: '/pt',
         component: () => import('../layout/wrapper/pt.vue'),

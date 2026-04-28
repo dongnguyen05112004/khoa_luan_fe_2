@@ -1,175 +1,185 @@
 <template>
-  <div class="ai-tab">
-
+  <div class="ai-dashboard">
     <!-- ===== HEADER HERO ===== -->
     <div class="ai-hero">
       <div class="hero-glow"></div>
       <div class="hero-content">
         <div class="hero-icon-wrap">
-          <i class="fas fa-robot"></i>
+          <i class="fas fa-brain"></i>
           <span class="hero-pulse"></span>
         </div>
         <div class="hero-text">
-          <h2 class="hero-title">SmartGym AI <span class="hero-badge">Powered by Groq</span></h2>
-          <p class="hero-sub">Phân tích thông minh theo thời gian thực – sức khoẻ hội viên, nguy cơ rời bỏ &amp; báo cáo quản lý.</p>
-        </div>
-        <div class="hero-stats">
-          <div class="hstat">
-            <div class="hstat-val">{{ totalGenerated }}</div>
-            <div class="hstat-label">Phân tích đã tạo</div>
-          </div>
-          <div class="hstat-divider"></div>
-          <div class="hstat">
-            <div class="hstat-val">Groq</div>
-            <div class="hstat-label">AI Engine</div>
-          </div>
-          <div class="hstat-divider"></div>
-          <div class="hstat">
-            <div class="hstat-val">3</div>
-            <div class="hstat-label">Tính năng AI</div>
-          </div>
+          <h2 class="hero-title">Trung tâm Phân tích AI <span class="hero-badge">SmartGym AI Engine</span></h2>
+          <p class="hero-sub">Trợ lý AI tổng hợp dữ liệu thời gian thực và cung cấp phân tích chiến lược cho Quản lý.</p>
         </div>
       </div>
     </div>
 
-    <!-- ===== 3 FEATURE CARDS ===== -->
-    <div class="feature-grid">
+    <!-- ===== NAVIGATION TABS ===== -->
+    <div class="ai-nav">
+      <button 
+        v-for="tab in tabs" 
+        :key="tab.id" 
+        class="nav-tab-btn" 
+        :class="{ active: currentTab === tab.id }"
+        @click="switchTab(tab.id)"
+      >
+        <i :class="tab.icon"></i>
+        <span>{{ tab.name }}</span>
+      </button>
+    </div>
 
-      <!-- Card 1: Gợi ý sức khoẻ cá nhân -->
-      <div class="feat-card feat-health">
-        <div class="feat-card-top">
-          <div class="feat-icon health-icon"><i class="fas fa-heartbeat"></i></div>
-          <div class="feat-info">
-            <div class="feat-title">Gợi ý sức khoẻ cá nhân</div>
-            <div class="feat-sub">Dành cho hội viên đang đăng nhập</div>
-          </div>
-          <span class="feat-tag feat-tag-green">Cá nhân hoá</span>
-        </div>
-        <p class="feat-desc">AI phân tích chỉ số sức khoẻ &amp; mục tiêu cá nhân của hội viên hiện tại để đưa ra chẩn đoán và gợi ý cải thiện.</p>
-        <button class="feat-btn feat-btn-green" @click="generateHealthRec" :disabled="healthLoading">
-          <i class="fas" :class="healthLoading ? 'fa-spinner fa-spin' : 'fa-magic'"></i>
-          {{ healthLoading ? 'Đang phân tích...' : 'Tạo gợi ý sức khoẻ' }}
-        </button>
-        <!-- Result -->
-        <div v-if="healthResult" class="feat-result">
-          <div class="res-title"><i class="fas fa-check-circle res-ic green"></i>{{ healthResult.title }}</div>
-          <div class="res-diag">{{ healthResult.ai_diagnosis }}</div>
-          <div class="res-tips" v-if="healthResult.ai_suggestions">
-            <div class="res-tip" v-for="(tip, i) in parsedTips(healthResult.ai_suggestions)" :key="i">
-              <i class="fas fa-arrow-right tip-arrow"></i><span>{{ tip }}</span>
-            </div>
-          </div>
-          <div class="res-meta">{{ formatDate(healthResult.created_at) }}</div>
-        </div>
-        <div v-if="healthError" class="feat-error"><i class="fas fa-exclamation-triangle"></i> {{ healthError }}</div>
+    <!-- ===== MAIN CONTENT AREA ===== -->
+    <div class="ai-main-content">
+      
+      <!-- LOADING STATE -->
+      <div v-if="loading" class="ai-loading-state">
+        <div class="spinner-pulse"></div>
+        <p>AI đang xử lý và tổng hợp dữ liệu...</p>
       </div>
 
-      <!-- Card 2: Dự báo rời bỏ (Churn) -->
-      <div class="feat-card feat-churn">
-        <div class="feat-card-top">
-          <div class="feat-icon churn-icon"><i class="fas fa-users-slash"></i></div>
-          <div class="feat-info">
-            <div class="feat-title">Dự báo rời bỏ hội viên</div>
-            <div class="feat-sub">Dành cho Admin / Manager</div>
+      <!-- RESULT PANEL -->
+      <div v-else-if="currentResult" class="ai-result-panel" :class="`theme-${currentTab}`">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <i :class="getTabIcon(currentTab)"></i>
+            <h3>{{ currentResult.title || 'Kết quả phân tích' }}</h3>
           </div>
-          <span class="feat-tag feat-tag-red">Quản lý</span>
+          <button class="btn-rerun" @click="runAnalysis(currentTab)">
+            <i class="fas fa-sync-alt"></i> Phân tích lại
+          </button>
         </div>
-        <p class="feat-desc">AI phân tích lịch sử check-in, thời hạn đăng ký &amp; mục tiêu để phân loại rủi ro rời bỏ: Đỏ / Vàng / Xanh.</p>
-        <button class="feat-btn feat-btn-red" @click="runChurn" :disabled="churnLoading">
-          <i class="fas" :class="churnLoading ? 'fa-spinner fa-spin' : 'fa-chart-pie'"></i>
-          {{ churnLoading ? 'Đang phân tích...' : 'Phân tích nguy cơ rời bỏ' }}
-        </button>
-        <!-- Result summary -->
-        <div v-if="churnResult" class="feat-result">
-          <div class="res-title"><i class="fas fa-check-circle res-ic red"></i>Phân tích hoàn tất – {{ churnResult.count }} hội viên</div>
-          <div class="churn-badges">
-            <span class="cbadge cb-red"><i class="fas fa-circle"></i> Đỏ: {{ countRisk('Đỏ') }}</span>
-            <span class="cbadge cb-yellow"><i class="fas fa-circle"></i> Vàng: {{ countRisk('Vàng') }}</span>
-            <span class="cbadge cb-green"><i class="fas fa-circle"></i> Xanh: {{ countRisk('Xanh') }}</span>
+
+        <div class="panel-grid">
+          <!-- Main Diagnosis -->
+          <div class="panel-card diagnosis-card">
+            <div class="card-label"><i class="fas fa-comment-alt"></i> Đánh giá của AI</div>
+            <p class="diagnosis-text">{{ currentResult.ai_diagnosis }}</p>
           </div>
-          <div class="churn-list">
-            <div class="churn-row" v-for="(item, i) in churnItems.slice(0, 4)" :key="i">
-              <span class="churn-id">ID {{ item.user_id }}</span>
-              <span class="churn-risk-tag" :class="riskClass(item.title)">{{ riskLabel(item.title) }}</span>
-              <span class="churn-diag">{{ item.ai_diagnosis }}</span>
+
+          <!-- Suggestions / Action Plan -->
+          <div class="panel-card suggestions-card">
+            <div class="card-label"><i class="fas fa-lightbulb"></i> Đề xuất hành động</div>
+            <ul class="suggestions-list">
+              <li v-for="(tip, i) in parsedTips(currentResult.ai_suggestions)" :key="i">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ tip }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Dynamic Metrics based on Tab -->
+          <div class="panel-card metrics-card">
+            <div class="card-label"><i class="fas fa-chart-pie"></i> Chỉ số nổi bật</div>
+            <div class="metrics-content">
+              
+              <!-- Tab 1: Overview -->
+              <div v-if="currentTab === 'overview'" class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-val">{{ currentResult.overall_score || 'N/A' }}</span>
+                  <span class="m-lbl">Điểm tổng quan</span>
+                </div>
+                <div class="metric-item full-width">
+                  <span class="m-val small">{{ currentResult.key_highlights || 'N/A' }}</span>
+                  <span class="m-lbl">Điểm sáng nổi bật</span>
+                </div>
+              </div>
+
+              <!-- Tab 2: Retention -->
+              <div v-if="currentTab === 'retention'" class="metrics-grid">
+                <div class="metric-item" v-for="(val, key) in currentResult.key_metrics" :key="key">
+                  <span class="m-val">{{ val }}</span>
+                  <span class="m-lbl">{{ formatMetricKey(key) }}</span>
+                </div>
+              </div>
+
+              <!-- Tab 3: Plans -->
+              <div v-if="currentTab === 'plans'" class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-val green">{{ currentResult.best_plan || 'N/A' }}</span>
+                  <span class="m-lbl">Gói bán chạy nhất</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val red">{{ currentResult.worst_plan || 'N/A' }}</span>
+                  <span class="m-lbl">Gói kém hiệu quả</span>
+                </div>
+              </div>
+
+              <!-- Tab 4: Promotions -->
+              <div v-if="currentTab === 'promotions'" class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-val purple">{{ currentResult.best_promotion || 'N/A' }}</span>
+                  <span class="m-lbl">Khuyến mãi hiệu quả</span>
+                </div>
+                <div class="metric-item full-width">
+                  <span class="m-val small">{{ currentResult.recommendation || 'N/A' }}</span>
+                  <span class="m-lbl">Đề xuất chính sách</span>
+                </div>
+              </div>
+
+              <!-- Tab 5: Feedback -->
+              <div v-if="currentTab === 'feedback'" class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-val" :class="getSentimentClass(currentResult.sentiment)">{{ currentResult.sentiment || 'N/A' }}</span>
+                  <span class="m-lbl">Cảm xúc chung</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val small red">{{ currentResult.urgent_issues || 'Không có' }}</span>
+                  <span class="m-lbl">Vấn đề khẩn cấp</span>
+                </div>
+              </div>
+
+              <!-- Tab 6: General Report -->
+              <div v-if="currentTab === 'general'" class="metrics-grid">
+                <div class="metric-item full-width">
+                  <span class="m-val">{{ currentResult.overall_health || 'N/A' }}</span>
+                  <span class="m-lbl">Sức khoẻ vận hành</span>
+                </div>
+              </div>
+
+              <!-- Tab 7: Health & Churn -->
+              <div v-if="currentTab === 'health_churn'" class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-val red">{{ currentResult.churn_risk_count || '0' }}</span>
+                  <span class="m-lbl">Hội viên nguy cơ rời bỏ</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-val orange small">{{ currentResult.health_alert || 'Không' }}</span>
+                  <span class="m-lbl">Cảnh báo sức khoẻ</span>
+                </div>
+              </div>
+
             </div>
           </div>
-          <div v-if="churnItems.length > 4" class="churn-more">+{{ churnItems.length - 4 }} hội viên khác. Xem tab "Giữ chân" để biết thêm.</div>
         </div>
-        <div v-if="churnError" class="feat-error"><i class="fas fa-exclamation-triangle"></i> {{ churnError }}</div>
+
+        <div class="panel-footer">
+          <span><i class="far fa-clock"></i> Cập nhật: {{ formatDate(currentResult.created_at) }}</span>
+        </div>
       </div>
 
-      <!-- Card 3: Báo cáo quản lý -->
-      <div class="feat-card feat-report">
-        <div class="feat-card-top">
-          <div class="feat-icon report-icon"><i class="fas fa-chart-line"></i></div>
-          <div class="feat-info">
-            <div class="feat-title">Báo cáo chiến lược quản lý</div>
-            <div class="feat-sub">Doanh thu, giữ chân &amp; tư vấn</div>
-          </div>
-          <span class="feat-tag feat-tag-purple">Chiến lược</span>
-        </div>
-        <p class="feat-desc">AI tổng hợp doanh thu tháng, tỷ lệ gia hạn, gói tập nổi bật và đánh giá khách hàng để đưa ra tư vấn chiến lược kinh doanh.</p>
-        <button class="feat-btn feat-btn-purple" @click="generateReport" :disabled="reportLoading">
-          <i class="fas" :class="reportLoading ? 'fa-spinner fa-spin' : 'fa-brain'"></i>
-          {{ reportLoading ? 'Đang phân tích...' : 'Tạo báo cáo AI' }}
+      <!-- EMPTY STATE (NO ANALYSIS YET) -->
+      <div v-else class="ai-empty-state">
+        <i class="fas fa-feather-alt"></i>
+        <p>Chưa có dữ liệu phân tích cho mục này.</p>
+        <button class="btn-run-initial" @click="runAnalysis(currentTab)">
+          <i class="fas fa-play"></i> Bắt đầu phân tích
         </button>
-        <!-- Result -->
-        <div v-if="reportResult" class="feat-result">
-          <div class="res-title"><i class="fas fa-check-circle res-ic purple"></i>{{ reportResult.title }}</div>
-          <div class="res-diag">{{ reportResult.ai_diagnosis }}</div>
-          <div class="res-tips" v-if="reportResult.ai_suggestions">
-            <div class="res-tip" v-for="(tip, i) in parsedTips(reportResult.ai_suggestions)" :key="i">
-              <i class="fas fa-arrow-right tip-arrow"></i><span>{{ tip }}</span>
-            </div>
-          </div>
-          <div class="res-meta">{{ formatDate(reportResult.created_at) }}</div>
-        </div>
-        <div v-if="reportError" class="feat-error"><i class="fas fa-exclamation-triangle"></i> {{ reportError }}</div>
       </div>
 
     </div>
 
-    <!-- ===== HISTORY TABLE ===== -->
-    <div class="history-section">
-      <div class="history-header">
-        <div>
-          <div class="history-title"><i class="fas fa-history"></i> Lịch sử phân tích AI</div>
-          <div class="history-sub">Các phân tích gần đây được lưu trong hệ thống</div>
-        </div>
-        <button class="btn-refresh-hist" @click="fetchHistory" :disabled="histLoading">
-          <i class="fas" :class="histLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
-          Làm mới
-        </button>
-      </div>
-
-      <div class="history-card">
-        <div class="hist-loading" v-if="histLoading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
-        <table class="hist-table" v-else-if="history.length > 0">
-          <thead>
-            <tr>
-              <th>LOẠI PHÂN TÍCH</th>
-              <th>TIÊU ĐỀ</th>
-              <th>CHẨN ĐOÁN</th>
-              <th>USER ID</th>
-              <th>THỜI GIAN</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="rec in history" :key="rec.id">
-              <td><span class="type-badge" :class="typeClass(rec.recommendation_type)">{{ rec.recommendation_type }}</span></td>
-              <td class="hist-title-cell">{{ rec.title }}</td>
-              <td class="hist-diag-cell">{{ rec.ai_diagnosis }}</td>
-              <td class="hist-uid">{{ rec.user_id }}</td>
-              <td class="hist-date">{{ formatDate(rec.created_at) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="hist-empty" v-else>
-          <i class="fas fa-robot"></i>
-          <p>Chưa có phân tích AI nào. Hãy nhấn vào một trong các nút trên để bắt đầu.</p>
+    <!-- ===== HISTORY SECTION ===== -->
+    <div class="ai-history-section">
+      <div class="section-title"><i class="fas fa-history"></i> Phân tích đã lưu gần đây</div>
+      <div class="history-grid" v-if="history.length > 0">
+        <div class="history-item" v-for="rec in history.slice(0, 4)" :key="rec.id">
+          <span class="hist-type">{{ rec.recommendation_type }}</span>
+          <div class="hist-title">{{ rec.title }}</div>
+          <div class="hist-date">{{ formatDate(rec.created_at) }}</div>
         </div>
       </div>
+      <div v-else class="history-empty">Chưa có lịch sử phân tích.</div>
     </div>
 
   </div>
@@ -178,33 +188,43 @@
 <script>
 import axios from 'axios';
 
-const API = 'http://127.0.0.1:8000/api';
+const API = 'http://localhost:8000/api';
 
 export default {
   name: 'TabAI',
   data() {
     return {
-      // Health
-      healthLoading: false,
-      healthResult: null,
-      healthError: null,
-      // Churn
-      churnLoading: false,
-      churnResult: null,
-      churnItems: [],
-      churnError: null,
-      // Report
-      reportLoading: false,
-      reportResult: null,
-      reportError: null,
-      // History
-      histLoading: false,
+      currentTab: 'overview',
+      loading: false,
+      results: {
+        overview: null,
+        retention: null,
+        plans: null,
+        promotions: null,
+        feedback: null,
+        general: null,
+        health_churn: null
+      },
       history: [],
-      totalGenerated: 0,
+      tabs: [
+        { id: 'overview', name: 'Tổng quan', icon: 'fas fa-eye', endpoint: 'manager/overview' },
+        { id: 'retention', name: 'Giữ chân KH', icon: 'fas fa-user-shield', endpoint: 'manager/retention-analysis' },
+        { id: 'plans', name: 'Gói tập', icon: 'fas fa-dumbbell', endpoint: 'manager/plan-effectiveness' },
+        { id: 'promotions', name: 'Khuyến mãi', icon: 'fas fa-percentage', endpoint: 'manager/promotion-effectiveness' },
+        { id: 'feedback', name: 'Phản hồi', icon: 'fas fa-comments', endpoint: 'manager/feedback-analysis' },
+        { id: 'general', name: 'Báo cáo chung', icon: 'fas fa-chart-line', endpoint: 'manager/general-report' },
+        { id: 'health_churn', name: 'Sức khoẻ & Churn', icon: 'fas fa-heartbeat', endpoint: 'manager/health-churn-report' }
+      ]
     };
+  },
+  computed: {
+    currentResult() {
+      return this.results[this.currentTab];
+    }
   },
   mounted() {
     this.fetchHistory();
+    this.runAnalysis('overview'); // Tự động load Overview khi vào
   },
   methods: {
     authHeaders() {
@@ -212,66 +232,39 @@ export default {
       return { Authorization: `Bearer ${token}` };
     },
 
-    async generateHealthRec() {
-      this.healthLoading = true;
-      this.healthError = null;
-      this.healthResult = null;
-      try {
-        const res = await axios.post(`${API}/ai-recommendations/generate`, {}, { headers: this.authHeaders() });
-        this.healthResult = res.data.data;
-        this.fetchHistory();
-      } catch (e) {
-        this.healthError = e.response?.data?.message || 'Lỗi khi gọi AI. Vui lòng thử lại.';
-      } finally {
-        this.healthLoading = false;
+    switchTab(tabId) {
+      this.currentTab = tabId;
+      if (!this.results[tabId]) {
+        this.runAnalysis(tabId);
       }
     },
 
-    async runChurn() {
-      this.churnLoading = true;
-      this.churnError = null;
-      this.churnResult = null;
-      this.churnItems = [];
-      try {
-        const res = await axios.post(`${API}/admin/churn-prediction`, {}, { headers: this.authHeaders() });
-        this.churnResult = res.data;
-        this.churnItems = Array.isArray(res.data.data) ? res.data.data : [];
-        this.fetchHistory();
-      } catch (e) {
-        this.churnError = e.response?.data?.message || 'Lỗi khi phân tích churn. Vui lòng thử lại.';
-      } finally {
-        this.churnLoading = false;
-      }
-    },
+    async runAnalysis(tabId) {
+      const tab = this.tabs.find(t => t.id === tabId);
+      if (!tab) return;
 
-    async generateReport() {
-      this.reportLoading = true;
-      this.reportError = null;
-      this.reportResult = null;
+      this.loading = true;
       try {
-        const res = await axios.post(`${API}/admin/manager-report`, {}, { headers: this.authHeaders() });
-        this.reportResult = res.data.data;
+        const res = await axios.post(`${API}/${tab.endpoint}`, {}, { headers: this.authHeaders() });
+        this.results[tabId] = res.data.data;
         this.fetchHistory();
-      } catch (e) {
-        this.reportError = e.response?.data?.message || 'Lỗi khi tạo báo cáo. Vui lòng thử lại.';
+      } catch (error) {
+        console.error(`Lỗi phân tích AI cho ${tabId}:`, error);
+        alert(error.response?.data?.message || 'Không thể tạo phân tích AI. Vui lòng thử lại.');
       } finally {
-        this.reportLoading = false;
+        this.loading = false;
       }
     },
 
     async fetchHistory() {
-      this.histLoading = true;
       try {
         const res = await axios.get(`${API}/ai-recommendations`, {
-          params: { per_page: 15 },
+          params: { per_page: 10 },
           headers: this.authHeaders(),
         });
         this.history = res.data.data || [];
-        this.totalGenerated = res.data.total || this.history.length;
       } catch (e) {
         console.error('Lỗi khi tải lịch sử AI', e);
-      } finally {
-        this.histLoading = false;
       }
     },
 
@@ -285,203 +278,253 @@ export default {
       return d.toLocaleString('vi-VN');
     },
 
-    typeClass(type) {
-      if (!type) return 'type-default';
-      if (type.includes('Health')) return 'type-health';
-      if (type.includes('Churn')) return 'type-churn';
-      if (type.includes('Business')) return 'type-report';
-      return 'type-default';
+    getTabIcon(tabId) {
+      return this.tabs.find(t => t.id === tabId)?.icon || 'fas fa-brain';
     },
 
-    riskLabel(title) {
-      if (!title) return '?';
-      if (title.includes('Đỏ')) return 'Đỏ';
-      if (title.includes('Vàng')) return 'Vàng';
-      if (title.includes('Xanh')) return 'Xanh';
-      return title;
+    formatMetricKey(key) {
+      const map = {
+        retention_rate: 'Tỉ lệ giữ chân',
+        risk_group: 'Nhóm rủi ro',
+        trend: 'Xu hướng'
+      };
+      return map[key] || key;
     },
 
-    riskClass(title) {
-      if (!title) return 'cb-yellow';
-      if (title.includes('Đỏ')) return 'risk-red';
-      if (title.includes('Xanh')) return 'risk-green';
-      return 'risk-yellow';
-    },
-
-    countRisk(level) {
-      return this.churnItems.filter(item => (item.title || '').includes(level)).length;
-    },
-  },
+    getSentimentClass(sentiment) {
+      if (!sentiment) return '';
+      if (sentiment.includes('Tích cực')) return 'green';
+      if (sentiment.includes('Tiêu cực')) return 'red';
+      return 'orange';
+    }
+  }
 };
 </script>
 
 <style scoped>
-/* ===================== ROOT ===================== */
-.ai-tab { display:flex; flex-direction:column; gap:24px; font-family:'Segoe UI',sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;800&display=swap');
 
-/* ===================== HERO ===================== */
+.ai-dashboard {
+  font-family: 'Quicksand', sans-serif;
+  padding: 20px;
+  background-color: #0f172a; /* Dark background */
+  color: #f1f5f9;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* ===== HERO ===== */
 .ai-hero {
-  position:relative; overflow:hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
-  border-radius:20px; padding:28px 32px;
-  color:#fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-radius: 16px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .hero-glow {
-  position:absolute; top:-60px; right:-60px;
-  width:220px; height:220px; border-radius:50%;
-  background: radial-gradient(circle, rgba(99,102,241,0.35), transparent 70%);
-  pointer-events:none;
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%);
+  pointer-events: none;
 }
-.hero-content { position:relative; display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
-.hero-icon-wrap { position:relative; flex-shrink:0; }
-.hero-icon-wrap i { font-size:2.2rem; color:#a78bfa; display:block; }
+.hero-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.hero-icon-wrap {
+  width: 60px; height: 60px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.hero-icon-wrap i { font-size: 1.8rem; color: #818cf8; }
 .hero-pulse {
-  position:absolute; inset:-6px; border-radius:50%;
-  border:2px solid rgba(167,139,250,0.4);
-  animation:pulse-ring 2s ease-out infinite;
+  position: absolute; inset: -5px; border-radius: 50%;
+  border: 2px solid rgba(99, 102, 241, 0.4);
+  animation: pulse-ring 2s ease-out infinite;
 }
-@keyframes pulse-ring { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.6);opacity:0} }
-.hero-text { flex:1; min-width:0; }
-.hero-title { margin:0; font-size:1.4rem; font-weight:900; }
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+.hero-title { margin: 0; font-size: 1.6rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
 .hero-badge {
-  background:linear-gradient(90deg,#4f46e5,#7c3aed);
-  font-size:.65rem; font-weight:700; padding:3px 10px;
-  border-radius:20px; margin-left:8px; vertical-align:middle; letter-spacing:.5px;
+  font-size: 0.7rem; background: #4f46e5; padding: 4px 10px; border-radius: 20px; font-weight: 700;
 }
-.hero-sub { margin:6px 0 0; font-size:.82rem; color:#94a3b8; line-height:1.5; }
-.hero-stats { display:flex; align-items:center; gap:0; }
-.hstat { text-align:center; padding:0 20px; }
-.hstat-val { font-size:1.4rem; font-weight:900; color:#a78bfa; }
-.hstat-label { font-size:.65rem; color:#64748b; margin-top:2px; }
-.hstat-divider { width:1px; height:36px; background:rgba(255,255,255,.1); }
+.hero-sub { margin: 8px 0 0; font-size: 0.9rem; color: #94a3b8; }
 
-/* ===================== FEATURE GRID ===================== */
-.feature-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-
-.feat-card {
-  background:#fff; border-radius:18px;
-  padding:22px; box-shadow:0 4px 20px rgba(0,0,0,.06);
-  display:flex; flex-direction:column; gap:14px;
-  border-top:3px solid transparent; transition:transform .2s,box-shadow .2s;
+/* ===== NAVIGATION TABS ===== */
+.ai-nav {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
 }
-.feat-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.1); }
-.feat-health { border-top-color:#16a34a; }
-.feat-churn  { border-top-color:#dc2626; }
-.feat-report { border-top-color:#7c3aed; }
+.ai-nav::-webkit-scrollbar { height: 4px; }
+.ai-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
-.feat-card-top { display:flex; align-items:center; gap:12px; }
-.feat-icon {
-  width:42px; height:42px; border-radius:12px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:1.1rem; color:#fff; flex-shrink:0;
+.nav-tab-btn {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  font-family: inherit; font-weight: 700; font-size: 0.85rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
-.health-icon { background:linear-gradient(135deg,#16a34a,#4ade80); }
-.churn-icon  { background:linear-gradient(135deg,#dc2626,#f87171); }
-.report-icon { background:linear-gradient(135deg,#7c3aed,#a78bfa); }
-
-.feat-info { flex:1; min-width:0; }
-.feat-title { font-size:.9rem; font-weight:800; color:#1e293b; }
-.feat-sub   { font-size:.7rem; color:#94a3b8; margin-top:2px; }
-
-.feat-tag { font-size:.62rem; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
-.feat-tag-green  { background:#dcfce7; color:#16a34a; }
-.feat-tag-red    { background:#fee2e2; color:#dc2626; }
-.feat-tag-purple { background:#ede9fe; color:#7c3aed; }
-
-.feat-desc { font-size:.78rem; color:#64748b; line-height:1.6; margin:0; }
-
-.feat-btn {
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  border:none; border-radius:10px; padding:11px 16px;
-  font-size:.82rem; font-weight:700; cursor:pointer;
-  transition:all .25s; letter-spacing:.2px;
+.nav-tab-btn i { font-size: 1rem; }
+.nav-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: #fff;
 }
-.feat-btn:disabled { opacity:.55; cursor:not-allowed; transform:none !important; }
-.feat-btn-green  { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; }
-.feat-btn-green:hover:not(:disabled)  { box-shadow:0 4px 14px rgba(22,163,74,.35); }
-.feat-btn-red    { background:linear-gradient(135deg,#dc2626,#f87171); color:#fff; }
-.feat-btn-red:hover:not(:disabled)    { box-shadow:0 4px 14px rgba(220,38,38,.35); }
-.feat-btn-purple { background:linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; }
-.feat-btn-purple:hover:not(:disabled) { box-shadow:0 4px 14px rgba(124,58,237,.35); }
-
-/* Result box */
-.feat-result {
-  background:#f8fafc; border-radius:12px; padding:14px 16px;
-  display:flex; flex-direction:column; gap:8px;
-  border:1px solid #e2e8f0; animation:fadeIn .3s ease;
-}
-@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-.res-title { font-size:.82rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:6px; }
-.res-ic { font-size:.85rem; }
-.res-ic.green  { color:#16a34a; }
-.res-ic.red    { color:#dc2626; }
-.res-ic.purple { color:#7c3aed; }
-.res-diag { font-size:.77rem; color:#475569; line-height:1.55; }
-.res-tips { display:flex; flex-direction:column; gap:5px; }
-.res-tip { display:flex; align-items:flex-start; gap:6px; font-size:.74rem; color:#475569; }
-.tip-arrow { color:#6366f1; font-size:.65rem; margin-top:3px; flex-shrink:0; }
-.res-meta { font-size:.65rem; color:#94a3b8; text-align:right; }
-
-/* Churn specifics */
-.churn-badges { display:flex; gap:8px; flex-wrap:wrap; }
-.cbadge { font-size:.7rem; font-weight:700; padding:3px 10px; border-radius:20px; display:flex; align-items:center; gap:4px; }
-.cb-red    { background:#fee2e2; color:#dc2626; }
-.cb-yellow { background:#fef9c3; color:#a16207; }
-.cb-green  { background:#dcfce7; color:#16a34a; }
-.churn-list { display:flex; flex-direction:column; gap:6px; }
-.churn-row { display:flex; align-items:center; gap:8px; font-size:.74rem; }
-.churn-id { font-family:monospace; font-weight:700; color:#64748b; min-width:50px; }
-.churn-risk-tag { font-size:.65rem; font-weight:700; padding:2px 7px; border-radius:20px; white-space:nowrap; }
-.risk-red    { background:#fee2e2; color:#dc2626; }
-.risk-yellow { background:#fef9c3; color:#a16207; }
-.risk-green  { background:#dcfce7; color:#16a34a; }
-.churn-diag { color:#475569; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.churn-more { font-size:.7rem; color:#94a3b8; text-align:center; }
-
-/* Error */
-.feat-error {
-  background:#fff1f2; border:1px solid #fecdd3; border-radius:10px;
-  padding:10px 14px; font-size:.77rem; color:#dc2626;
-  display:flex; align-items:center; gap:7px;
+.nav-tab-btn.active {
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+  border-color: transparent;
 }
 
-/* ===================== HISTORY ===================== */
-.history-section { display:flex; flex-direction:column; gap:12px; }
-.history-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.history-title { font-size:.95rem; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:7px; }
-.history-title i { color:#6366f1; }
-.history-sub { font-size:.72rem; color:#94a3b8; margin-top:3px; }
-.btn-refresh-hist {
-  display:flex; align-items:center; gap:6px;
-  background:#f1f5f9; border:1px solid #e2e8f0;
-  color:#475569; border-radius:8px; padding:7px 14px;
-  font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s;
+/* ===== MAIN CONTENT ===== */
+.ai-main-content {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 30px;
+  min-height: 400px;
 }
-.btn-refresh-hist:hover:not(:disabled) { background:#e2e8f0; }
-.btn-refresh-hist:disabled { opacity:.5; cursor:not-allowed; }
 
-.history-card { background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); overflow:hidden; }
-.hist-loading { padding:30px; text-align:center; color:#94a3b8; font-size:.85rem; }
-.hist-table { width:100%; border-collapse:collapse; font-size:.78rem; }
-.hist-table th {
-  text-align:left; font-size:.62rem; font-weight:700; color:#94a3b8;
-  letter-spacing:.4px; padding:12px 14px; border-bottom:1px solid #f1f5f9; background:#fafafa;
+/* LOADING */
+.ai-loading-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 15px;
 }
-.hist-table td { padding:12px 14px; border-bottom:1px solid #f8fafc; vertical-align:middle; }
-.hist-table tr:last-child td { border-bottom:none; }
+.spinner-pulse {
+  width: 40px; height: 40px; border-radius: 50%; background: #4f46e5;
+  animation: pulse-spin 1.2s infinite ease-in-out;
+}
+@keyframes pulse-spin {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+.ai-loading-state p { color: #94a3b8; font-size: 0.95rem; font-weight: 700; }
 
-.type-badge { font-size:.65rem; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
-.type-health  { background:#dcfce7; color:#16a34a; }
-.type-churn   { background:#fee2e2; color:#dc2626; }
-.type-report  { background:#ede9fe; color:#7c3aed; }
-.type-default { background:#f1f5f9; color:#64748b; }
+/* RESULT PANEL */
+.ai-result-panel {
+  display: flex; flex-direction: column; gap: 20px;
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-.hist-title-cell { font-weight:600; color:#1e293b; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.hist-diag-cell  { color:#64748b; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.hist-uid  { font-family:monospace; font-size:.75rem; color:#64748b; }
-.hist-date { font-size:.72rem; color:#94a3b8; white-space:nowrap; }
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+}
+.panel-title-wrap { display: flex; align-items: center; gap: 12px; }
+.panel-title-wrap i { font-size: 1.5rem; color: #818cf8; }
+.panel-title-wrap h3 { margin: 0; font-size: 1.3rem; font-weight: 800; }
 
-.hist-empty { padding:40px; text-align:center; color:#94a3b8; }
-.hist-empty i { font-size:2rem; margin-bottom:10px; display:block; opacity:.3; }
-.hist-empty p { margin:0; font-size:.82rem; }
+.btn-rerun {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.8rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+}
+.btn-rerun:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* GRID */
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+@media (max-width: 992px) {
+  .panel-grid { grid-template-columns: 1fr; }
+}
+
+.panel-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+.card-label { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.card-label i { color: #4f46e5; }
+
+.diagnosis-text { font-size: 0.95rem; line-height: 1.6; color: #cbd5e1; margin: 0; font-weight: 500; }
+
+.suggestions-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.suggestions-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.4; }
+.suggestions-list li i { color: #10b981; font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+
+.metrics-card { grid-column: span 2; }
+@media (max-width: 992px) {
+  .metrics-card { grid-column: span 1; }
+}
+
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+@media (max-width: 768px) {
+  .metrics-grid { grid-template-columns: 1fr; }
+}
+
+.metric-item {
+  background: rgba(30, 41, 59, 0.4);
+  padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center;
+}
+.metric-item.full-width { grid-column: span 2; }
+@media (max-width: 768px) {
+  .metric-item.full-width { grid-column: span 1; }
+}
+.m-val { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+.m-val.small { font-size: 0.95rem; font-weight: 700; line-height: 1.4; }
+.m-lbl { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; }
+
+/* Colors */
+.green { color: #10b981 !important; }
+.red { color: #ef4444 !important; }
+.orange { color: #f97316 !important; }
+.purple { color: #8b5cf6 !important; }
+
+.panel-footer { font-size: 0.75rem; color: #64748b; display: flex; justify-content: flex-end; }
+
+/* EMPTY STATE */
+.ai-empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 15px; color: #64748b;
+}
+.ai-empty-state i { font-size: 2.5rem; color: #334155; }
+.ai-empty-state p { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.btn-run-initial {
+  background: #4f46e5; border: none; color: #fff; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); transition: 0.2s;
+}
+.btn-run-initial:hover { background: #4338ca; transform: translateY(-1px); }
+
+/* HISTORY */
+.ai-history-section { margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 25px; }
+.section-title { font-size: 1rem; font-weight: 800; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: #fff; }
+.section-title i { color: #6366f1; }
+
+.history-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+@media (max-width: 992px) { .history-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 576px) { .history-grid { grid-template-columns: 1fr; } }
+
+.history-item {
+  background: rgba(30, 41, 59, 0.3); padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.02);
+}
+.hist-type { font-size: 0.65rem; font-weight: 700; color: #818cf8; text-transform: uppercase; background: rgba(129, 140, 248, 0.1); padding: 2px 6px; border-radius: 4px; }
+.hist-title { font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin: 8px 0; }
+.hist-date { font-size: 0.7rem; color: #64748b; }
+.history-empty { color: #64748b; font-size: 0.85rem; text-align: center; padding: 20px; }
 </style>
