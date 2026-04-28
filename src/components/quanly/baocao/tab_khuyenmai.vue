@@ -11,17 +11,7 @@
           :class="['km-tab', activeTab===t.key?'active':'']"
           @click="activeTab=t.key; showCreate=false">{{ t.label }}</button>
       </div>
-      <div class="km-nav-right">
-        <button class="btn-notif"><i class="fas fa-bell"></i><span class="nd"></span></button>
-        <button class="btn-help"><i class="fas fa-question-circle"></i></button>
-        <div class="km-user">
-          <div class="km-user-info">
-            <span class="km-uname">Alex Rivera</span>
-            <span class="km-urole">Quản lý Marketing</span>
-          </div>
-          <div class="km-avatar">AR</div>
-        </div>
-      </div>
+      
     </div>
 
     <!-- ======= TAB: TỔNG QUAN ======= -->

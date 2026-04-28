@@ -187,6 +187,33 @@ const routes = [
             }
         ]
     },
+    ,
+    {
+        path: '/pt',
+        component: () => import('../layout/wrapper/pt.vue'),
+        meta: { layout: 'pt' },
+        children: [
+            {
+                path: '',
+                redirect: '/pt/chi_so_suc_khoe',
+            },
+            {
+                path: 'lich_tap',
+                name: 'PTLichTap',
+                component: () => import('../components/pt/lich_tap.vue'),
+            },
+            {
+                path: 'chi_so_suc_khoe',
+                name: 'PTChiSoSucKhoe',
+                component: () => import('../components/pt/chi_so_suc_khoe.vue'),
+            },
+            {
+                path: 'goi_y_ai',
+                name: 'PTGoiYAI',
+                component: () => import('../components/pt/goi_y_ai.vue'),
+            },
+        ]
+    },
 ]
 
 const router = createRouter({
