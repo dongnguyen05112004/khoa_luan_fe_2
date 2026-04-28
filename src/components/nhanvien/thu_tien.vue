@@ -5,7 +5,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Quản Lý Thanh Toán</h1>
-        <p class="page-subtitle">Review and manage elite membership transactions.</p>
+        <p class="page-subtitle">Quản lý và theo dõi giao dịch hội viên theo thời gian thực.</p>
       </div>
     </div>
 
@@ -17,46 +17,65 @@
         <div class="live-badge">
           <span class="live-dot"></span> LIVE METRICS
         </div>
-        <div class="revenue-label">Today's Total Revenue</div>
+        <div class="revenue-label">Doanh Thu Hôm Nay</div>
         <div class="revenue-amount">
-          {{ todayRevenue.toLocaleString('vi-VN') }}
-          <span class="revenue-unit">VND</span>
-          <span class="revenue-change">↑ +14.2%</span>
+          <span v-if="statsLoading" class="skeleton-text">--</span>
+          <template v-else>
+            {{ formatVND(todayRevenue) }}
+            <span class="revenue-unit">VND</span>
+            <span class="revenue-change" :class="revenueChange >= 0 ? 'positive' : 'negative'">
+              {{ revenueChange >= 0 ? '↑' : '↓' }} {{ Math.abs(revenueChange) }}%
+            </span>
+          </template>
         </div>
         <div class="revenue-stats">
           <div class="rev-stat">
-            <div class="rev-stat-label">COMPLETED</div>
-            <div class="rev-stat-val">{{ completedCount }} <span class="rev-stat-sub">deals</span></div>
+            <div class="rev-stat-label">HOÀN THÀNH</div>
+            <div class="rev-stat-val">
+              <span v-if="statsLoading" class="skeleton-text">-</span>
+              <template v-else>{{ completedCount }} <span class="rev-stat-sub">gd</span></template>
+            </div>
           </div>
           <div class="rev-divider"></div>
           <div class="rev-stat">
-            <div class="rev-stat-label">AVG TICKET</div>
-            <div class="rev-stat-val">{{ avgTicket }} <span class="rev-stat-sub">VND</span></div>
+            <div class="rev-stat-label">TB/GIAO DỊCH</div>
+            <div class="rev-stat-val">
+              <span v-if="statsLoading" class="skeleton-text">-</span>
+              <template v-else>{{ formatVNDShort(avgTicket) }} <span class="rev-stat-sub">đ</span></template>
+            </div>
           </div>
           <div class="rev-divider"></div>
           <div class="rev-stat">
-            <div class="rev-stat-label">REFUNDED</div>
-            <div class="rev-stat-val">{{ refundedCount }} <span class="rev-stat-sub">txns</span></div>
+            <div class="rev-stat-label">HOÀN TIỀN</div>
+            <div class="rev-stat-val">
+              <span v-if="statsLoading" class="skeleton-text">-</span>
+              <template v-else>{{ refundedCount }} <span class="rev-stat-sub">gd</span></template>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Payment method breakdown -->
       <div class="breakdown-card">
-        <div class="breakdown-title">Payment Method Breakdown</div>
+        <div class="breakdown-title">Phương Thức Thanh Toán</div>
         <div class="breakdown-list">
-          <div class="breakdown-item" v-for="m in paymentMethods" :key="m.label">
-            <div class="breakdown-top">
-              <span class="breakdown-dot" :style="{ background: m.color }"></span>
-              <span class="breakdown-label">{{ m.label }}</span>
-              <span class="breakdown-pct">{{ m.pct }}%</span>
+          <template v-if="statsLoading">
+            <div class="breakdown-skeleton" v-for="n in 3" :key="n"></div>
+          </template>
+          <template v-else>
+            <div class="breakdown-item" v-for="m in paymentMethods" :key="m.key">
+              <div class="breakdown-top">
+                <span class="breakdown-dot" :style="{ background: m.color }"></span>
+                <span class="breakdown-label">{{ m.label }}</span>
+                <span class="breakdown-pct">{{ m.pct }}%</span>
+              </div>
+              <div class="breakdown-bar-bg">
+                <div class="breakdown-bar-fill" :style="{ width: m.pct + '%', background: m.color }"></div>
+              </div>
             </div>
-            <div class="breakdown-bar-bg">
-              <div class="breakdown-bar-fill" :style="{ width: m.pct + '%', background: m.color }"></div>
-            </div>
-          </div>
+          </template>
         </div>
-        <button class="btn-detailed">Detailed Analytics →</button>
+        <button class="btn-detailed" @click="goToPayment">Thanh toán mới →</button>
       </div>
 
     </div>
@@ -76,29 +95,45 @@
           >{{ t.label }}</button>
         </div>
         <div class="table-head-actions">
-          <button class="btn-export"><i class="fas fa-download"></i> Export CSV</button>
-          <button class="btn-manual"><i class="fas fa-plus"></i> Manual Entry</button>
+          <!-- Search -->
+          <div class="search-wrap">
+            <i class="fas fa-search search-ico"></i>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Tìm kiếm..."
+              class="search-input"
+              @input="onSearchInput"
+            />
+          </div>
+          <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Export CSV</button>
           <button class="btn-pay" @click="goToPayment"><i class="fas fa-cash-register"></i> Thanh toán</button>
         </div>
       </div>
 
+      <!-- Loading -->
+      <div v-if="tableLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <span>Đang tải dữ liệu...</span>
+      </div>
+
       <!-- Table -->
-      <div class="tt-table-wrap">
+      <div class="tt-table-wrap" v-show="!tableLoading">
         <table class="tt-table">
           <thead>
             <tr>
-              <th>TRANSACTION ID</th>
-              <th>DATE</th>
-              <th>MEMBER NAME</th>
-              <th>PACKAGE</th>
-              <th>AMOUNT</th>
-              <th>METHOD</th>
-              <th>STATUS</th>
-              <th>ACTIONS</th>
+              <th>MÃ GIAO DỊCH</th>
+              <th>NGÀY</th>
+              <th>HỘI VIÊN</th>
+              <th>GÓI TẬP</th>
+              <th>SỐ TIỀN</th>
+              <th>PHƯƠNG THỨC</th>
+              <th>TRẠNG THÁI</th>
+              <th>THAO TÁC</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="tx in paginatedTx" :key="tx.id">
+            <tr v-for="tx in transactions" :key="tx.id">
               <td>
                 <span class="tx-id">{{ tx.txId }}</span>
               </td>
@@ -119,7 +154,7 @@
                 <span class="pkg-badge" :class="tx.pkgClass">{{ tx.package }}</span>
               </td>
               <td>
-                <div class="tx-amount">{{ tx.amount.toLocaleString('vi-VN') }}</div>
+                <div class="tx-amount">{{ formatVND(tx.amount) }}</div>
                 <div class="tx-amount-sub">VND</div>
               </td>
               <td>
@@ -135,13 +170,32 @@
               </td>
               <td>
                 <div class="action-btns">
-                  <button class="action-btn" title="Xem"><i class="fas fa-eye"></i></button>
-                  <button class="action-btn" title="Sửa"><i class="fas fa-pen"></i></button>
-                  <button class="action-btn danger" title="Xoá"><i class="fas fa-trash-alt"></i></button>
+                  <button class="action-btn" title="Xem chi tiết" @click="viewDetail(tx)">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button
+                    v-if="tx.status_raw === 'pending'"
+                    class="action-btn confirm"
+                    title="Xác nhận thanh toán"
+                    @click="confirmPayment(tx)"
+                  >
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button
+                    v-if="tx.status_raw === 'paid'"
+                    class="action-btn refund"
+                    title="Hoàn tiền"
+                    @click="openRefundModal(tx)"
+                  >
+                    <i class="fas fa-undo"></i>
+                  </button>
+                  <button class="action-btn danger" title="Xoá" @click="deletePayment(tx)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
                 </div>
               </td>
             </tr>
-            <tr v-if="paginatedTx.length === 0">
+            <tr v-if="transactions.length === 0 && !tableLoading">
               <td colspan="8" class="empty-row">
                 <i class="fas fa-receipt"></i> Không tìm thấy giao dịch.
               </td>
@@ -152,9 +206,11 @@
 
       <!-- Pagination -->
       <div class="pagination-bar">
-        <span class="pagination-info">Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredTx.length }} transactions</span>
+        <span class="pagination-info">
+          Hiển thị {{ pageFrom }}-{{ pageTo }} trong {{ totalRecords }} giao dịch
+        </span>
         <div class="pagination-controls">
-          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
+          <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
             <i class="fas fa-chevron-left"></i>
           </button>
           <button
@@ -162,9 +218,9 @@
             :key="p"
             class="page-btn"
             :class="{ active: currentPage === p }"
-            @click="currentPage = p"
+            @click="changePage(p)"
           >{{ p }}</button>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+          <button class="page-btn" :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
@@ -172,138 +228,306 @@
 
     </div>
 
+    <!-- ===== Detail Modal ===== -->
+    <div class="modal-overlay" v-if="showDetail" @click.self="showDetail = false">
+      <div class="detail-modal">
+        <div class="modal-header">
+          <h3>Chi tiết giao dịch {{ selectedTx?.txId }}</h3>
+          <button class="modal-close" @click="showDetail = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" v-if="selectedTx">
+          <div class="detail-row"><span class="dl">Hội viên</span><span class="dv">{{ selectedTx.memberName }}</span></div>
+          <div class="detail-row"><span class="dl">Email</span><span class="dv">{{ selectedTx.memberEmail || '—' }}</span></div>
+          <div class="detail-row"><span class="dl">Gói tập</span><span class="dv">{{ selectedTx.package }}</span></div>
+          <div class="detail-row"><span class="dl">Số tiền</span><span class="dv">{{ formatVND(selectedTx.amount) }} đ</span></div>
+          <div class="detail-row"><span class="dl">Phương thức</span><span class="dv">{{ selectedTx.method }}</span></div>
+          <div class="detail-row"><span class="dl">Ngày</span><span class="dv">{{ selectedTx.date }}</span></div>
+          <div class="detail-row"><span class="dl">Trạng thái</span>
+            <span class="status-badge" :class="selectedTx.statusClass">
+              <span class="status-dot"></span>{{ selectedTx.status }}
+            </span>
+          </div>
+          <div class="detail-row" v-if="selectedTx.promotion_code">
+            <span class="dl">Mã KM</span><span class="dv promo-tag">{{ selectedTx.promotion_code }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedTx.note">
+            <span class="dl">Ghi chú</span><span class="dv note-text">{{ selectedTx.note }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Refund Modal ===== -->
+    <div class="modal-overlay" v-if="showRefund" @click.self="showRefund = false">
+      <div class="detail-modal">
+        <div class="modal-header">
+          <h3>Hoàn tiền {{ selectedTx?.txId }}</h3>
+          <button class="modal-close" @click="showRefund = false"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p class="refund-amount">Số tiền hoàn: <strong>{{ formatVND(selectedTx?.amount) }} đ</strong></p>
+          <label class="field-label">Lý do hoàn tiền *</label>
+          <textarea v-model="refundReason" class="refund-textarea" placeholder="Nhập lý do hoàn tiền..." rows="3"></textarea>
+          <div class="modal-actions">
+            <button class="btn-cancel-modal" @click="showRefund = false">Hủy</button>
+            <button class="btn-refund-confirm" @click="submitRefund" :disabled="actionLoading">
+              <i class="fas fa-undo"></i> Xác nhận hoàn tiền
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Toast Notification ===== -->
+    <div class="toast" :class="[toastType, { show: showToast }]">
+      <i :class="toastType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+      {{ toastMsg }}
+    </div>
+
   </div>
 </template>
 
 <script>
+import { paymentApi, formatVND } from '@/services/paymentApi.js'
+
 export default {
   name: 'ThuTien',
+
   data() {
     return {
+      // State
       activeTab: 'all',
       currentPage: 1,
-      perPage: 6,
-      todayRevenue: 42850000,
-      completedCount: 38,
-      avgTicket: '1.1M',
-      refundedCount: 3,
-      paymentMethods: [
-        { label: 'Credit Card',   pct: 65, color: '#22c55e' },
-        { label: 'Bank Transfer', pct: 25, color: '#16a34a' },
-        { label: 'Cash / Other',  pct: 10, color: '#86efac' },
-      ],
+      perPage: 10,
+      searchQuery: '',
+      searchTimer: null,
+
+      // Loading
+      statsLoading: true,
+      tableLoading: true,
+      actionLoading: false,
+
+      // Stats
+      todayRevenue: 0,
+      revenueChange: 0,
+      completedCount: 0,
+      avgTicket: 0,
+      refundedCount: 0,
+      paymentMethods: [],
+
+      // Table
+      transactions: [],
+      totalRecords: 0,
+      lastPage: 1,
+
+      // Tabs
       tabs: [
-        { key: 'all',       label: 'All Transactions' },
-        { key: 'completed', label: 'Completed' },
-        { key: 'pending',   label: 'Pending' },
-        { key: 'refunded',  label: 'Refunded' },
+        { key: 'all',      label: 'Tất cả' },
+        { key: 'paid',     label: 'Hoàn thành' },
+        { key: 'pending',  label: 'Đang chờ' },
+        { key: 'refunded', label: 'Hoàn tiền' },
       ],
-      transactions: [
-        {
-          id: 1, txId: '#TRX-8291', date: 'Oct 24, 2023',
-          memberName: 'Felix Nguyen',   avatarBg: 'f59e0b',
-          package: 'ELITE ANNUAL',  pkgClass: 'pkg-elite',
-          amount: 12500000, method: 'VISA',  methodIcon: 'fas fa-credit-card',
-          status: 'Completed', statusClass: 'st-completed',
-        },
-        {
-          id: 2, txId: '#TRX-8288', date: 'Oct 23, 2023',
-          memberName: 'Luna Tran',     avatarBg: '6366f1',
-          package: 'MONTHLY PASS', pkgClass: 'pkg-monthly',
-          amount: 1200000,  method: 'Bank', methodIcon: 'fas fa-university',
-          status: 'Pending',   statusClass: 'st-pending',
-        },
-        {
-          id: 3, txId: '#TRX-8285', date: 'Oct 22, 2023',
-          memberName: 'Marco Pham',    avatarBg: 'ec4899',
-          package: 'PT SESSIONS',  pkgClass: 'pkg-pt',
-          amount: 5000000,  method: 'Cash', methodIcon: 'fas fa-money-bill-wave',
-          status: 'Refunded',  statusClass: 'st-refunded',
-        },
-        {
-          id: 4, txId: '#TRX-8280', date: 'Oct 21, 2023',
-          memberName: 'Elara Nguyen',  avatarBg: '14b8a6',
-          package: 'ELITE ANNUAL',  pkgClass: 'pkg-elite',
-          amount: 12500000, method: 'AMEX', methodIcon: 'fas fa-credit-card',
-          status: 'Completed', statusClass: 'st-completed',
-        },
-        {
-          id: 5, txId: '#TRX-8276', date: 'Oct 20, 2023',
-          memberName: 'Hoàng Thị Lan', avatarBg: '8b5cf6',
-          package: 'MONTHLY PASS', pkgClass: 'pkg-monthly',
-          amount: 1200000,  method: 'VISA', methodIcon: 'fas fa-credit-card',
-          status: 'Completed', statusClass: 'st-completed',
-        },
-        {
-          id: 6, txId: '#TRX-8271', date: 'Oct 19, 2023',
-          memberName: 'Bình Công Sơn', avatarBg: '0ea5e9',
-          package: 'PT SESSIONS',  pkgClass: 'pkg-pt',
-          amount: 5000000,  method: 'Bank', methodIcon: 'fas fa-university',
-          status: 'Pending',   statusClass: 'st-pending',
-        },
-        {
-          id: 7, txId: '#TRX-8265', date: 'Oct 18, 2023',
-          memberName: 'Nguyễn Minh Anh', avatarBg: 'd97706',
-          package: 'ELITE ANNUAL',  pkgClass: 'pkg-elite',
-          amount: 12500000, method: 'VISA', methodIcon: 'fas fa-credit-card',
-          status: 'Completed', statusClass: 'st-completed',
-        },
-        {
-          id: 8, txId: '#TRX-8258', date: 'Oct 17, 2023',
-          memberName: 'Trần Hoàng Nam', avatarBg: '16a34a',
-          package: 'MONTHLY PASS', pkgClass: 'pkg-monthly',
-          amount: 1200000,  method: 'Cash', methodIcon: 'fas fa-money-bill-wave',
-          status: 'Refunded',  statusClass: 'st-refunded',
-        },
-        {
-          id: 9, txId: '#TRX-8250', date: 'Oct 16, 2023',
-          memberName: 'Phạm Quốc Hùng', avatarBg: 'a855f7',
-          package: 'PT SESSIONS',  pkgClass: 'pkg-pt',
-          amount: 5000000,  method: 'Bank', methodIcon: 'fas fa-university',
-          status: 'Completed', statusClass: 'st-completed',
-        },
-        {
-          id: 10, txId: '#TRX-8244', date: 'Oct 15, 2023',
-          memberName: 'Lê Thu Thảo',   avatarBg: 'f43f5e',
-          package: 'ELITE ANNUAL',  pkgClass: 'pkg-elite',
-          amount: 12500000, method: 'AMEX', methodIcon: 'fas fa-credit-card',
-          status: 'Pending',   statusClass: 'st-pending',
-        },
-      ],
+
+      // Modals
+      showDetail: false,
+      showRefund: false,
+      selectedTx: null,
+      refundReason: '',
+
+      // Toast
+      showToast: false,
+      toastMsg: '',
+      toastType: 'success',
     }
   },
+
   computed: {
-    filteredTx() {
-      if (this.activeTab === 'all') return this.transactions
-      const map = { completed: 'Completed', pending: 'Pending', refunded: 'Refunded' }
-      return this.transactions.filter(t => t.status === map[this.activeTab])
-    },
     totalPages() {
-      return Math.max(1, Math.ceil(this.filteredTx.length / this.perPage))
-    },
-    paginatedTx() {
-      const start = (this.currentPage - 1) * this.perPage
-      return this.filteredTx.slice(start, start + this.perPage)
-    },
-    pageStart() {
-      return this.filteredTx.length === 0 ? 0 : (this.currentPage - 1) * this.perPage + 1
-    },
-    pageEnd() {
-      return Math.min(this.currentPage * this.perPage, this.filteredTx.length)
+      return Math.max(1, this.lastPage)
     },
     visiblePages() {
       const pages = []
-      for (let i = 1; i <= Math.min(this.totalPages, 3); i++) pages.push(i)
+      const start = Math.max(1, this.currentPage - 1)
+      const end   = Math.min(this.totalPages, start + 2)
+      for (let i = start; i <= end; i++) pages.push(i)
       return pages
     },
-  },
-  methods: {
-    setTab(key) {
-      this.activeTab = key
-      this.currentPage = 1
+    pageFrom() {
+      return this.totalRecords === 0 ? 0 : (this.currentPage - 1) * this.perPage + 1
     },
+    pageTo() {
+      return Math.min(this.currentPage * this.perPage, this.totalRecords)
+    },
+  },
+
+  mounted() {
+    this.loadStats()
+    this.loadTransactions()
+  },
+
+  methods: {
+    // ── Utilities ──────────────────────────────────────────────
+    formatVND(amount) {
+      return Number(amount || 0).toLocaleString('vi-VN')
+    },
+    formatVNDShort(amount) {
+      if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1) + 'M'
+      if (amount >= 1_000)    return (amount / 1_000).toFixed(0) + 'K'
+      return amount
+    },
+
+    showToastMsg(msg, type = 'success') {
+      this.toastMsg  = msg
+      this.toastType = type
+      this.showToast = true
+      setTimeout(() => { this.showToast = false }, 3000)
+    },
+
+    // ── Data Loading ────────────────────────────────────────────
+    async loadStats() {
+      this.statsLoading = true
+      try {
+        const { data } = await paymentApi.getStats()
+        this.todayRevenue     = data.today_revenue    ?? 0
+        this.revenueChange    = data.today_revenue_change ?? 0
+        this.completedCount   = data.completed_count  ?? 0
+        this.avgTicket        = data.avg_ticket       ?? 0
+        this.refundedCount    = data.refunded_count   ?? 0
+        this.paymentMethods   = data.payment_methods  ?? []
+      } catch (err) {
+        console.error('Stats error:', err)
+        // Fallback với dữ liệu mặc định để không break giao diện
+        this.paymentMethods = [
+          { key: 'card',          label: 'Thẻ TD',        pct: 65, color: '#22c55e' },
+          { key: 'bank_transfer', label: 'Chuyển khoản',  pct: 25, color: '#16a34a' },
+          { key: 'cash',          label: 'Tiền mặt',      pct: 10, color: '#86efac' },
+        ]
+      } finally {
+        this.statsLoading = false
+      }
+    },
+
+    async loadTransactions() {
+      this.tableLoading = true
+      try {
+        const params = {
+          page:     this.currentPage,
+          per_page: this.perPage,
+        }
+        if (this.activeTab !== 'all') params.status = this.activeTab
+        if (this.searchQuery.trim())  params.search = this.searchQuery.trim()
+
+        const { data } = await paymentApi.getAll(params)
+
+        this.transactions  = data.data        ?? []
+        this.totalRecords  = data.total       ?? 0
+        this.lastPage      = data.last_page   ?? 1
+      } catch (err) {
+        console.error('Transactions error:', err)
+        this.showToastMsg('Không thể tải danh sách giao dịch', 'error')
+      } finally {
+        this.tableLoading = false
+      }
+    },
+
+    // ── Actions ─────────────────────────────────────────────────
+    setTab(key) {
+      this.activeTab   = key
+      this.currentPage = 1
+      this.loadTransactions()
+    },
+
+    changePage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.currentPage = page
+      this.loadTransactions()
+    },
+
+    onSearchInput() {
+      clearTimeout(this.searchTimer)
+      this.searchTimer = setTimeout(() => {
+        this.currentPage = 1
+        this.loadTransactions()
+      }, 400)
+    },
+
     goToPayment() {
       this.$router.push('/nhanvien/xuly_thanh_toan')
+    },
+
+    viewDetail(tx) {
+      this.selectedTx = tx
+      this.showDetail = true
+    },
+
+    async confirmPayment(tx) {
+      if (!confirm(`Xác nhận thanh toán ${tx.txId}?`)) return
+      this.actionLoading = true
+      try {
+        await paymentApi.confirm(tx.id)
+        this.showToastMsg(`Đã xác nhận thanh toán ${tx.txId}`)
+        await this.loadTransactions()
+        await this.loadStats()
+      } catch (err) {
+        this.showToastMsg(err.response?.data?.message || 'Lỗi xác nhận', 'error')
+      } finally {
+        this.actionLoading = false
+      }
+    },
+
+    openRefundModal(tx) {
+      this.selectedTx   = tx
+      this.refundReason = ''
+      this.showRefund   = true
+    },
+
+    async submitRefund() {
+      if (!this.refundReason.trim() || this.refundReason.trim().length < 5) {
+        this.showToastMsg('Vui lòng nhập lý do hoàn tiền (ít nhất 5 ký tự)', 'error')
+        return
+      }
+      this.actionLoading = true
+      try {
+        await paymentApi.refund(this.selectedTx.id, this.refundReason)
+        this.showToastMsg(`Hoàn tiền ${this.selectedTx.txId} thành công`)
+        this.showRefund = false
+        await this.loadTransactions()
+        await this.loadStats()
+      } catch (err) {
+        this.showToastMsg(err.response?.data?.message || 'Lỗi hoàn tiền', 'error')
+      } finally {
+        this.actionLoading = false
+      }
+    },
+
+    async deletePayment(tx) {
+      if (!confirm(`Xóa giao dịch ${tx.txId}? Thao tác này không thể hoàn tác.`)) return
+      this.actionLoading = true
+      try {
+        await paymentApi.remove(tx.id)
+        this.showToastMsg(`Đã xóa giao dịch ${tx.txId}`)
+        await this.loadTransactions()
+        await this.loadStats()
+      } catch (err) {
+        this.showToastMsg(err.response?.data?.message || 'Lỗi xóa giao dịch', 'error')
+      } finally {
+        this.actionLoading = false
+      }
+    },
+
+    exportCSV() {
+      const headers = ['Mã GD', 'Ngày', 'Hội viên', 'Gói tập', 'Số tiền', 'Phương thức', 'Trạng thái']
+      const rows    = this.transactions.map(t => [
+        t.txId, t.date, t.memberName, t.package, t.amount, t.method, t.status,
+      ])
+      const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `giao-dich-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
     },
   },
 }
@@ -399,11 +623,18 @@ export default {
 .revenue-change {
   font-size: 0.78rem;
   font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.revenue-change.positive {
   background: rgba(74, 222, 128, 0.2);
   border: 1px solid rgba(74, 222, 128, 0.35);
   color: #4ade80;
-  padding: 3px 10px;
-  border-radius: 20px;
+}
+.revenue-change.negative {
+  background: rgba(248, 113, 113, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
 }
 .revenue-stats {
   display: flex;
@@ -437,9 +668,23 @@ export default {
   margin-left: 3px;
 }
 
+/* Skeleton */
+.skeleton-text {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+  min-width: 60px;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
 /* Breakdown card */
 .breakdown-card {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   background: #fff;
   border-radius: 16px;
@@ -455,7 +700,12 @@ export default {
   margin-bottom: 16px;
 }
 .breakdown-list { flex: 1; display: flex; flex-direction: column; gap: 14px; }
-.breakdown-item {}
+.breakdown-skeleton {
+  height: 36px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  animation: shimmer 1.5s infinite;
+}
 .breakdown-top {
   display: flex;
   align-items: center;
@@ -511,6 +761,7 @@ export default {
   border-radius: 16px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  position: relative;
 }
 .table-head-row {
   display: flex;
@@ -540,9 +791,33 @@ export default {
 .tab-btn.active { background: #1a4d24; color: #fff; font-weight: 700; }
 
 /* Actions */
-.table-head-actions { display: flex; gap: 8px; }
-.btn-export,
-.btn-manual {
+.table-head-actions { display: flex; gap: 8px; align-items: center; }
+
+/* Search */
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: border-color 0.2s;
+}
+.search-wrap:focus-within { border-color: #2d7a3a; }
+.search-ico { color: #94a3b8; font-size: 0.75rem; }
+.search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.82rem;
+  color: #334155;
+  font-family: inherit;
+  width: 130px;
+}
+.search-input::placeholder { color: #94a3b8; }
+
+.btn-export {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -553,19 +828,31 @@ export default {
   font-family: inherit;
   cursor: pointer;
   transition: all 0.18s;
-}
-.btn-export {
   background: #fff;
   border: 1.5px solid #e2e8f0;
   color: #475569;
 }
 .btn-export:hover { border-color: #2d7a3a; color: #2d7a3a; background: #f0fdf4; }
-.btn-manual {
-  background: #1a4d24;
-  border: 1.5px solid #1a4d24;
-  color: #fff;
+
+/* Loading overlay */
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px;
+  color: #64748b;
+  font-size: 0.88rem;
 }
-.btn-manual:hover { background: #133a1b; }
+.loading-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #2d7a3a;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Table */
 .tt-table-wrap { overflow-x: auto; }
@@ -605,7 +892,6 @@ export default {
   color: #64748b;
   white-space: nowrap;
 }
-
 .member-cell {
   display: flex;
   align-items: center;
@@ -641,7 +927,6 @@ export default {
   color: #0f172a;
 }
 .tx-amount-sub { font-size: 0.68rem; color: #94a3b8; }
-
 .method-cell {
   display: flex;
   align-items: center;
@@ -689,10 +974,12 @@ export default {
   justify-content: center;
   transition: all 0.15s;
 }
-.action-btn:hover        { background: #f0fdf4; border-color: #2d7a3a; color: #2d7a3a; }
-.action-btn.danger:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.action-btn:hover         { background: #f0fdf4; border-color: #2d7a3a; color: #2d7a3a; }
+.action-btn.danger:hover  { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.action-btn.confirm:hover { background: #f0fdf4; border-color: #16a34a; color: #16a34a; }
+.action-btn.refund:hover  { background: #fef9c3; border-color: #f59e0b; color: #d97706; }
 
-/* Pay button in toolbar */
+/* Pay button */
 .btn-pay {
   display: flex;
   align-items: center;
@@ -750,6 +1037,164 @@ export default {
 .page-btn:hover:not(:disabled) { border-color: #2d7a3a; color: #2d7a3a; background: #f0fdf4; }
 .page-btn.active { background: #2d7a3a; border-color: #2d7a3a; color: #fff; font-weight: 700; }
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.detail-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  animation: slideUp 0.22s ease;
+  overflow: hidden;
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: #334155; }
+.modal-body { padding: 18px 20px; }
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+  gap: 12px;
+}
+.detail-row:last-child { border-bottom: none; }
+.dl { font-size: 0.78rem; color: #64748b; flex-shrink: 0; }
+.dv { font-size: 0.82rem; font-weight: 600; color: #0f172a; text-align: right; }
+.promo-tag {
+  background: #dcfce7;
+  color: #16a34a;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+.note-text { color: #64748b; font-weight: 400; font-style: italic; }
+
+/* Refund modal */
+.refund-amount {
+  font-size: 0.88rem;
+  color: #334155;
+  margin: 0 0 14px;
+}
+.refund-amount strong { color: #dc2626; }
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  display: block;
+}
+.refund-textarea {
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 0.83rem;
+  color: #334155;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.refund-textarea:focus { border-color: #2d7a3a; background: #fff; }
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+.btn-cancel-modal {
+  padding: 9px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel-modal:hover { border-color: #94a3b8; color: #334155; }
+.btn-refund-confirm {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.btn-refund-confirm:hover:not(:disabled) { background: #b91c1c; }
+.btn-refund-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 200;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: #1a4d24; color: #fff; }
+.toast.error   { background: #dc2626; color: #fff; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
