@@ -224,11 +224,12 @@ import TabGoiTap      from './baocao/tab_goitap.vue'
 import TabKhuyenMai   from './baocao/tab_khuyenmai.vue'
 import TabPhanHoi     from './baocao/tab_phanhoi.vue'
 import TabBaoCao      from './baocao/tab_baocao.vue'
+import TabAI          from './baocao/tab_ai.vue'
 import axios from 'axios';
 
 export default {
   name: 'AdminDashboard',
-  components: { TabGiuChan, TabGoiTap, TabKhuyenMai, TabPhanHoi, TabBaoCao },
+  components: { TabGiuChan, TabGoiTap, TabKhuyenMai, TabPhanHoi, TabBaoCao, TabAI },
   data() {
     return {
       aiReport: null,
@@ -242,6 +243,7 @@ export default {
         { key: 'khuyenmai',   label: 'Phân tích hiệu quả khuyến mãi' },
         { key: 'phanhoi',     label: 'Phân tích phản hồi khách hàng' },
         { key: 'baocao',      label: 'Báo cáo' },
+        { key: 'ai',          label: '🤖 SmartGym AI' },
       ],
       kpis: [
         {
@@ -314,6 +316,7 @@ export default {
         khuyenmai:  'TabKhuyenMai',
         phanhoi:    'TabPhanHoi',
         baocao:     'TabBaoCao',
+        ai:         'TabAI',
       }
       return map[this.activeTab] || null
     },
