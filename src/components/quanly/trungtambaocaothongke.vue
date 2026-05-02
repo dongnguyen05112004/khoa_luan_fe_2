@@ -345,6 +345,15 @@ export default {
     async fetchLatestAiReport() {
       try {
         const typeMap = {
+          tongquan: 'Manager Overview',
+          giuchan: 'Retention Analysis',
+          goitap: 'Plan Effectiveness',
+          khuyenmai: 'Promotion Effectiveness',
+          phanhoi: 'Feedback Analysis',
+          baocao: 'General Report'
+        };
+        // Fallback for old types
+        const oldTypeMap = {
           tongquan: 'Business Report',
           giuchan: 'Retention Analysis',
           goitap: 'Subscription Analysis',
@@ -352,10 +361,11 @@ export default {
           phanhoi: 'Feedback Analysis',
           baocao: 'Equipment Analysis'
         };
-        const currentType = typeMap[this.activeTab] || 'Business Report';
+        const currentType = typeMap[this.activeTab] || 'Manager Overview';
+        const oldType = oldTypeMap[this.activeTab] || 'Business Report';
 
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
+        let res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
           params: { type: currentType, per_page: 1 },
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -365,6 +375,15 @@ export default {
 
         if (res.data && res.data.data && res.data.data.length > 0) {
           this.aiReport = res.data.data[0];
+        } else {
+          // Thử tìm theo type cũ
+          res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
+            params: { type: oldType, per_page: 1 },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.data && res.data.data && res.data.data.length > 0) {
+            this.aiReport = res.data.data[0];
+          }
         }
       } catch (error) {
         console.error('Lỗi khi lấy báo cáo AI', error);
@@ -373,25 +392,25 @@ export default {
     async generateAiReport() {
       this.isAiLoading = true;
       try {
-        const typeMap = {
-          tongquan: 'Business Report',
-          giuchan: 'Retention Analysis',
-          goitap: 'Subscription Analysis',
-          khuyenmai: 'Promotion Analysis',
-          phanhoi: 'Feedback Analysis',
-          baocao: 'Equipment Analysis'
+        const endpointMap = {
+          tongquan: 'manager/overview',
+          giuchan: 'manager/retention-analysis',
+          goitap: 'manager/plan-effectiveness',
+          khuyenmai: 'manager/promotion-effectiveness',
+          phanhoi: 'manager/feedback-analysis',
+          baocao: 'manager/general-report'
         };
-        const currentType = typeMap[this.activeTab] || 'Business Report';
+        const endpoint = endpointMap[this.activeTab] || 'manager/overview';
 
         const token = localStorage.getItem('token');
-        const res = await axios.post('http://127.0.0.1:8000/api/admin/manager-report', 
-          { type: currentType }, 
+        const res = await axios.post(`http://127.0.0.1:8000/api/${endpoint}`, 
+          {}, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
         if (res.data && res.data.data) {
           this.aiReport = res.data.data;
-          alert(`Đã tạo phân tích ${currentType} bằng AI thành công!`);
+          alert(`Đã tạo phân tích bằng AI thành công!`);
         }
       } catch (error) {
         console.error('Lỗi khi tạo báo cáo AI', error);

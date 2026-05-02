@@ -138,28 +138,38 @@
             <div class="ls-val">{{ campaigns.length > 0 ? Math.round(statsActive / campaigns.length * 100) : 0 }}%</div>
             <div class="ls-trend" style="color:#7c3aed"><i class="fas fa-bolt"></i> Tỷ lệ hoạt động</div>
           </div>
-          <!-- AI Unified Card (Matching theme) -->
-          <div class="ai-card-unified">
-            <div class="ai-card-header-unified">
-              <div class="ai-avatar-unified">
-                <i class="fas fa-brain"></i>
-              </div>
-              <div class="ai-title-unified">
-                <strong v-if="aiReport">{{ aiReport.title }}</strong>
-                <strong v-else>Phân tích từ SmartGym AI</strong>
-              </div>
-              <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
-                <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
-                {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
-              </button>
-            </div>
+        </div>
 
-            <div v-if="aiReport">
-              <div class="ai-rec-diagnosis-unified">{{ (aiReport.ai_diagnosis || '').substring(0, 100) }}...</div>
+        <!-- AI Unified Card (Matching theme) -->
+        <div class="ai-card-unified">
+          <div class="ai-card-header-unified">
+            <div class="ai-avatar-unified">
+              <i class="fas fa-brain"></i>
             </div>
-            <div v-else class="ai-empty-unified" style="padding: 15px;">
-              Chưa có phân tích AI cho chiến dịch.
+            <div class="ai-title-unified">
+              <strong v-if="aiReport">{{ aiReport.title }}</strong>
+              <strong v-else>Phân tích từ SmartGym AI</strong>
             </div>
+            <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+              <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+              {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
+            </button>
+          </div>
+
+          <div v-if="aiReport">
+            <div class="ai-rec-diagnosis-unified">{{ aiReport.ai_diagnosis }}</div>
+            <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
+              <div class="suggestion-hd">ĐỀ XUẤT CHIẾN LƯỢC:</div>
+              <div class="suggestion-item-unified" v-for="(tip, i) in aiReport.ai_suggestions.split('\n')" :key="i">
+                <template v-if="tip.trim()">
+                  <i class="fas fa-check-circle"></i>
+                  <span>{{ tip.replace(/^- /, '').replace(/^\* /, '') }}</span>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div v-else class="ai-empty-unified" style="padding: 15px;">
+            Chưa có phân tích AI cho chiến dịch.
           </div>
         </div>
 
@@ -738,7 +748,7 @@ export default {
 .btn-add-camp:hover { opacity:.9; transform:translateY(-1px); }
 
 /* Stats row */
-.list-stats { display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; gap:14px; }
+.list-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
 .ls-card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
 .ls-lbl { font-size:.62rem; font-weight:700; color:#94a3b8; letter-spacing:.4px; margin-bottom:6px; }
 .ls-val { font-size:1.7rem; font-weight:800; color:#0f172a; margin-bottom:4px; }
@@ -956,6 +966,37 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
   padding: 14px 18px;
   border-radius: 12px;
   border-left: 3px solid #6366f1;
+  margin-bottom: 12px;
+}
+.ai-suggestions-unified {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suggestion-hd {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.suggestion-item-unified {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.suggestion-item-unified i {
+  color: #4ade80;
+  margin-top: 3px;
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 .ai-empty-unified {
   text-align: center;
