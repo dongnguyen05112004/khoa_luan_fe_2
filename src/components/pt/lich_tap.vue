@@ -1,14 +1,29 @@
 <template>
   <div class="lt-page">
     <div class="lt-header">
-      <h1 class="lt-title">Quản lý lịch tập</h1>
+      <div class="lt-header-left">
+        <div class="lt-title-icon"><i class="fas fa-calendar-alt"></i></div>
+        <div>
+          <h1 class="lt-title">Quản lý lịch tập</h1>
+          <div class="lt-subtitle">Theo dõi và quản lý buổi tập của hội viên</div>
+        </div>
+      </div>
       <div class="lt-header-center">
-        <div class="lt-search"><i class="fas fa-search"></i><input placeholder="Tìm kiếm hội viên..." /></div>
+        <div class="lt-search">
+          <i class="fas fa-search"></i>
+          <input placeholder="Tìm kiếm hội viên..." />
+        </div>
       </div>
       <div class="lt-header-right">
-        <button class="lt-icon-btn"><i class="fas fa-bell"></i><span class="lt-dot"></span></button>
-        <button class="lt-icon-btn"><i class="fas fa-history"></i></button>
-        <button class="lt-icon-btn"><i class="fas fa-user-circle"></i></button>
+        <button class="lt-icon-btn" title="Thông báo">
+          <i class="fas fa-bell"></i><span class="lt-dot"></span>
+        </button>
+        <button class="lt-icon-btn" title="Lịch sử">
+          <i class="fas fa-history"></i>
+        </button>
+        <button class="lt-icon-btn lt-icon-btn--accent" title="Thêm lịch">
+          <i class="fas fa-plus"></i>
+        </button>
       </div>
     </div>
 
@@ -59,10 +74,20 @@
       <!-- MIDDLE: Weekly Calendar -->
       <div class="lt-middle">
         <div class="wc-header">
-          <div class="wc-title">Lịch biểu tuần</div>
+          <div class="wc-title-wrap">
+            <i class="fas fa-calendar-week wc-title-icon"></i>
+            <span class="wc-title">Lịch biểu tuần</span>
+          </div>
           <div class="wc-tabs">
-            <button :class="['wc-tab', viewMode==='week'?'active':'']" @click="viewMode='week'">Tuần này</button>
-            <button :class="['wc-tab', viewMode==='month'?'active':'']" @click="viewMode='month'">Tháng</button>
+            <button :class="['wc-tab', viewMode==='week'?'active':'']" @click="viewMode='week'">
+              <i class="fas fa-calendar-week"></i> Tuần này
+            </button>
+            <button :class="['wc-tab', viewMode==='month'?'active':'']" @click="viewMode='month'">
+              <i class="fas fa-calendar-alt"></i> Tháng
+            </button>
+            <button :class="['wc-tab', viewMode==='detail'?'active':'']" @click="viewMode='detail'">
+              <i class="fas fa-clipboard-list"></i> Chi tiết buổi tập
+            </button>
           </div>
         </div>
         <div class="wc-grid">
@@ -313,19 +338,65 @@ export default {
 
 <style scoped>
 *{box-sizing:border-box}
-.lt-page{display:flex;flex-direction:column;height:100%;font-family:'Inter','Segoe UI',sans-serif;color:#1e293b;margin:-24px;background:#f2f6f3}
+.lt-page{display:flex;flex-direction:column;height:100%;font-family:'Inter','Segoe UI',sans-serif;color:#1e293b;background:#f2f6f3;}
 
 /* Header */
-.lt-header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:#fff;border-bottom:1px solid #e5eae7;position:sticky;top:0;z-index:10}
-.lt-title{font-size:1.05rem;font-weight:800;color:#0f172a;margin:0;white-space:nowrap}
-.lt-header-center{flex:1}
-.lt-search{display:flex;align-items:center;gap:8px;background:#f4f7f5;border:1px solid #e2e8e4;border-radius:20px;padding:7px 16px;max-width:280px}
-.lt-search i{color:#94a3b8;font-size:.8rem}
-.lt-search input{border:none;background:transparent;outline:none;font-size:.83rem;color:#475569;width:100%}
-.lt-header-right{display:flex;gap:8px}
-.lt-icon-btn{position:relative;width:34px;height:34px;border-radius:50%;border:1px solid #e2e8e4;background:#f4f7f5;color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s}
-.lt-icon-btn:hover{background:#e8f5e9;color:#2d7a3a}
-.lt-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#ef4444;border:2px solid #fff}
+.lt-header{
+  display:flex;align-items:center;gap:20px;
+  padding:14px 24px;
+  background:#fff;
+  border-bottom:1.5px solid #e8edf0;
+  position:sticky;top:0;z-index:10;
+  box-shadow:0 2px 12px rgba(0,0,0,0.05);
+  margin: -24px -24px 20px -24px;
+}
+.lt-header-left{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.lt-title-icon{
+  width:40px;height:40px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,#2d7a3a,#38a169);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:1rem;
+  box-shadow:0 4px 10px rgba(45,122,58,0.3);
+}
+.lt-title{font-size:1rem;font-weight:800;color:#0f172a;margin:0;white-space:nowrap;line-height:1.2}
+.lt-subtitle{font-size:.68rem;color:#94a3b8;margin-top:2px;white-space:nowrap}
+.lt-header-center{flex:1;display:flex;justify-content:center}
+.lt-search{
+  display:flex;align-items:center;gap:9px;
+  background:#f8fafc;
+  border:1.5px solid #e2e8f0;
+  border-radius:24px;
+  padding:8px 18px;
+  width:300px;
+  transition:all .2s;
+}
+.lt-search:focus-within{
+  border-color:#2d7a3a;
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(45,122,58,0.1);
+}
+.lt-search i{color:#94a3b8;font-size:.82rem;flex-shrink:0}
+.lt-search input{border:none;background:transparent;outline:none;font-size:.84rem;color:#475569;width:100%;font-family:inherit}
+.lt-header-right{display:flex;gap:8px;align-items:center}
+.lt-icon-btn{
+  position:relative;width:36px;height:36px;
+  border-radius:10px;
+  border:1.5px solid #e2e8f0;
+  background:#f8fafc;
+  color:#64748b;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;
+  transition:all .2s;
+}
+.lt-icon-btn:hover{background:#f0fdf4;color:#2d7a3a;border-color:#86efac}
+.lt-icon-btn--accent{
+  background:linear-gradient(135deg,#2d7a3a,#38a169);
+  color:#fff;border-color:transparent;
+  box-shadow:0 3px 10px rgba(45,122,58,0.3);
+}
+.lt-icon-btn--accent:hover{opacity:.88;background:linear-gradient(135deg,#2d7a3a,#38a169);color:#fff;border-color:transparent}
+.lt-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:#ef4444;border:2px solid #fff}
 
 /* Body */
 .lt-body{display:grid;grid-template-columns:190px 1fr 210px;gap:0;flex:1;min-height:0;overflow:hidden}
@@ -372,11 +443,46 @@ export default {
 
 /* MIDDLE */
 .lt-middle{display:flex;flex-direction:column;overflow:hidden;background:#f8fafb}
-.wc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;background:#fff;border-bottom:1px solid #e8edf0}
-.wc-title{font-size:.95rem;font-weight:700;color:#0f172a}
-.wc-tabs{display:flex;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-.wc-tab{padding:6px 14px;font-size:.78rem;font-weight:600;background:#fff;border:none;cursor:pointer;color:#64748b;transition:all .15s}
-.wc-tab.active{background:#2d7a3a;color:#fff}
+.wc-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px 12px;
+  background:#fff;
+  border-bottom:1.5px solid #e8edf0;
+  gap:12px;
+}
+.wc-title-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.wc-title-icon{
+  width:30px;height:30px;border-radius:9px;
+  background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+  display:flex;align-items:center;justify-content:center;
+  color:#16a34a;font-size:.8rem;
+  border:1px solid #bbf7d0;
+}
+.wc-title{font-size:.9rem;font-weight:800;color:#0f172a}
+.wc-tabs{
+  display:flex;gap:4px;
+  background:#f1f5f9;
+  border-radius:12px;
+  padding:4px;
+  border:1px solid #e2e8f0;
+}
+.wc-tab{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 14px;
+  font-size:.75rem;font-weight:600;
+  background:transparent;
+  border:none;border-radius:8px;
+  cursor:pointer;color:#64748b;
+  transition:all .18s;
+  font-family:inherit;
+  white-space:nowrap;
+}
+.wc-tab i{font-size:.7rem}
+.wc-tab:hover{color:#2d7a3a;background:rgba(255,255,255,.7)}
+.wc-tab.active{
+  background:#fff;color:#2d7a3a;font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
 
 .wc-grid{display:grid;grid-template-columns:56px repeat(7,1fr);overflow-y:auto;flex:1}
 .wc-grid::-webkit-scrollbar{width:4px}

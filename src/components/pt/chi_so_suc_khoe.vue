@@ -37,47 +37,71 @@
       <!-- Left: Form -->
       <div class="form-card">
         <div class="form-card-header">
-          <div class="form-card-bar"></div>
-          <span class="form-card-title">Thông số mới</span>
-        </div>
-        <div class="form-updating-for">
-          Đang cập nhật cho: <strong>{{ selectedMember.name }} - {{ selectedMember.code }}</strong>
+          <div class="form-card-icon"><i class="fas fa-heartbeat"></i></div>
+          <div>
+            <div class="form-card-title">Thông số mới</div>
+            <div class="form-updating-for">Cập nhật cho: <strong>{{ selectedMember.name }}</strong> · <span class="member-code-tag">{{ selectedMember.code }}</span></div>
+          </div>
         </div>
 
         <div class="metrics-grid">
           <div class="metric-group">
-            <label class="metric-label">CÂN NẶNG (KG)</label>
-            <input v-model="form.weight" type="number" step="0.1" class="metric-input" placeholder="70.5" />
+            <label class="metric-label"><i class="fas fa-weight"></i> Cân nặng</label>
+            <div class="metric-input-wrap">
+              <input v-model="form.weight" type="number" step="0.1" class="metric-input" placeholder="70.5" />
+              <span class="metric-unit">kg</span>
+            </div>
           </div>
           <div class="metric-group">
-            <label class="metric-label">CHIỀU CAO (CM)</label>
-            <input v-model="form.height" type="number" step="0.1" class="metric-input" placeholder="175" />
+            <label class="metric-label"><i class="fas fa-ruler-vertical"></i> Chiều cao</label>
+            <div class="metric-input-wrap">
+              <input v-model="form.height" type="number" step="0.1" class="metric-input" placeholder="175" />
+              <span class="metric-unit">cm</span>
+            </div>
           </div>
           <div class="metric-group">
-            <label class="metric-label">BODY FAT (%)</label>
-            <input v-model="form.bodyFat" type="number" step="0.1" class="metric-input" placeholder="18.2" />
+            <label class="metric-label"><i class="fas fa-fire"></i> Body Fat</label>
+            <div class="metric-input-wrap">
+              <input v-model="form.bodyFat" type="number" step="0.1" class="metric-input" placeholder="18.2" />
+              <span class="metric-unit">%</span>
+            </div>
           </div>
           <div class="metric-group">
-            <label class="metric-label">CƠ BẮP (%)</label>
-            <input v-model="form.muscle" type="number" step="0.1" class="metric-input" placeholder="42.5" />
+            <label class="metric-label"><i class="fas fa-dumbbell"></i> Cơ bắp</label>
+            <div class="metric-input-wrap">
+              <input v-model="form.muscle" type="number" step="0.1" class="metric-input" placeholder="42.5" />
+              <span class="metric-unit">%</span>
+            </div>
           </div>
         </div>
 
         <!-- BMI Card -->
         <div class="bmi-card" v-if="bmi">
-          <div class="bmi-left">
-            <div class="bmi-label">CHỈ SỐ BMI DỰ KIẾN</div>
-            <div class="bmi-value">{{ bmi }}</div>
+          <div class="bmi-top">
+            <div class="bmi-label-row">
+              <i class="fas fa-calculator bmi-icon"></i>
+              <span class="bmi-label">Chỉ số BMI dự kiến</span>
+            </div>
+            <div class="bmi-badge" :class="bmiStatus.cls">{{ bmiStatus.text }}</div>
           </div>
-          <div class="bmi-badge" :class="bmiStatus.cls">{{ bmiStatus.text }}</div>
+          <div class="bmi-value">{{ bmi }}</div>
+          <div class="bmi-bar-wrap">
+            <div class="bmi-bar">
+              <div class="bmi-bar-fill" :style="bmiBarStyle"></div>
+              <div class="bmi-bar-marker" :style="{ left: bmiMarkerLeft }"></div>
+            </div>
+            <div class="bmi-bar-labels">
+              <span>Thiếu cân</span><span>Bình thường</span><span>Thừa cân</span><span>Béo phì</span>
+            </div>
+          </div>
         </div>
 
         <div class="form-actions">
           <button class="btn-save" @click="saveMetrics" :disabled="saving">
-            <i class="fas fa-save"></i>
+            <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
             {{ saving ? 'Đang lưu...' : 'Lưu thông tin' }}
           </button>
-          <button class="btn-cancel" @click="resetForm">Huỷ</button>
+          <button class="btn-cancel" @click="resetForm"><i class="fas fa-undo"></i> Huỷ</button>
         </div>
       </div>
 
@@ -86,7 +110,10 @@
         <!-- Chart Card -->
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title">Biểu đồ tiến trình (6 tháng qua)</div>
+            <div class="chart-title-wrap">
+              <i class="fas fa-chart-area chart-title-icon"></i>
+              <span class="chart-title">Biểu đồ tiến trình <span class="chart-title-sub">(6 tháng qua)</span></span>
+            </div>
             <div class="chart-tabs">
               <button
                 v-for="t in chartTabs"
@@ -97,20 +124,36 @@
               >{{ t.label }}</button>
             </div>
           </div>
-          <div class="chart-area">
-            <svg viewBox="0 0 520 200" class="line-chart" preserveAspectRatio="none">
+
+          <div class="chart-area" @mousemove="onChartHover" @mouseleave="hoveredPoint = null">
+            <svg viewBox="0 0 560 210" class="line-chart" preserveAspectRatio="none" ref="chartSvg">
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2d7a3a" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#2d7a3a" stop-opacity="0.02"/>
+                </linearGradient>
+              </defs>
               <!-- Grid lines -->
-              <line v-for="y in gridYs" :key="y" x1="40" :y1="y" x2="510" :y2="y" stroke="#e8f0ec" stroke-width="1"/>
+              <line v-for="y in gridYs" :key="'g'+y" x1="45" :y1="y" x2="545" :y2="y" stroke="#f1f5f9" stroke-width="1.2"/>
               <!-- Y labels -->
-              <text v-for="(lbl, i) in yLabels" :key="'yl'+i" x="35" :y="gridYs[i]+4" text-anchor="end" font-size="10" fill="#94a3b8">{{ lbl }}</text>
+              <text v-for="(lbl, i) in yLabels" :key="'yl'+i" x="40" :y="gridYs[i]+4" text-anchor="end" font-size="10" fill="#cbd5e1">{{ lbl }}</text>
               <!-- Area fill -->
-              <path :d="areaPath" fill="rgba(45,122,58,0.12)" />
-              <!-- Line -->
-              <path :d="linePath" fill="none" stroke="#2d7a3a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path :d="areaPath" fill="url(#areaGrad)" />
+              <!-- Line with glow -->
+              <path :d="linePath" fill="none" stroke="#2d7a3a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="drop-shadow(0 2px 4px rgba(45,122,58,0.3))"/>
               <!-- Dots -->
-              <circle v-for="(pt, i) in chartPoints" :key="'dot'+i" :cx="pt.x" :cy="pt.y" r="5" fill="#fff" stroke="#2d7a3a" stroke-width="2.5"/>
+              <g v-for="(pt, i) in chartPoints" :key="'dot'+i">
+                <circle :cx="pt.x" :cy="pt.y" r="7" fill="rgba(45,122,58,0.1)" />
+                <circle :cx="pt.x" :cy="pt.y" r="4.5" fill="#fff" stroke="#2d7a3a" stroke-width="2.5"/>
+              </g>
+              <!-- Hover tooltip -->
+              <g v-if="hoveredPoint !== null && chartPoints[hoveredPoint]">
+                <line :x1="chartPoints[hoveredPoint].x" y1="15" :x2="chartPoints[hoveredPoint].x" y2="185" stroke="#2d7a3a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+                <rect :x="chartPoints[hoveredPoint].x - 28" :y="chartPoints[hoveredPoint].y - 30" width="56" height="22" rx="6" fill="#2d7a3a"/>
+                <text :x="chartPoints[hoveredPoint].x" :y="chartPoints[hoveredPoint].y - 14" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">{{ chartPoints[hoveredPoint].v }}</text>
+              </g>
               <!-- X labels -->
-              <text v-for="(lbl, i) in xLabels" :key="'xl'+i" :x="chartPoints[i].x" y="195" text-anchor="middle" font-size="10" fill="#94a3b8">{{ lbl }}</text>
+              <text v-for="(lbl, i) in xLabels" :key="'xl'+i" :x="chartPoints[i].x" y="205" text-anchor="middle" font-size="10" fill="#94a3b8">{{ lbl }}</text>
             </svg>
           </div>
         </div>
@@ -118,11 +161,11 @@
         <!-- Stats row -->
         <div class="stats-row">
           <div class="stat-mini green">
-            <div class="stat-mini-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-mini-icon"><i class="fas fa-weight"></i></div>
             <div class="stat-mini-body">
               <div class="stat-mini-label">THAY ĐỔI CÂN NẶNG</div>
               <div class="stat-mini-value">{{ weightChange }}</div>
-              <div class="stat-mini-sub">với tháng trước</div>
+              <div class="stat-mini-sub">so với tháng trước</div>
             </div>
           </div>
           <div class="stat-mini purple">
@@ -130,7 +173,7 @@
             <div class="stat-mini-body">
               <div class="stat-mini-label">CHỈ SỐ CƠ BẮP</div>
               <div class="stat-mini-value">{{ muscleChange }}</div>
-              <div class="stat-mini-sub">với tháng trước</div>
+              <div class="stat-mini-sub">so với tháng trước</div>
             </div>
           </div>
         </div>
@@ -181,6 +224,7 @@ export default {
       form: { weight: '', height: '', bodyFat: '', muscle: '' },
       toast: { show: false, text: '', type: 'success' },
       toastTimer: null,
+      hoveredPoint: null,
     }
   },
   mounted() {
@@ -228,6 +272,20 @@ export default {
       const first = pts[0], last = pts[pts.length - 1]
       return `${this.linePath} L${last.x},180 L${first.x},180 Z`
     },
+    bmiBarStyle() {
+      const v = parseFloat(this.bmi)
+      const pct = Math.min(Math.max((v - 10) / (40 - 10) * 100, 0), 100)
+      let color = '#16a34a'
+      if (v < 18.5) color = '#3b82f6'
+      else if (v >= 25 && v < 30) color = '#eab308'
+      else if (v >= 30) color = '#ef4444'
+      return { width: pct + '%', background: color }
+    },
+    bmiMarkerLeft() {
+      const v = parseFloat(this.bmi)
+      const pct = Math.min(Math.max((v - 10) / (40 - 10) * 100, 0), 100)
+      return pct + '%'
+    },
     gridYs() { return [20, 55, 90, 125, 160] },
     yLabels() {
       const data = this.chartData
@@ -260,6 +318,18 @@ export default {
     },
   },
   methods: {
+    onChartHover(e) {
+      if (!this.chartPoints.length) return
+      const rect = this.$el.querySelector('.chart-area').getBoundingClientRect()
+      const svgW = 560
+      const relX = ((e.clientX - rect.left) / rect.width) * svgW
+      let closest = 0, minDist = Infinity
+      this.chartPoints.forEach((pt, i) => {
+        const d = Math.abs(pt.x - relX)
+        if (d < minDist) { minDist = d; closest = i }
+      })
+      this.hoveredPoint = closest
+    },
     async loadMembers() {
       this.loading = true
       try {
@@ -420,84 +490,159 @@ export default {
 
 /* Form Card */
 .form-card {
-  background: #fff; border-radius: 16px;
-  padding: 22px 22px 18px;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-  display: flex; flex-direction: column; gap: 16px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  display: flex; flex-direction: column; gap: 18px;
+  border: 1px solid #f1f5f9;
 }
-.form-card-header { display: flex; align-items: center; gap: 8px; }
-.form-card-bar { width: 4px; height: 20px; background: #2d7a3a; border-radius: 4px; border: 2px dashed #86efac; }
-.form-card-title { font-size: 1rem; font-weight: 700; color: #0f172a; }
-.form-updating-for { font-size: 0.75rem; color: #64748b; margin-top: -8px; }
-.form-updating-for strong { color: #2d7a3a; }
+.form-card-header { display: flex; align-items: center; gap: 14px; }
+.form-card-icon {
+  width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, #2d7a3a, #38a169);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(45,122,58,0.3);
+}
+.form-card-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.2; }
+.form-updating-for { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+.form-updating-for strong { color: #2d7a3a; font-weight: 700; }
+.member-code-tag {
+  background: #f0fdf4; color: #16a34a; font-weight: 700;
+  padding: 1px 7px; border-radius: 6px; font-size: 0.7rem;
+  border: 1px solid #bbf7d0;
+}
 
-.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.metric-group { display: flex; flex-direction: column; gap: 5px; }
-.metric-label { font-size: 0.68rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.4px; }
+.metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.metric-group { display: flex; flex-direction: column; gap: 6px; }
+.metric-label {
+  font-size: 0.7rem; font-weight: 700; color: #64748b;
+  letter-spacing: 0.3px; display: flex; align-items: center; gap: 5px;
+}
+.metric-label i { color: #2d7a3a; width: 12px; text-align: center; }
+.metric-input-wrap { position: relative; display: flex; align-items: center; }
 .metric-input {
-  border: 1.5px solid #e2e8f0; border-radius: 9px;
-  padding: 10px 13px; font-size: 1rem; font-weight: 600;
-  color: #1e293b; outline: none;
-  transition: border-color 0.18s; background: #f8fafc;
+  width: 100%; border: 1.5px solid #e2e8f0; border-radius: 11px;
+  padding: 11px 40px 11px 14px; font-size: 1rem; font-weight: 700;
+  color: #1e293b; outline: none; box-sizing: border-box;
+  transition: all 0.2s; background: #f8fafc;
   font-family: inherit;
 }
-.metric-input:focus { border-color: #2d7a3a; background: #fff; }
+.metric-input:focus {
+  border-color: #2d7a3a; background: #fff;
+  box-shadow: 0 0 0 3px rgba(45,122,58,0.1);
+}
+.metric-unit {
+  position: absolute; right: 12px; font-size: 0.72rem; font-weight: 700;
+  color: #94a3b8; pointer-events: none;
+}
 
+/* BMI Card */
 .bmi-card {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #f0fdf4; border-radius: 12px;
-  padding: 14px 16px; border: 1px solid #bbf7d0;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-radius: 16px;
+  padding: 16px 18px;
+  border: 1px solid #bbf7d0;
+  display: flex; flex-direction: column; gap: 10px;
 }
-.bmi-label { font-size: 0.68rem; font-weight: 700; color: #15803d; letter-spacing: 0.3px; }
-.bmi-value { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 2px; }
+.bmi-top { display: flex; align-items: center; justify-content: space-between; }
+.bmi-label-row { display: flex; align-items: center; gap: 7px; }
+.bmi-icon { font-size: 0.85rem; color: #15803d; }
+.bmi-label { font-size: 0.7rem; font-weight: 700; color: #15803d; letter-spacing: 0.3px; text-transform: uppercase; }
+.bmi-value { font-size: 2.2rem; font-weight: 900; color: #0f172a; line-height: 1; }
 .bmi-badge {
-  padding: 5px 14px; border-radius: 20px;
-  font-size: 0.75rem; font-weight: 700;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2px;
 }
-.bmi-badge.green  { background: #dcfce7; color: #16a34a; }
-.bmi-badge.yellow { background: #fef9c3; color: #ca8a04; }
-.bmi-badge.red    { background: #fee2e2; color: #dc2626; }
-.bmi-badge.blue   { background: #dbeafe; color: #2563eb; }
+.bmi-badge.green  { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+.bmi-badge.yellow { background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; }
+.bmi-badge.red    { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.bmi-badge.blue   { background: #dbeafe; color: #2563eb; border: 1px solid #93c5fd; }
+.bmi-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
+.bmi-bar {
+  height: 8px; background: #e2e8f0; border-radius: 10px;
+  position: relative; overflow: visible;
+}
+.bmi-bar-fill {
+  height: 100%; border-radius: 10px;
+  transition: width 0.5s ease, background 0.3s ease;
+}
+.bmi-bar-marker {
+  position: absolute; top: -3px; width: 14px; height: 14px;
+  background: #fff; border: 2.5px solid #2d7a3a;
+  border-radius: 50%; transform: translateX(-50%);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: left 0.5s ease;
+}
+.bmi-bar-labels {
+  display: flex; justify-content: space-between;
+  font-size: 0.6rem; color: #94a3b8; font-weight: 600;
+}
 
 .form-actions { display: flex; flex-direction: column; gap: 8px; }
 .btn-save {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   background: linear-gradient(135deg, #2d7a3a, #1a5c28);
-  color: #fff; border: none; border-radius: 10px;
-  padding: 12px; font-size: 0.9rem; font-weight: 700;
-  cursor: pointer; transition: opacity 0.18s;
-  font-family: inherit;
+  color: #fff; border: none; border-radius: 12px;
+  padding: 13px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  font-family: inherit; letter-spacing: 0.2px;
+  box-shadow: 0 4px 14px rgba(45,122,58,0.35);
 }
-.btn-save:hover:not(:disabled) { opacity: 0.88; }
-.btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(45,122,58,0.4); }
+.btn-save:active:not(:disabled) { transform: translateY(0); }
+.btn-save:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 .btn-cancel {
-  text-align: center; padding: 9px; font-size: 0.85rem;
-  color: #64748b; font-weight: 500; cursor: pointer;
-  background: none; border: none; transition: color 0.15s; font-family: inherit;
+  text-align: center; padding: 9px; font-size: 0.82rem;
+  color: #94a3b8; font-weight: 500; cursor: pointer;
+  background: none; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  transition: all 0.15s; font-family: inherit; display: flex;
+  align-items: center; justify-content: center; gap: 6px;
 }
-.btn-cancel:hover { color: #dc2626; }
+.btn-cancel:hover { color: #ef4444; border-color: #fca5a5; background: #fff5f5; }
 
 /* Right col */
 .right-col { display: flex; flex-direction: column; gap: 16px; }
 
 /* Chart Card */
 .chart-card {
-  background: #fff; border-radius: 16px;
-  padding: 20px 22px;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  border: 1px solid #f1f5f9;
 }
-.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.chart-title { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
-.chart-tabs { display: flex; gap: 6px; }
+.chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.chart-title-wrap { display: flex; align-items: center; gap: 10px; }
+.chart-title-icon {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  display: flex; align-items: center; justify-content: center;
+  color: #16a34a; font-size: 0.95rem; border: 1px solid #bbf7d0;
+}
+.chart-title { font-size: 0.95rem; font-weight: 800; color: #0f172a; }
+.chart-title-sub { font-size: 0.8rem; font-weight: 500; color: #94a3b8; }
+.chart-tabs {
+  display: flex; gap: 4px;
+  background: #f8fafc; border-radius: 12px; padding: 4px;
+  border: 1px solid #e2e8f0;
+}
 .chart-tab {
-  padding: 5px 12px; border-radius: 20px; border: 1.5px solid #e2e8f0;
+  padding: 5px 14px; border-radius: 9px; border: none;
   font-size: 0.75rem; font-weight: 600; color: #64748b;
-  background: #f8fafc; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  background: transparent; cursor: pointer; transition: all 0.18s; font-family: inherit;
 }
-.chart-tab:hover { border-color: #2d7a3a; color: #2d7a3a; }
-.chart-tab.active { background: #f0fdf4; border-color: #2d7a3a; color: #2d7a3a; }
-.chart-area { width: 100%; height: 200px; }
-.line-chart { width: 100%; height: 100%; }
+.chart-tab:hover { color: #2d7a3a; }
+.chart-tab.active {
+  background: #fff; color: #2d7a3a; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.chart-area { width: 100%; height: 220px; cursor: crosshair; }
+.line-chart { width: 100%; height: 100%; overflow: visible; }
 
 /* Stats row */
 .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
