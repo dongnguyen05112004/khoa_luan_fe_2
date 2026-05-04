@@ -7,9 +7,34 @@
         <h1 class="tk-title">Quản lý tài khoản nhân viên và hội viên</h1>
       </div>
       <div class="tk-header-actions">
-        <button class="tk-btn-filter">
+        <button class="tk-btn-filter" @click="showFilter = !showFilter">
           <i class="fas fa-sliders-h"></i> Lọc dữ liệu
+          <span v-if="activeFilterCount" class="tk-filter-badge">{{ activeFilterCount }}</span>
         </button>
+        <!-- Filter Dropdown -->
+        <div class="tk-filter-dropdown" v-if="showFilter" v-click-outside="() => showFilter = false">
+          <div class="tk-filter-title">Lọc theo</div>
+          <div class="tk-filter-group">
+            <label class="tk-filter-label">CHỨC VỤ / VAI TRÒ</label>
+            <select v-model="filterRole" class="tk-filter-select">
+              <option value="">Tất cả</option>
+              <option v-for="r in roles" :key="r.id" :value="r.name">{{ roleLabel(r.name) }}</option>
+            </select>
+          </div>
+          <div class="tk-filter-group">
+            <label class="tk-filter-label">TRẠNG THÁI</label>
+            <select v-model="filterStatus" class="tk-filter-select">
+              <option value="">Đang hoạt động</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Tạm ngưng</option>
+              <option value="banned">Bị khóa</option>
+            </select>
+          </div>
+          <div class="tk-filter-actions">
+            <button class="tk-filter-reset" @click="resetFilter">Xóa bộ lọc</button>
+            <button class="tk-filter-apply" @click="applyFilter">Áp dụng</button>
+          </div>
+        </div>
         <button class="tk-btn-add" @click="showAddModal = true">
           <i class="fas fa-user-plus"></i> Thêm nhân sự
         </button>
@@ -74,8 +99,7 @@
           />
         </div>
         <div class="tk-toolbar-right">
-          <button class="tk-icon-btn" title="Xuất dữ liệu"><i class="fas fa-download"></i></button>
-          <button class="tk-icon-btn" title="Tùy chọn"><i class="fas fa-ellipsis-v"></i></button>
+          
         </div>
       </div>
 
@@ -107,7 +131,10 @@
               </div>
             </td>
             <td class="tk-td-role">
-              <span class="tk-chucvu" :class="getChucVuClass(person)">{{ person.chucVu }}</span>
+              <span class="tk-chucvu" :class="getChucVuClass(person)">
+                <i :class="getRoleIcon(person)"></i>
+                {{ person.chucVu }}
+              </span>
             </td>
             <td class="tk-td-date">{{ person.ngayGiaNhap }}</td>
             <td class="tk-td-status">
@@ -186,6 +213,13 @@
             </div>
             <div class="add-row">
               <div class="add-fg">
+                <label class="add-lbl">CHỨC VỤ / VAI TRÒ <span class="req">*</span></label>
+                <select v-model="addForm.role_id" class="add-fi">
+                  <option value="" disabled>-- Chọn chức vụ --</option>
+                  <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.name) }}</option>
+                </select>
+              </div>
+              <div class="add-fg">
                 <label class="add-lbl">GIỚI TÍNH</label>
                 <select v-model="addForm.gender" class="add-fi">
                   <option value="male">Nam</option>
@@ -193,6 +227,8 @@
                   <option value="other">Khác</option>
                 </select>
               </div>
+            </div>
+            <div class="add-row">
               <div class="add-fg">
                 <label class="add-lbl">TRẠNG THÁI</label>
                 <select v-model="addForm.state" class="add-fi">
@@ -386,7 +422,7 @@
 </template>
 
 <script>
-import { userApi } from '@/services/accountApi.js'
+import { userApi, rolesApi } from '@/services/accountApi.js'
 
 export default {
   name: 'TaiKhoanNhanVienHoiVien',
@@ -401,6 +437,16 @@ export default {
       loadingDetail: false,
       loading: false,
       errorMsg: '',
+
+      // Filter
+      showFilter: false,
+      filterRole: '',
+      filterStatus: '',
+      appliedRole: '',
+      appliedStatus: '',
+
+      // Roles list
+      roles: [],
 
       // Modal form: add new user
       showAddModal: false,
@@ -427,15 +473,30 @@ export default {
   },
 
   computed: {
+    activeFilterCount() {
+      let c = 0
+      if (this.appliedRole) c++
+      if (this.appliedStatus) c++
+      return c
+    },
     filteredList() {
       const q = this.searchQuery.toLowerCase()
-      if (!q) return this.people
-      return this.people.filter(p =>
-        (p.name || '').toLowerCase().includes(q) ||
-        String(p.id).toLowerCase().includes(q) ||
-        (p.chucVu || '').toLowerCase().includes(q) ||
-        (p.email || '').toLowerCase().includes(q)
-      )
+      let list = this.people
+      if (q) {
+        list = list.filter(p =>
+          (p.name || '').toLowerCase().includes(q) ||
+          String(p.id).toLowerCase().includes(q) ||
+          (p.chucVu || '').toLowerCase().includes(q) ||
+          (p.email || '').toLowerCase().includes(q)
+        )
+      }
+      if (this.appliedRole) {
+        list = list.filter(p => p.roleName === this.appliedRole)
+      }
+      if (this.appliedStatus) {
+        list = list.filter(p => p.state === this.appliedStatus)
+      }
+      return list
     },
     totalPages() {
       return this.serverTotalPages
@@ -481,19 +542,30 @@ export default {
 
   mounted() {
     this.fetchUsers(1)
+    this.fetchRoles()
   },
 
   methods: {
+    // ─── Map role name → nhãn tiếng Việt ────────────────────
+    roleLabel(name) {
+      const map = {
+        admin: 'Quản trị viên',
+        manager: 'Quản lý',
+        staff: 'Nhân viên',
+        trainer: 'Huấn luyện viên',
+        receptionist: 'Lễ tân',
+        member: 'Hội viên',
+      }
+      return map[name] || (name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Không rõ')
+    },
+
     // ─── Map dữ liệu API → định dạng FE ─────────────────────
     mapUser(u) {
       const roleName = u.role ? u.role.name : ''
       const isMember = roleName === 'member'
-      const isStaff = !isMember
 
-      // Xác định chức vụ hiển thị
-      let chucVu = roleName || 'Không rõ'
-      if (isMember) chucVu = 'Hội viên'
-      else if (roleName) chucVu = roleName.charAt(0).toUpperCase() + roleName.slice(1)
+      // Xác định chức vụ hiển thị (tiếng Việt)
+      const chucVu = this.roleLabel(roleName)
 
       // Trạng thái
       const stateMap = { active: 'ĐANG HOẠT ĐỘNG', inactive: 'TẠM NGƯNG', banned: 'BỊ KHÓA' }
@@ -519,8 +591,27 @@ export default {
         trangThai,
         avatar,
         state: u.state,
-        // raw data từ API để dùng khi call detail
         _raw: u,
+      }
+    },
+
+    // ─── Fetch roles từ BE ───────────────────────────────────
+    async fetchRoles() {
+      try {
+        const res = await rolesApi.getAll()
+        const data = res.data
+        this.roles = Array.isArray(data) ? data : (data?.data || [])
+      } catch (e) {
+        console.warn('fetchRoles failed, dùng danh sách mặc định:', e.message)
+        // Fallback nếu BE chưa có endpoint /roles
+        this.roles = [
+          { id: 1, name: 'admin' },
+          { id: 2, name: 'manager' },
+          { id: 3, name: 'staff' },
+          { id: 4, name: 'trainer' },
+          { id: 5, name: 'receptionist' },
+          { id: 6, name: 'member' },
+        ]
       }
     },
 
@@ -529,11 +620,10 @@ export default {
       this.loading = true
       this.errorMsg = ''
       try {
-        const params = {
-          page,
-          per_page: this.perPage,
-        }
+        const params = { page, per_page: this.perPage }
         if (search) params.search = search
+        if (this.appliedRole) params.role = this.appliedRole
+        if (this.appliedStatus) params.state = this.appliedStatus
 
         const res = await userApi.getAll(params)
         const data = res.data
@@ -643,6 +733,10 @@ export default {
         this.addError = 'Vui lòng điền đầy đủ họ tên, email và mật khẩu.'
         return
       }
+      if (!this.addForm.role_id) {
+        this.addError = 'Vui lòng chọn chức vụ / vai trò.'
+        return
+      }
       this.addLoading = true
       this.addError = ''
       try {
@@ -662,12 +756,42 @@ export default {
       }
     },
 
+    // ─── Bộ lọc ──────────────────────────────────────────────
+    applyFilter() {
+      this.appliedRole = this.filterRole
+      this.appliedStatus = this.filterStatus
+      this.currentPage = 1
+      this.showFilter = false
+      this.fetchUsers(1)
+    },
+    resetFilter() {
+      this.filterRole = ''
+      this.filterStatus = ''
+      this.appliedRole = ''
+      this.appliedStatus = ''
+      this.currentPage = 1
+      this.showFilter = false
+      this.fetchUsers(1)
+    },
+
     // ─── CSS helpers ─────────────────────────────────────────
     getChucVuClass(person) {
-      if (person.role === 'member') return 'chucvu-member'
-      const cv = (person.chucVu || '').toLowerCase()
-      if (cv.includes('lễ tân') || cv.includes('le tan') || cv.includes('receptionist')) return 'chucvu-letan'
+      const cv = (person.roleName || '').toLowerCase()
+      if (cv === 'member') return 'chucvu-member'
+      if (cv === 'admin') return 'chucvu-admin'
+      if (cv === 'manager') return 'chucvu-manager'
+      if (cv === 'trainer') return 'chucvu-trainer'
+      if (cv.includes('lễ tân') || cv === 'receptionist') return 'chucvu-letan'
       return 'chucvu-staff'
+    },
+    getRoleIcon(person) {
+      const cv = (person.roleName || '').toLowerCase()
+      if (cv === 'member') return 'fas fa-id-card'
+      if (cv === 'admin') return 'fas fa-crown'
+      if (cv === 'manager') return 'fas fa-user-tie'
+      if (cv === 'trainer') return 'fas fa-dumbbell'
+      if (cv === 'receptionist') return 'fas fa-concierge-bell'
+      return 'fas fa-user'
     },
     getStatusDotClass(status) {
       if (!status) return ''
@@ -847,6 +971,88 @@ export default {
   transition: border-color 0.2s, background 0.2s;
 }
 .tk-btn-filter:hover { border-color: #2d7a3a; background: #f0faf3; }
+.tk-filter-badge {
+  background: #2d7a3a;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  margin-left: 2px;
+}
+.tk-header-actions { position: relative; }
+.tk-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 120px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px 20px;
+  width: 280px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tk-filter-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 10px;
+}
+.tk-filter-group { display: flex; flex-direction: column; gap: 5px; }
+.tk-filter-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+.tk-filter-select {
+  padding: 8px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  font-size: 0.85rem;
+  outline: none;
+  font-family: inherit;
+  background: #f9fafb;
+  cursor: pointer;
+}
+.tk-filter-select:focus { border-color: #2d7a3a; box-shadow: 0 0 0 3px rgba(45,122,58,0.1); }
+.tk-filter-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+.tk-filter-reset {
+  flex: 1; padding: 8px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.tk-filter-reset:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+.tk-filter-apply {
+  flex: 1; padding: 8px;
+  background: linear-gradient(135deg, #2d7a3a, #1a5c28);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s;
+}
+.tk-filter-apply:hover { opacity: .88; }
 .tk-btn-add {
   display: inline-flex;
   align-items: center;
@@ -1073,16 +1279,23 @@ export default {
   color: #111827;
 }
 .tk-chucvu {
-  display: inline-block;
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 700;
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
-.chucvu-staff { background: #eff6ff; color: #2563eb; }
-.chucvu-member { background: #f5f3ff; color: #7c3aed; }
-.chucvu-letan { background: #fff7ed; color: #c2410c; }
+.tk-chucvu i { font-size: 0.7rem; }
+.chucvu-staff   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.chucvu-member  { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+.chucvu-letan   { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.chucvu-admin   { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.chucvu-manager { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.chucvu-trainer { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 
 .tk-td-date {
   font-size: 0.82rem;
