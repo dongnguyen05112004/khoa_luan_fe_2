@@ -31,11 +31,22 @@
                 <input v-model="form.name" class="fi" placeholder="vd: Bứt phá Mùa hè 2024"/>
               </div>
               <div class="fg-row">
-                <div class="fg">
+              <div class="fg">
                   <label class="flbl">MÃ GIẢM GIÁ</label>
                   <div class="code-wrap">
-                    <input v-model="form.code" class="fi" placeholder="PEAK24"/>
-                    <span class="unique-tag" v-if="form.code"><i class="fas fa-check-circle"></i> DUY NHẤT</span>
+                    <input
+                      :value="form.code"
+                      @input="onCodeInput"
+                      class="fi"
+                      :class="{ 'fi-error': codeFormatError }"
+                      placeholder="PEAK24"
+                    />
+                    <span class="unique-tag" v-if="form.code && !codeFormatError"><i class="fas fa-check-circle"></i> DUY NHẤT</span>
+                    <span class="error-tag" v-if="codeFormatError"><i class="fas fa-exclamation-circle"></i> SAI ĐỊNH DẠNG</span>
+                  </div>
+                  <div class="code-error-msg" v-if="codeFormatError">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Mã giảm giá chỉ được chứa chữ cái, số và dấu gạch ngang (-). Không được chứa ký tự đặc biệt hay biểu tượng.
                   </div>
                 </div>
                 <div class="fg">
@@ -223,7 +234,7 @@
             <div class="forecast-title">Dự báo Hiệu suất Sắp tới</div>
             <div class="forecast-desc">Dựa trên dữ liệu lịch sử, các chiến dịch ra mắt từ ngày 10 đến 15 tháng 2 có <strong>tỷ lệ tương tác cao hơn 14%</strong> do nhu cầu chuẩn bị cho kỳ nghỉ xuân trong khu vực.</div>
           </div>
-          <button class="btn-draft">Lên lịch Bản nháp</button>
+          <button class="btn-draft" @click="scheduleDraft">Lên lịch Bản nháp</button>
         </div>
       </div>
     </div>
@@ -407,6 +418,11 @@ export default {
   },
 
   computed: {
+    // Kiểm tra định dạng mã giảm giá: chỉ cho phép chữ, số, gạch ngang, gạch dưới
+    codeFormatError() {
+      if (!this.form.code) return false
+      return !/^[A-Za-z0-9\-_]+$/.test(this.form.code)
+    },
     filteredCamps() {
       const q = this.search.toLowerCase()
       return this.campaigns.filter(c =>
@@ -555,13 +571,29 @@ export default {
         this.saveError = 'Vui lòng nhập tên chiến dịch.'
         return
       }
+      if (this.codeFormatError) {
+        this.saveError = 'Mã giảm giá không hợp lệ. Chỉ được dùng chữ cái, số và dấu gạch ngang (-).'
+        return
+      }
+      if (this.form.discount !== '' && this.form.discount !== null && Number(this.form.discount) <= 0) {
+        this.saveError = 'Mức giảm giá phải lớn hơn 0%. Vui lòng nhập lại.'
+        return
+      }
+      if (!this.form.startDate || !this.form.endDate) {
+        this.saveError = 'Vui lòng nhập đầy đủ thời gian hiệu lực (ngày bắt đầu và ngày kết thúc).'
+        return
+      }
+      if (new Date(this.form.startDate) >= new Date(this.form.endDate)) {
+        this.saveError = 'Ngày bắt đầu phải nhỏ hơn ngày kết thúc.'
+        return
+      }
       this.saving = true
       this.saveError = ''
       try {
         const payload = {
           title: this.form.name,
           code: this.form.code || undefined,
-          discount: this.form.discount || undefined,
+          discount: this.form.discount != null && this.form.discount !== '' ? this.form.discount : undefined,
           description: this.form.desc || undefined,
           start_date: this.form.startDate || undefined,
           end_date: this.form.endDate || undefined,
@@ -638,7 +670,7 @@ export default {
         const payload = {
           title:       this.editForm.name,
           code:        this.editForm.code        || undefined,
-          discount:    this.editForm.discount    || undefined,
+          discount:    this.editForm.discount != null && this.editForm.discount !== '' ? this.editForm.discount : undefined,
           description: this.editForm.desc        || undefined,
           start_date:  this.editForm.startDate   || undefined,
           end_date:    this.editForm.endDate     || undefined,
@@ -670,10 +702,47 @@ export default {
       this.$nextTick(() => { this.showCreate = true })
     },
 
+    // ─── Xử lý nhập mã giảm giá: tự loại bỏ khoảng trắng ───
+    onCodeInput(e) {
+      // Tự loại bỏ toàn bộ khoảng trắng ngay khi gõ
+      this.form.code = e.target.value.replace(/\s/g, '')
+    },
+
     // ─── Điều kiện áp dụng ──────────────────────────────────
     addCond(o) {
       if (!this.form.conditions.find(c => c.key === o.key)) this.form.conditions.push({ ...o })
       this.condMenu = false
+    },
+
+    // ─── Lên lịch Bản nháp: điền dữ liệu AI gợi ý vào form ─
+    scheduleDraft() {
+      // Tính ngày bắt đầu = 10 ngày tới, ngày kết thúc = 40 ngày tới
+      const pad = n => String(n).padStart(2, '0')
+      const toDateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
+      const start = new Date()
+      start.setDate(start.getDate() + 10)
+      const end = new Date()
+      end.setDate(end.getDate() + 40)
+
+      // Điền sẵn thông số AI gợi ý vào form
+      this.form = {
+        name: 'Chuẩn bị cho Mùa hè ' + new Date().getFullYear(),
+        code: 'SUMMER' + new Date().getFullYear(),
+        discount: 15,
+        startDate: toDateStr(start),
+        endDate: toDateStr(end),
+        conditions: [
+          { key: 'new',   label: 'Hội viên mới',  icon: 'fas fa-user-plus' },
+          { key: 'month', label: 'Gói tháng',     icon: 'fas fa-calendar-alt' },
+        ],
+        desc: 'Chiến dịch được AI gợi ý dựa trên xu hướng thị trường: ra mắt từ ngày 10 đến 15 tháng tới có tỷ lệ tương tác cao hơn 14%.',
+        usage_limit: '',
+      }
+      this.saveError = ''
+
+      // Chuyển sang tab Tổng quan và mở form tạo chiến dịch
+      this.activeTab = 'tongquan'
+      this.$nextTick(() => { this.showCreate = true })
     },
   },
 }
@@ -784,6 +853,11 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
 .fi::placeholder { color:#cbd5e1; }
 .code-wrap { position:relative; }
 .unique-tag { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:.6rem; font-weight:700; color:#16a34a; background:#dcfce7; padding:2px 8px; border-radius:20px; display:flex; align-items:center; gap:3px; white-space:nowrap; }
+.error-tag { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:.6rem; font-weight:700; color:#dc2626; background:#fee2e2; padding:2px 8px; border-radius:20px; display:flex; align-items:center; gap:3px; white-space:nowrap; }
+.fi-error { border-color:#dc2626 !important; background:#fff8f8; }
+.fi-error:focus { border-color:#dc2626 !important; }
+.code-error-msg { font-size:.72rem; color:#dc2626; display:flex; align-items:flex-start; gap:5px; line-height:1.4; margin-top:2px; }
+.code-error-msg i { margin-top:2px; flex-shrink:0; }
 .pct-wrap { position:relative; }
 .pct-sfx { position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-weight:600; }
 .date-row { display:flex; align-items:center; gap:8px; }
@@ -958,3 +1032,5 @@ input:checked + .toggle-slider:before { transform:translateX(16px); }
 .modal-km-fade-enter-from .km-modal { transform: scale(.95) translateY(16px); }
 .modal-km-fade-leave-to .km-modal { transform: scale(.95) translateY(16px); }
 </style>
+
+
