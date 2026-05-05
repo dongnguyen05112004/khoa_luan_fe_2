@@ -12,7 +12,7 @@
             class="profile-avatar"
           />
           <span class="status-badge" :class="user.status === 'active' ? 'active' : 'inactive'">
-            {{ user.status === 'active' ? 'ACTIVE' : 'INACTIVE' }}
+            {{ userStateLabel(user.status) }}
           </span>
         </div>
 
@@ -55,7 +55,7 @@
 
           <!-- Personal Details -->
           <div class="info-card">
-            <div class="info-card-label">PERSONAL DETAILS</div>
+            <div class="info-card-label">THÔNG TIN CÁ NHÂN</div>
             <div class="info-grid">
               <div class="info-field">
                 <div class="field-label">SỐ ĐIỆN THOẠI</div>
@@ -78,7 +78,7 @@
 
           <!-- Medical History -->
           <div class="info-card">
-            <div class="info-card-label">MEDICAL HISTORY</div>
+            <div class="info-card-label">TIỀN SỬ BỆNH LÝ</div>
             <div
               v-for="(item, idx) in user.medicalHistory"
               :key="idx"
@@ -131,7 +131,7 @@
 
         <!-- RIGHT COLUMN: Biometric Markers -->
         <div class="col-lg-6 d-flex flex-column gap-3">
-          <div class="info-card-label ms-1">BIOMETRIC MARKERS</div>
+          <div class="info-card-label ms-1">CHỈ SỐ CƠ THỂ</div>
 
           <div
             v-for="metric in biometrics"
@@ -147,7 +147,7 @@
               <div class="biometric-value">
                 {{ metric.value }}
                 <span class="biometric-unit">{{ metric.unit }}</span>
-                <span v-if="metric.key === 'bmi'" class="bmi-badge overweight">OVERWEIGHT</span>
+                <span v-if="metric.key === 'bmi'" class="bmi-badge overweight">THỪ CÂN</span>
               </div>
             </div>
             <div
@@ -242,6 +242,7 @@
 <script>
 import axios from 'axios'
 import ChiSoSucKhoe from './chisosuckhoe.vue'
+import { userStateLabel } from '@/utils/i18n'
 
 export default {
   name: 'HoSoCaNhan',

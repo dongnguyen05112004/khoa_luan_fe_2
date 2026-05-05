@@ -13,7 +13,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Quản lý Hợp đồng &amp; Gia hạn</h1>
-        <p class="page-subtitle">Optimize membership lifecycle with precision tracking and seamless renewal workflows.</p>
+        <p class="page-subtitle">Theo dõi vòng đời gói tập và quản lý gia hạn hiệu quả.</p>
       </div>
     </div>
 
@@ -27,29 +27,29 @@
         <div class="contract-card">
           <div class="contract-card-head">
             <span class="cc-title">Hợp đồng hiện tại</span>
-            <span class="badge-active">ACTIVE</span>
+            <span class="badge-active">ĐANG HỪU LỰC</span>
           </div>
           <div class="cc-grid">
             <div class="cc-field">
-              <div class="cc-label">MEMBER NAME</div>
+              <div class="cc-label">TÊN HỘI VIÊN</div>
               <div class="cc-value">{{ currentContract.memberName }}</div>
             </div>
             <div class="cc-field">
-              <div class="cc-label">PACKAGE</div>
+              <div class="cc-label">GÓI TẬP</div>
               <div class="cc-value">{{ currentContract.package }}</div>
             </div>
             <div class="cc-field">
-              <div class="cc-label">START DATE</div>
+              <div class="cc-label">NGÀY BẬT ĐẦU</div>
               <div class="cc-value">{{ currentContract.startDate }}</div>
             </div>
             <div class="cc-field">
-              <div class="cc-label">END DATE</div>
+              <div class="cc-label">NGÀY HẾT HẠN</div>
               <div class="cc-value cc-red">{{ currentContract.endDate }}</div>
             </div>
           </div>
           <div class="lifecycle-row">
-            <span class="lifecycle-label">Contract Lifecycle</span>
-            <span class="lifecycle-pct">{{ currentContract.progress }}% Complete</span>
+            <span class="lifecycle-label">Tiến trình hợp đồng</span>
+            <span class="lifecycle-pct">{{ currentContract.progress }}% Hoàn thành</span>
           </div>
           <div class="lifecycle-bar">
             <div class="lifecycle-fill" :style="{ width: currentContract.progress + '%' }"></div>
@@ -65,8 +65,8 @@
           <div class="list-head">
             <span class="list-title">Danh sách hợp đồng</span>
             <div class="list-actions">
-              <button class="btn-filter"><i class="fas fa-filter"></i> Filter</button>
-              <button class="btn-export"><i class="fas fa-file-export"></i> Export</button>
+              <button class="btn-filter"><i class="fas fa-filter"></i> Lọc</button>
+              <button class="btn-export"><i class="fas fa-file-export"></i> Xuất file</button>
             </div>
           </div>
 
@@ -97,12 +97,12 @@
             <table class="hd-table">
               <thead>
                 <tr>
-                  <th>CONTRACT ID</th>
-                  <th>MEMBER NAME</th>
-                  <th>PACKAGE</th>
-                  <th>STATUS</th>
-                  <th>EXPIRY DATE</th>
-                  <th>ACTIONS</th>
+                  <th>MÃ HỢP ĐỒNG</th>
+                  <th>HỘI VIÊN</th>
+                  <th>GÓI TẬP</th>
+                  <th>TRẠNG THÁI</th>
+                  <th>NGÀY HẾT HẠN</th>
+                  <th>THAO TÁC</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,7 +160,7 @@
 
           <!-- Pagination -->
           <div class="pagination-bar">
-            <span class="pagination-info">Showing 1 to {{ paginatedContracts.length }} of {{ filteredContracts.length }} entries</span>
+            <span class="pagination-info">Hiển thị 1 đến {{ paginatedContracts.length }} trong tổng {{ filteredContracts.length }} hợp đồng</span>
             <div class="pagination-controls">
               <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
                 <i class="fas fa-chevron-left"></i>
@@ -222,11 +222,11 @@
           <div class="side-card-title cancel-title">
             <i class="fas fa-times-circle"></i> Hủy hợp đồng
           </div>
-          <div class="side-label cancel-label">REASON FOR CANCELLATION (REQUIRED)</div>
+          <div class="side-label cancel-label">LÝ DO HUỶ (BẮT BUỘC)</div>
           <textarea
             v-model="cancelReason"
             class="cancel-textarea"
-            placeholder="Describe member reason for termination..."
+            placeholder="Mô tả lý do hội viên muốn huỷ hợp đồng..."
             rows="4"
           ></textarea>
           <button class="btn-cancel-link" @click="doCancel">Hủy hợp đồng</button>
@@ -237,8 +237,8 @@
           <div class="billing-row">
             <div class="billing-icon"><i class="fas fa-headset"></i></div>
             <div class="billing-info">
-              <div class="billing-title">Billing Support</div>
-              <div class="billing-sub">Request manual override</div>
+              <div class="billing-title">HỔ TRỢ THANH TOÁN</div>
+              <div class="billing-sub">Yêu cầu xử lý thủ công</div>
             </div>
             <i class="fas fa-chevron-right billing-arrow"></i>
           </div>
@@ -262,7 +262,7 @@
           <div v-else-if="detailContract" class="modal-body">
             <div class="detail-grid">
               <div class="detail-item">
-                <div class="detail-label">CONTRACT ID</div>
+                <div class="detail-label">MÃ HỢP ĐỒNG</div>
                 <div class="detail-value mono">{{ detailContract.contractId }}</div>
               </div>
               <div class="detail-item">
@@ -315,6 +315,7 @@
 <script>
 import axios from 'axios'
 import { contractApi } from '@/services/contractApi'
+import { contractStatusLabel, contractStatusClass } from '@/utils/i18n'
 
 // Màu avatar ngẫu nhiên cho mỗi hội viên
 const AVATAR_COLORS = ['f59e0b','16a34a','14b8a6','ec4899','6366f1','8b5cf6','0ea5e9','d97706','a855f7','ef4444']
@@ -355,10 +356,10 @@ export default {
 
       // ── Tabs ──────────────────────────────────────────────────────
       tabs: [
-        { key: 'all',       label: 'Tất cả',   cls: 'tab-all'       },
-        { key: 'active',    label: 'Active',    cls: 'tab-active'    },
-        { key: 'expired',   label: 'Expired',   cls: 'tab-expired'   },
-        { key: 'cancelled', label: 'Cancelled', cls: 'tab-pending'   },
+        { key: 'all',       label: 'Tất cả',        cls: 'tab-all'       },
+        { key: 'active',    label: 'Đang hiệu lực', cls: 'tab-active'    },
+        { key: 'expired',   label: 'Đã hết hạn',    cls: 'tab-expired'   },
+        { key: 'cancelled', label: 'Đã huỷ',         cls: 'tab-pending'   },
       ],
 
       // ── Modal chi tiết ────────────────────────────────────────────
@@ -428,13 +429,11 @@ export default {
     },
 
     statusClass(status) {
-      const map = { active: 'st-active', expired: 'st-expired', cancelled: 'st-pending', pending: 'st-pending' }
-      return map[status] || 'st-pending'
+      return contractStatusClass(status)
     },
 
     statusLabel(status) {
-      const map = { active: 'ACTIVE', expired: 'EXPIRED', cancelled: 'CANCELLED', pending: 'PENDING' }
-      return map[status] || status?.toUpperCase() || '—'
+      return contractStatusLabel(status)
     },
 
     avatarColor(id) {

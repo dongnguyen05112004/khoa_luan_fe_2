@@ -7,11 +7,11 @@
         <h1 class="page-title">Quản lý hội viên</h1>
         <div class="header-badges">
           <span class="badge-members">
-            <i class="fas fa-users"></i> {{ (stats.total_active || 0).toLocaleString() }} Active Members
+            <i class="fas fa-users"></i> {{ (stats.total_active || 0).toLocaleString() }} Hội viên đang hoạt động
           </span>
           <span class="badge-ai" v-if="stats.retention_change !== null">
             <i class="fas fa-robot"></i>
-            AI INSIGHT: Retention
+            AI: Tỉ lệ giữ chân
             {{ stats.retention_change >= 0 ? '+' : '' }}{{ stats.retention_change }}%
           </span>
         </div>
@@ -26,24 +26,24 @@
 
       <!-- Quick Lookup -->
       <div class="toolbar-block">
-        <span class="toolbar-label">QUICK LOOKUP</span>
+        <span class="toolbar-label">TÌM KIẾM NHANH</span>
         <div class="lookup-bar">
           <input
             v-model="searchQ"
             type="text"
-            placeholder="Name, ID, or Phone..."
+            placeholder="Tên, ID, hoặc SĐT..."
             class="lookup-input"
             @keyup.enter="doSearch"
           />
           <button class="btn-search" @click="doSearch">
-            <i class="fas fa-search"></i> Search
+            <i class="fas fa-search"></i> Tìm kiếm
           </button>
         </div>
       </div>
 
       <!-- Status Filter -->
       <div class="toolbar-block">
-        <span class="toolbar-label">STATUS FILTER</span>
+        <span class="toolbar-label">LỌC TRẠNG THÁI</span>
         <div class="status-filter">
           <button
             v-for="f in statusFilters"
@@ -57,7 +57,7 @@
 
       <!-- New Today -->
       <div class="new-today-card">
-        <div class="new-today-label">NEW TODAY</div>
+        <div class="new-today-label">MỚI HÔM NAY</div>
         <div class="new-today-val">+{{ stats.new_today }}</div>
         <div class="new-today-sub">
           <i class="fas fa-users"></i>
@@ -84,13 +84,13 @@
       <table class="hv-table">
         <thead>
           <tr>
-            <th class="th-member">MEMBER</th>
-            <th>ID / PHONE</th>
-            <th>PACKAGE</th>
-            <th>EXPIRY</th>
-            <th>LAST CHECK-IN</th>
-            <th>STATUS</th>
-            <th>ACTIONS</th>
+            <th class="th-member">HỘI VIÊN</th>
+            <th>ID / SĐT</th>
+            <th>GÓI TẬP</th>
+            <th>HẾT HẠN</th>
+            <th>CHECK-IN GẦN NHẤT</th>
+            <th>TRẠNG THÁI</th>
+            <th>THAO TÁC</th>
           </tr>
         </thead>
         <tbody>
@@ -122,7 +122,7 @@
                 {{ formatDate(m.end_date) }}
               </div>
               <div class="expiry-sub" :class="expirySubClass(m)">
-                {{ m.expiry_label || (isExpired(m) ? 'Expired' : '—') }}
+                {{ m.expiry_label || (isExpired(m) ? 'Đã hết hạn' : '—') }}
               </div>
             </td>
             <td>
@@ -163,8 +163,8 @@
       <!-- Pagination inside card -->
       <div class="pagination-bar">
         <span class="pagination-info">
-          Showing {{ pagination.from || 0 }} to {{ pagination.to || 0 }}
-          of {{ (pagination.total || 0).toLocaleString() }} members
+          Hiển thị {{ pagination.from || 0 }} đến {{ pagination.to || 0 }}
+          trong tổng {{ (pagination.total || 0).toLocaleString() }} hội viên
         </span>
         <div class="pagination-controls">
           <button class="page-btn" :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
@@ -197,6 +197,7 @@
 
 <script>
 import { memberApi } from '@/services/memberApi'
+import { memberStatusLabel, memberStatusClass } from '@/utils/i18n'
 
 const AVATAR_COLORS = ['e67e22','6366f1','ec4899','14b8a6','8b5cf6','0ea5e9','d97706','16a34a','f43f5e','a855f7','0284c7','db2777']
 
@@ -232,10 +233,10 @@ export default {
       perPage: 10,
 
       statusFilters: [
-        { key: 'all',     label: 'All',     cls: 'sf-all'     },
-        { key: 'active',  label: 'Active',  cls: 'sf-active'  },
-        { key: 'expired', label: 'Expired', cls: 'sf-expired' },
-        { key: 'on_hold', label: 'On-hold', cls: 'sf-onhold'  },
+        { key: 'all',     label: 'Tất cả',       cls: 'sf-all'     },
+        { key: 'active',  label: 'Hoạt động',    cls: 'sf-active'  },
+        { key: 'expired', label: 'Hết hạn',      cls: 'sf-expired' },
+        { key: 'on_hold', label: 'Tạm dừng',     cls: 'sf-onhold'  },
       ],
 
       // ---- Toast ----
@@ -382,21 +383,11 @@ export default {
     },
 
     statusClass(status) {
-      return {
-        active:  'st-active',
-        expired: 'st-expired',
-        on_hold: 'st-onhold',
-        banned:  'st-banned',
-      }[status] || 'st-expired'
+      return memberStatusClass(status)
     },
 
     statusLabel(status) {
-      return {
-        active:  'ACTIVE',
-        expired: 'EXPIRED',
-        on_hold: 'ON-HOLD',
-        banned:  'BANNED',
-      }[status] || status?.toUpperCase() || '—'
+      return memberStatusLabel(status)
     },
 
     showToast(message, type = 'success') {

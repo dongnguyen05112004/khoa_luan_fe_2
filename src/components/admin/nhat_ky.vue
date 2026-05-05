@@ -164,9 +164,12 @@
                 </span>
               </td>
 
-              <!-- Old → New Values (Target Object column) -->
-              <td class="target-cell" :title="log.new_values || ''">
-                {{ truncate(log.new_values || log.old_values || '—') }}
+              <!-- Target Object: human-readable description -->
+              <td class="target-cell">
+                <div class="target-desc" :title="rawTargetHint(log)">
+                  <i :class="targetIcon(log.action)" class="target-icon"></i>
+                  <span>{{ describeTarget(log) }}</span>
+                </div>
               </td>
 
               <!-- IP Address -->
@@ -465,6 +468,169 @@ export default {
       if (a.includes('DELETE') || a.includes('DESTROY'))return 'action--delete'
       if (a.includes('CONFIG') || a.includes('SETTING'))return 'action--config'
       return 'action--default'
+    },
+
+    /* ── TARGET OBJECT: parse & describe in Vietnamese ── */
+    _parseValues(raw) {
+      if (!raw) return null
+      if (typeof raw === 'object') return raw
+      try { return JSON.parse(raw) } catch { return null }
+    },
+
+    rawTargetHint(log) {
+      // Tooltip hiển thị JSON gốc khi hover
+      const raw = log.new_values || log.old_values
+      if (!raw) return ''
+      if (typeof raw === 'object') return JSON.stringify(raw, null, 2)
+      return String(raw)
+    },
+
+    targetIcon(action) {
+      if (!action) return 'fas fa-circle-dot'
+      const a = action.toUpperCase()
+      if (a.includes('LOGIN'))          return 'fas fa-right-to-bracket'
+      if (a.includes('VIEW'))           return 'fas fa-eye'
+      if (a.includes('CHECKIN'))        return 'fas fa-clipboard-check'
+      if (a.includes('UPDATE') || a.includes('EDIT'))   return 'fas fa-pen-to-square'
+      if (a.includes('CREATE') || a.includes('INSERT')) return 'fas fa-plus-circle'
+      if (a.includes('DELETE') || a.includes('DESTROY'))return 'fas fa-trash'
+      if (a.includes('BOOK'))           return 'fas fa-calendar-plus'
+      if (a.includes('CANCEL'))         return 'fas fa-calendar-xmark'
+      if (a.includes('REGISTER'))       return 'fas fa-user-plus'
+      if (a.includes('BACKUP'))         return 'fas fa-database'
+      if (a.includes('CONFIG') || a.includes('SETTING')) return 'fas fa-sliders'
+      return 'fas fa-circle-dot'
+    },
+
+    describeTarget(log) {
+      const action  = (log.action || '').toUpperCase()
+      const newData = this._parseValues(log.new_values)
+      const oldData = this._parseValues(log.old_values)
+      const data    = newData || oldData
+
+      // Mapping tên trường → tiếng Việt
+      const fieldVN = {
+        name: 'Tên', full_name: 'Họ tên', email: 'Email',
+        phone: 'Điện thoại', status: 'Trạng thái', role: 'Vai trò',
+        plan_name: 'Gói tập', price: 'Giá', start_date: 'Ngày bắt đầu',
+        end_date: 'Ngày kết thúc', class_name: 'Lớp học',
+        trainer_name: 'PT', date: 'Ngày', amount: 'Số tiền',
+        duration: 'Thời hạn', description: 'Mô tả', title: 'Tiêu đề',
+      }
+
+      const pick = (obj, ...keys) => {
+        for (const k of keys) if (obj && obj[k]) return String(obj[k])
+        return null
+      }
+
+      // ── Đăng nhập ─────────────────────────────────────
+      if (action.includes('LOGIN')) {
+        return `${this.actorName(log)} đăng nhập hệ thống`
+      }
+
+      // ── Xem hồ sơ ────────────────────────────────────
+      if (action.includes('VIEW_PROFILE') || action.includes('VIEW')) {
+        const who = pick(data, 'target_name', 'full_name', 'name', 'email')
+        return who ? `Xem hồ sơ: ${this.truncate(who, 28)}` : 'Xem hồ sơ thành viên'
+      }
+
+      // ── Điểm danh ────────────────────────────────────
+      if (action.includes('CHECKIN')) {
+        const member = pick(data, 'member_name', 'full_name', 'name')
+          || (data?.member_id ? `Thành viên #${data.member_id}` : null)
+          || (data?.user_id   ? `Người dùng #${data.user_id}`  : null)
+          || 'Không rõ'
+        return `Điểm danh: ${this.truncate(member, 28)}`
+      }
+
+      // ── Cập nhật hồ sơ / thành viên ──────────────────
+      if (action.includes('UPDATE_PROFILE') || action.includes('UPDATE_MEMBER') ||
+          action.includes('UPDATE') || action.includes('EDIT')) {
+        if (newData && oldData) {
+          const changed = Object.keys(newData)
+            .filter(k => String(newData[k]) !== String(oldData[k]))
+          if (changed.length) {
+            const labels = changed.slice(0, 3).map(k => fieldVN[k] || k).join(', ')
+            return `Đã thay đổi: ${labels}`
+          }
+        }
+        const who = pick(data, 'full_name', 'name', 'email')
+        return who ? `Cập nhật: ${this.truncate(who, 28)}` : 'Cập nhật thông tin'
+      }
+
+      // ── Đặt lịch PT ──────────────────────────────────
+      if (action.includes('BOOK_PT') || action.includes('BOOK')) {
+        const trainer = pick(data, 'trainer_name', 'pt_name')
+          || (data?.trainer_id ? `PT #${data.trainer_id}` : 'PT')
+        const date = pick(data, 'date', 'appointment_date', 'scheduled_date')
+        return date ? `Đặt lịch: ${trainer} — ${date}` : `Đặt lịch với ${trainer}`
+      }
+
+      // ── Hủy lớp ──────────────────────────────────────
+      if (action.includes('CANCEL_CLASS') || action.includes('CANCEL')) {
+        const cls = pick(data, 'class_name', 'name', 'title')
+          || (data?.class_id ? `Lớp #${data.class_id}` : 'lớp học')
+        return `Hủy: ${this.truncate(cls, 30)}`
+      }
+
+      // ── Đăng ký lớp ──────────────────────────────────
+      if (action.includes('REGISTER_CLASS') || action.includes('REGISTER')) {
+        const cls = pick(data, 'class_name', 'name', 'title')
+          || (data?.class_id ? `Lớp #${data.class_id}` : 'lớp học')
+        return `Đăng ký: ${this.truncate(cls, 30)}`
+      }
+
+      // ── Tạo gói tập ──────────────────────────────────
+      if (action.includes('CREATE_PLAN') || action.includes('CREATE')) {
+        const plan  = pick(data, 'plan_name', 'name', 'title')
+        const price = data?.price
+          ? ` — ${Number(data.price).toLocaleString('vi-VN')}đ` : ''
+        return plan ? `Tạo mới: ${this.truncate(plan, 22)}${price}` : 'Tạo bản ghi mới'
+      }
+
+      // ── Xóa ──────────────────────────────────────────
+      if (action.includes('DELETE') || action.includes('DESTROY')) {
+        const subject = pick(data, 'name', 'full_name', 'title', 'email')
+          || (data?.id ? `#${data.id}` : 'bản ghi')
+        return `Đã xóa: ${this.truncate(subject, 28)}`
+      }
+
+      // ── Xóa chiến dịch ───────────────────────────────
+      if (action.includes('CAMPAIGN')) {
+        const campaign = pick(data, 'name', 'title')
+          || (data?.id ? `Chiến dịch #${data.id}` : 'chiến dịch')
+        return `Chiến dịch: ${this.truncate(campaign, 28)}`
+      }
+
+      // ── Cấu hình hệ thống ────────────────────────────
+      if (action.includes('CONFIG') || action.includes('SETTING')) {
+        const keys = data ? Object.keys(data).slice(0, 2).map(k => fieldVN[k] || k).join(', ') : ''
+        return keys ? `Cấu hình: ${keys}` : 'Thay đổi cấu hình hệ thống'
+      }
+
+      // ── Sao lưu ──────────────────────────────────────
+      if (action.includes('BACKUP')) {
+        const size = data?.size ? ` (${data.size})` : ''
+        return `Sao lưu dữ liệu tự động${size}`
+      }
+
+      // ── Fallback: ưu tiên các trường có nghĩa ────────
+      if (data) {
+        const priority = ['full_name', 'name', 'email', 'title', 'plan_name', 'class_name', 'description']
+        for (const f of priority) {
+          if (data[f]) return this.truncate(String(data[f]), 35)
+        }
+        const firstKey = Object.keys(data)[0]
+        if (firstKey) {
+          const label = fieldVN[firstKey] || firstKey
+          return `${label}: ${this.truncate(String(data[firstKey]), 25)}`
+        }
+      }
+
+      // ── Raw text fallback ─────────────────────────────
+      const raw = log.new_values || log.old_values
+      if (raw) return this.truncate(String(raw), 35)
+      return '—'
     },
 
     viewDetail(log) {
@@ -771,7 +937,27 @@ export default {
 .actor-name { font-weight: 600; color: #1e293b; }
 
 /* Target */
-.target-cell { font-family: monospace; color: #475569; font-size: 0.82rem; }
+.target-cell { color: #374151; font-size: 0.84rem; max-width: 240px; }
+.target-desc {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+.target-icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  opacity: 0.8;
+}
+.target-desc span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* IP */
 .ip-cell { color: #64748b; font-size: 0.82rem; }

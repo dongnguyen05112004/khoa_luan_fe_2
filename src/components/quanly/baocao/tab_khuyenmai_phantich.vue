@@ -60,7 +60,7 @@
           </div>
           <div class="ai-metric">
             <span class="ai-metric-lbl">Doanh thu dự kiến</span>
-            <span class="ai-metric-val">$85.4k</span>
+            <span class="ai-metric-val">85.400.000 VNĐ</span>
           </div>
         </div>
         <button class="btn-apply">Áp dụng chiến lược ngay</button>
@@ -110,7 +110,7 @@ export default {
     return {
       kpis: [
         { label: 'Số lần sử dụng', value: '12,482', trend: '+12.4%', trendClass: 'tr-green', icon: 'fas fa-ticket-alt', ic: 'ic-green', barColor: '#16a34a', pct: 74 },
-        { label: 'Doanh thu tạo ra', value: '$42,910.00', trend: '+8.1%', trendClass: 'tr-green', icon: 'fas fa-coins', ic: 'ic-blue', barColor: '#2563eb', pct: 60 },
+        { label: 'Doanh thu tạo ra', value: '42.910.000 VNĐ', trend: '+8.1%', trendClass: 'tr-green', icon: 'fas fa-coins', ic: 'ic-blue', barColor: '#2563eb', pct: 60 },
         { label: 'Tỷ lệ chuyển đổi (%)', value: '24.8%', trend: '+3.2%', trendClass: 'tr-green', icon: 'fas fa-percent', ic: 'ic-purple', barColor: '#7c3aed', pct: 82 },
         { label: 'Khuyến mãi đang chạy', value: '14', trend: 'Ổn định', trendClass: 'tr-gray', icon: 'fas fa-tag', ic: 'ic-orange', barColor: '#f59e0b', pct: 50 },
       ],

@@ -19,7 +19,7 @@
         <div class="kpi-icon-wrap bg-gradient-green"><i class="fas fa-dollar-sign"></i></div>
         <div class="kpi-info">
           <div class="kpi-label">DOANH THU GÓI</div>
-          <div class="kpi-val">$142,800</div>
+          <div class="kpi-val">142.800.000 VNĐ</div>
           <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +12.5% vs tháng trước</div>
         </div>
       </div>
@@ -35,7 +35,7 @@
         <div class="kpi-icon-wrap bg-gradient-blue"><i class="fas fa-tags"></i></div>
         <div class="kpi-info">
           <div class="kpi-label">GIÁ TRỊ TB/GÓI (ARPU)</div>
-          <div class="kpi-val">$84.50</div>
+          <div class="kpi-val">84.500 VNĐ</div>
           <div class="kpi-badge down"><i class="fas fa-caret-down"></i> -2.10 vs tháng trước</div>
         </div>
       </div>
@@ -70,11 +70,11 @@
               <!-- Data groups -->
               <g v-for="(d,i) in barData" :key="'bar'+i" class="bar-group">
                 <!-- Hover bg -->
-                <rect class="bar-hover-bg" :x="i*88" y="0" width="80" height="160" fill="rgba(0,0,0,0.0)" rx="8"/>
+                <rect class="bar-hover-bg" :x="i*88" y="0" width="80" height="140" fill="rgba(0,0,0,0.0)" rx="8"/>
                 <!-- Bars -->
-                <rect class="bar-rect" :x="i*88 + 12" :y="160-d.a" width="16" :height="d.a" fill="url(#grad-green)" rx="3"/>
-                <rect class="bar-rect" :x="i*88 + 32" :y="160-d.b" width="16" :height="d.b" fill="url(#grad-purple)" rx="3"/>
-                <rect class="bar-rect" :x="i*88 + 52" :y="160-d.c" width="16" :height="d.c" fill="url(#grad-indigo)" rx="3"/>
+                <rect class="bar-rect" :x="i*88 + 12" :y="140-d.a" width="16" :height="d.a" fill="url(#grad-green)" rx="3"/>
+                <rect class="bar-rect" :x="i*88 + 32" :y="140-d.b" width="16" :height="d.b" fill="url(#grad-purple)" rx="3"/>
+                <rect class="bar-rect" :x="i*88 + 52" :y="140-d.c" width="16" :height="d.c" fill="url(#grad-indigo)" rx="3"/>
                 <text :x="i*88 + 40" y="156" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">T{{ i+1 }}</text>
               </g>
 

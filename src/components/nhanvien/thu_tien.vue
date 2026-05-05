@@ -15,7 +15,7 @@
       <!-- Revenue card (dark green) -->
       <div class="revenue-card">
         <div class="live-badge">
-          <span class="live-dot"></span> LIVE METRICS
+          <span class="live-dot"></span> SỐ LIỆU THEO GIỞ
         </div>
         <div class="revenue-label">Doanh Thu Hôm Nay</div>
         <div class="revenue-amount">
@@ -106,7 +106,7 @@
               @input="onSearchInput"
             />
           </div>
-          <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Export CSV</button>
+          <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Xuất CSV</button>
           <button class="btn-pay" @click="goToPayment"><i class="fas fa-cash-register"></i> Thanh toán</button>
         </div>
       </div>
