@@ -46,6 +46,13 @@ export const employeeProfileApi = {
   },
 }
 
+// ── ROLES ──────────────────────────────────────────────────
+export const rolesApi = {
+  getAll() {
+    return axios.get(`${BASE}/roles`)
+  },
+}
+
 // ── MEMBER PROFILES ────────────────────────────────────────
 export const memberProfileApi = {
   getAll() {

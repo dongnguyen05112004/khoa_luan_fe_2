@@ -78,27 +78,7 @@
       </main>
     </div>
 
-    <!-- AI Floating Chat Bubble -->
-    <transition name="ai-fade">
-      <div class="ai-bubble" v-if="showAiBubble">
-        <div class="ai-bubble-header">
-          <span class="ai-icon"><i class="fas fa-robot"></i></span>
-          <strong>AI GỢI Ý VẬN HÀNH</strong>
-          <button class="ai-minimize-btn ms-auto" @click="showAiBubble = false" title="Thu gọn">
-            <i class="fas fa-chevron-down"></i>
-          </button>
-        </div>
-        <p class="ai-bubble-text">
-          Phòng tập tại quận 1 đang thiếu PT vào khung giờ 17:00 – 19:00, AI đề xuất điều phối nhân sự từ cơ sở lân cận.
-        </p>
-      </div>
-    </transition>
-
-    <transition name="ai-fade">
-      <button class="ai-fab" v-if="!showAiBubble" @click="showAiBubble = true" title="AI Assistant">
-        <i class="fas fa-robot"></i>
-      </button>
-    </transition>
+     
   </div>
 </template>
 

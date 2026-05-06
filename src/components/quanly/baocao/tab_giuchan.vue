@@ -77,7 +77,10 @@
       <div class="list-card">
         <div class="list-header">
           <strong>Danh sách hội viên rủi ro cần chú ý</strong>
-          <button class="btn-ai-badge"><i class="fas fa-robot"></i> AI CẬP NHẬT 2 PHÚT TRƯỚC</button>
+          <button class="btn-ai-badge" @click="runChurnPrediction" :disabled="isAiPredicting">
+            <i class="fas" :class="isAiPredicting ? 'fa-spinner fa-spin' : 'fa-robot'"></i> 
+            {{ isAiPredicting ? 'ĐANG PHÂN TÍCH...' : 'AI PHÂN TÍCH RỦI RO' }}
+          </button>
         </div>
         <table class="member-table">
           <thead>
@@ -134,10 +137,13 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'TabGiuChan',
   data() {
     return {
+      isAiPredicting: false,
       members: [
         { id: '#SG-8291', name: 'Lê Minh Khôi', initials: 'LM', avatarColor: '#bfdbfe', risk: 'Nguy cơ cao', riskClass: 'tag-red', metric: '↘ 72%', metricBad: true, health: 'Nguy 18% cấp', healthClass: 'health-red' },
         { id: '#SG-9102', name: 'Trần Mỹ Linh', initials: 'TL', avatarColor: '#fde68a', risk: 'Cần lưu ý', riskClass: 'tag-yellow', metric: '↘ 45%', metricBad: true, health: 'Thấp 42% trong', healthClass: 'health-yellow' },
@@ -145,6 +151,65 @@ export default {
       ],
     }
   },
+  mounted() {
+    this.fetchChurnPredictions();
+  },
+  methods: {
+    async fetchChurnPredictions() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
+          params: { type: 'Churn Prediction', per_page: 20 },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.data && res.data.data.length > 0) {
+          const colors = ['#bfdbfe', '#fde68a', '#a7f3d0', '#fbcfe8', '#ddd6fe'];
+          this.members = res.data.data.map((rec, index) => {
+            const riskLevel = rec.title.replace('Dự báo rủi ro rời bỏ: Mức độ ', '');
+            let riskClass = 'tag-yellow';
+            let healthClass = 'health-yellow';
+            if (riskLevel === 'Đỏ') {
+              riskClass = 'tag-red';
+              healthClass = 'health-red';
+            } else if (riskLevel === 'Xanh') {
+              riskClass = 'tag-green';
+              healthClass = 'health-green';
+            }
+            return {
+              id: `#SG-${rec.user_id}`,
+              name: rec.user ? rec.user.full_name : 'Hội viên ' + rec.user_id,
+              initials: rec.user && rec.user.full_name ? rec.user.full_name.substring(0, 2).toUpperCase() : 'HV',
+              avatarColor: colors[index % colors.length],
+              risk: riskLevel === 'Đỏ' ? 'Nguy cơ cao' : (riskLevel === 'Xanh' ? 'An toàn' : 'Cần lưu ý'),
+              riskClass: riskClass,
+              metric: 'Cập nhật AI',
+              metricBad: riskLevel === 'Đỏ',
+              health: 'Tư vấn mới',
+              healthClass: healthClass,
+            };
+          });
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu Churn Prediction', error);
+      }
+    },
+    async runChurnPrediction() {
+      this.isAiPredicting = true;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.post('http://127.0.0.1:8000/api/admin/churn-prediction', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        alert('Phân tích AI hoàn tất! ' + res.data.count + ' hội viên đã được đánh giá.');
+        this.fetchChurnPredictions();
+      } catch (error) {
+        console.error('Lỗi phân tích AI', error);
+        alert(error.response?.data?.message || 'Có lỗi xảy ra khi phân tích AI');
+      } finally {
+        this.isAiPredicting = false;
+      }
+    }
+  }
 }
 </script>
 
@@ -212,12 +277,14 @@ export default {
 .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.68rem; font-weight:700; }
 .tag-red { background:#fee2e2; color:#dc2626; }
 .tag-yellow { background:#fef9c3; color:#a16207; }
+.tag-green { background:#dcfce7; color:#16a34a; }
 .metric-cell { display:flex; flex-direction:column; gap:2px; }
 .metric-label { font-size:.65rem; color:#94a3b8; }
 .red-text { color:#dc2626; font-weight:700; }
 .green-text { color:#16a34a; font-weight:700; }
 .health-red { color:#dc2626; font-size:.75rem; font-weight:600; }
 .health-yellow { color:#a16207; font-size:.75rem; font-weight:600; }
+.health-green { color:#16a34a; font-size:.75rem; font-weight:600; }
 .btn-action { background:linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:.72rem; font-weight:600; cursor:pointer; white-space:nowrap; }
 .btn-action:hover { opacity:.88; }
 .table-footer { display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:8px; }

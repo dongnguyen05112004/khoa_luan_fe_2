@@ -11,12 +11,12 @@ const routes = [
         path: "/dangnhap",
         component: () => import("../components/admin/dangnhap.vue"),
         meta: { layout: "blank" },
-    }, 
+    },
     {
         path: "/dangky",
         component: () => import("../components/admin/dangky.vue"),
         meta: { layout: "blank" },
-    }, 
+    },
     // {
     //     path: "/home",
     //     component: () => import("../components/trangchu/trangchu.vue"),
@@ -185,6 +185,33 @@ const routes = [
                 name: 'PhanHoiAi',
                 component: () => import('../components/khachhang/phan_hoi_ai.vue'),
             }
+        ]
+    },
+    
+    {
+        path: '/pt',
+        component: () => import('../layout/wrapper/pt.vue'),
+        meta: { layout: 'pt' },
+        children: [
+            {
+                path: '',
+                redirect: '/pt/chi_so_suc_khoe',
+            },
+            {
+                path: 'lich_tap',
+                name: 'PTLichTap',
+                component: () => import('../components/pt/lich_tap.vue'),
+            },
+            {
+                path: 'chi_so_suc_khoe',
+                name: 'PTChiSoSucKhoe',
+                component: () => import('../components/pt/chi_so_suc_khoe.vue'),
+            },
+            {
+                path: 'goi_y_ai',
+                name: 'PTGoiYAI',
+                component: () => import('../components/pt/goi_y_ai.vue'),
+            },
         ]
     },
 ]

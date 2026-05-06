@@ -67,28 +67,36 @@
       </table>
     </div>
 
-    <!-- AI analysis block -->
-    <div class="ai-block">
-      <div class="ai-block-head">
-        <div class="ai-block-icon"><i class="fas fa-robot"></i></div>
-        <strong>Phân tích chiến lược từ Gemini AI</strong>
+    <!-- AI Unified Card -->
+    <div class="ai-card-unified">
+      <div class="ai-card-header-unified">
+        <div class="ai-avatar-unified">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="ai-title-unified">
+          <strong v-if="aiReport">{{ aiReport.title }}</strong>
+          <strong v-else>Phân tích chiến lược từ SmartGym AI</strong>
+        </div>
+        <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+          <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+          {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
+        </button>
       </div>
-      <div class="ai-cols">
-        <div class="ai-col">
-          <div class="ai-col-title">TÌNH TRẠNG HIỆN TẠI</div>
-          <p>Hệ thống ghi nhận 8.4% thiết bị đang trong tình trạng cảnh báo hoặc ngưng hoạt động. Các cụm máy cardio (máy chạy bộ) có tần suất sử dụng nhiệt độ cao, cần điều chỉnh lưng gió điều hòa khu vực này.</p>
-        </div>
-        <div class="ai-col">
-          <div class="ai-col-title">DỰ BÁO CHI PHÍ BẢO TRÌ</div>
-          <p>Dựa trên dữ liệu lịch sử, dự kiến ngân sách bảo trì tháng tới sẽ tăng 15% do chu kỳ thay đại cắp cho các giàn tạ Matrix. Nghị đàm phán sớm với nhà cung cấp để kiện hiệu bảo trì định kỳ hàng năm.</p>
-        </div>
-        <div class="ai-col">
-          <div class="ai-col-title">ĐỀ XUẤT LỊCH SỬA CHỮA</div>
-          <p>Ưu tiên xử lý 2 máy chạy bộ mã EQP-0089 và EQP-0091 trong 48h tới để đảm bảo công suất phục vụ giờ cao điểm. Các thiết bị tạ tay có thể đời lịch bảo trì sang tuần thứ 3 của tháng để tối ưu nhân sự kỹ thuật.</p>
+
+      <div v-if="aiReport">
+        <div class="ai-rec-diagnosis-unified">{{ aiReport.ai_diagnosis }}</div>
+        <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
+          <div class="suggestion-hd">ĐỀ XUẤT CHIẾN LƯỢC:</div>
+          <div class="suggestion-item-unified" v-for="(tip, i) in aiReport.ai_suggestions.split('\n')" :key="i">
+            <template v-if="tip.trim()">
+              <i class="fas fa-check-circle"></i>
+              <span>{{ tip.replace(/^- /, '').replace(/^\* /, '') }}</span>
+            </template>
+          </div>
         </div>
       </div>
-      <div class="ai-footer-note">
-        <i class="fas fa-circle-notch fa-spin"></i> AI đang liên tục cập nhật dữ liệu từ cảm biến IOT thiết bị...
+      <div v-else class="ai-empty-unified">
+        Chưa có báo cáo AI. Hãy nhấn nút "Cập nhật AI" để phân tích dữ liệu thiết bị.
       </div>
     </div>
 
@@ -171,6 +179,7 @@
 <script>
 export default {
   name: 'TabBaoCao',
+  props: ['aiReport', 'isAiLoading'],
   data() {
     return {
       equipment: [
@@ -219,14 +228,104 @@ export default {
 .st-red   { background:#fee2e2; color:#dc2626; }
 .btn-view { background:#f1f5f9; border:none; border-radius:6px; width:30px; height:30px; cursor:pointer; color:#64748b; display:flex; align-items:center; justify-content:center; }
 .btn-view:hover { background:#e2e8f0; }
-.ai-block { background:linear-gradient(135deg,#4f46e5,#7c3aed); border-radius:14px; padding:22px; color:#fff; }
-.ai-block-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-.ai-block-icon { width:32px; height:32px; background:rgba(255,255,255,.2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.9rem; }
-.ai-block-head strong { font-size:.95rem; }
-.ai-cols { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-.ai-col-title { font-size:.68rem; font-weight:700; color:rgba(255,255,255,.65); letter-spacing:.4px; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,.2); padding-bottom:6px; }
-.ai-col p { font-size:.75rem; color:rgba(255,255,255,.85); line-height:1.65; margin:0; }
-.ai-footer-note { margin-top:14px; font-size:.72rem; color:rgba(255,255,255,.6); display:flex; align-items:center; gap:6px; }
+/* AI Unified Card Style - KINETIC DARK VERSION */
+.ai-card-unified {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 15px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.ai-card-header-unified {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ai-avatar-unified {
+  width: 50px; height: 50px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.3rem;
+  flex-shrink: 0;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+}
+.ai-title-unified {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+}
+.btn-generate-ai-unified {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  outline: none !important;
+}
+.btn-generate-ai-unified:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4); }
+
+.ai-rec-diagnosis-unified {
+  font-size: 0.92rem;
+  color: #e2e8f0;
+  line-height: 1.7;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 18px 22px;
+  border-radius: 16px;
+  border-left: 4px solid #6366f1;
+}
+.ai-suggestions-unified {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.suggestion-hd {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.suggestion-item-unified {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.suggestion-item-unified i {
+  color: #4ade80;
+  margin-top: 3px;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.ai-empty-unified {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
 .bottom-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 0 0; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:10px; }
 .checkbox-label { display:flex; align-items:center; gap:7px; font-size:.8rem; color:#475569; cursor:pointer; }
 .export-btns { display:flex; gap:10px; }

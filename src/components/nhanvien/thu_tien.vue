@@ -15,7 +15,7 @@
       <!-- Revenue card (dark green) -->
       <div class="revenue-card">
         <div class="live-badge">
-          <span class="live-dot"></span> LIVE METRICS
+          <span class="live-dot"></span> SỐ LIỆU THEO GIỞ
         </div>
         <div class="revenue-label">Doanh Thu Hôm Nay</div>
         <div class="revenue-amount">
@@ -95,6 +95,17 @@
           >{{ t.label }}</button>
         </div>
         <div class="table-head-actions">
+          <!-- Search -->
+          <div class="search-wrap">
+            <i class="fas fa-search search-ico"></i>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Tìm kiếm..."
+              class="search-input"
+              @input="onSearchInput"
+            />
+          </div>
           <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Export CSV</button>
           <button class="btn-pay" @click="goToPayment"><i class="fas fa-cash-register"></i> Thanh toán</button>
         </div>

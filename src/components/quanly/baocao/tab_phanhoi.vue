@@ -20,19 +20,46 @@
       </div>
       <div class="kpi-card accent-purple">
         <div class="kpi-label-white">Phân tích AI tức thì</div>
-        <div class="ai-kpi-tag"><i class="fas fa-robot"></i> Phân tích tày mốc đang ưu tiên</div>
-        <button class="btn-live">PHÂN TÍCH TRỰC TIẾP</button>
+        <div class="ai-kpi-tag" v-if="aiReport"><i class="fas fa-robot"></i> {{ aiReport.title }}</div>
+        <div class="ai-kpi-tag" v-else><i class="fas fa-robot"></i> Phân tích các phản hồi ưu tiên</div>
+        <button class="btn-live" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+          <i class="fas" :class="isAiLoading ? 'fa-spinner fa-spin' : ''"></i>
+          {{ isAiLoading ? 'ĐANG CHẠY...' : 'PHÂN TÍCH TRỰC TIẾP' }}
+        </button>
       </div>
     </div>
 
-    <!-- Filters + CTA -->
-    <div class="filter-bar">
-      <div class="filter-group">
-        <div class="filter-select"><span>Chi nhánh</span><span class="fval">Tất cả chi nhánh</span><i class="fas fa-chevron-down"></i></div>
-        <div class="filter-select"><span>Chủ đề</span><span class="fval">Tất cả chủ đề</span><i class="fas fa-chevron-down"></i></div>
-        <div class="filter-select"><span>Mức độ Khẩn Cấp</span><span class="fval">Mọi cấp độ</span><i class="fas fa-chevron-down"></i></div>
+    <!-- AI Unified Card (Global analysis) -->
+    <div class="ai-card-unified" style="margin-bottom: 20px;">
+      <div class="ai-card-header-unified">
+        <div class="ai-avatar-unified">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="ai-title-unified">
+          <strong v-if="aiReport">{{ aiReport.title }}</strong>
+          <strong v-else>Phân tích sắc thái khách hàng từ AI</strong>
+        </div>
+        <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+          <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+          {{ isAiLoading ? 'Đang phân tích...' : 'Cập nhật AI' }}
+        </button>
       </div>
-      <button class="btn-ai-report"><i class="fas fa-robot"></i> Tạo Báo Cáo AI</button>
+
+      <div v-if="aiReport">
+        <div class="ai-rec-diagnosis-unified">{{ aiReport.ai_diagnosis }}</div>
+        <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
+          <div class="suggestion-hd">HÀNH ĐỘNG ĐỀ XUẤT:</div>
+          <div class="suggestion-item-unified" v-for="(tip, i) in aiReport.ai_suggestions.split('\n')" :key="i">
+            <template v-if="tip.trim()">
+              <i class="fas fa-check-circle"></i>
+              <span>{{ tip.replace(/^- /, '').replace(/^\* /, '') }}</span>
+            </template>
+          </div>
+        </div>
+      </div>
+      <div v-else class="ai-empty-unified">
+        Chưa có phân tích AI. Hãy nhấn nút "Cập nhật AI" để tổng hợp sắc thái và các vấn đề nóng từ phản hồi khách hàng.
+      </div>
     </div>
 
     <!-- Body -->
@@ -114,6 +141,7 @@
 <script>
 export default {
   name: 'TabPhanHoi',
+  props: ['aiReport', 'isAiLoading'],
   data() {
     return {
       keywords: [
@@ -169,6 +197,95 @@ export default {
 .filter-select { display:flex; align-items:center; gap:5px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:.75rem; color:#94a3b8; cursor:pointer; }
 .fval { color:#1e293b; font-weight:500; margin:0 2px; }
 .btn-ai-report { background:#2d7a3a; color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+/* AI Unified Card Style - KINETIC DARK VERSION */
+.ai-card-unified {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #fff;
+}
+.ai-card-header-unified {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-avatar-unified {
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+}
+.ai-title-unified {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+}
+.btn-generate-ai-unified {
+  background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.3s;
+  outline: none !important;
+}
+.ai-rec-diagnosis-unified {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 3px solid #6366f1;
+}
+.ai-suggestions-unified {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.suggestion-hd {
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.suggestion-item-unified {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+.suggestion-item-unified i {
+  color: #4ade80;
+  margin-top: 2px;
+  font-size: 0.9rem;
+}
+.ai-empty-unified {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
 .body-grid { display:grid; grid-template-columns:260px 1fr; gap:16px; }
 .left-col { display:flex; flex-direction:column; gap:14px; }
 .sentiment-card,.keyword-card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
