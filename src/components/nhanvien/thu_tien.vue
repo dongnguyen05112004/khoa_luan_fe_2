@@ -106,7 +106,7 @@
               @input="onSearchInput"
             />
           </div>
-          <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Xuất CSV</button>
+          <button class="btn-export" @click="exportCSV"><i class="fas fa-download"></i> Export CSV</button>
           <button class="btn-pay" @click="goToPayment"><i class="fas fa-cash-register"></i> Thanh toán</button>
         </div>
       </div>

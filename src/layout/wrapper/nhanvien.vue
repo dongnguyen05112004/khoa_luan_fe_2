@@ -39,11 +39,6 @@
           <i class="fas fa-credit-card nav-ico"></i>
           <span v-show="!sidebarCollapsed">Thanh toán</span>
         </router-link>
-
-        <router-link to="/nhanvien/caidat" class="nv-nav-item" active-class="active">
-          <i class="fas fa-cog nav-ico"></i>
-          <span v-show="!sidebarCollapsed">Cài đặt về viên</span>
-        </router-link>
       </nav>
 
       <!-- Footer -->

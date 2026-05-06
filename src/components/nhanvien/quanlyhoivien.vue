@@ -193,6 +193,123 @@
     </transition>
 
   </div>
+
+  <!-- ===== MODAL XEM CHI TIẾT ===== -->
+  <transition name="modal-fade">
+    <div v-if="viewModal.show" class="modal-overlay" @click.self="closeView">
+      <div class="modal-box modal-view">
+        <div class="modal-header">
+          <h2 class="modal-title"><i class="fas fa-id-card"></i> Chi tiết hội viên</h2>
+          <button class="modal-close" @click="closeView"><i class="fas fa-times"></i></button>
+        </div>
+        <div v-if="viewModal.loading" class="modal-loading"><div class="spinner"></div> Đang tải...</div>
+        <div v-else-if="viewModal.data" class="modal-body">
+          <div class="view-hero">
+            <img :src="memberAvatar(viewModal.data)" class="view-avatar" />
+            <div class="view-hero-info">
+              <div class="view-name">{{ viewModal.data.full_name }}</div>
+              <div class="view-email">{{ viewModal.data.email }}</div>
+              <span class="status-badge" :class="statusClass(viewModal.data.status)">{{ statusLabel(viewModal.data.status) }}</span>
+            </div>
+          </div>
+          <div class="view-grid">
+            <div class="view-item"><span class="vl">Mã thẻ</span><span class="vv">#{{ viewModal.data.card_number || viewModal.data.id }}</span></div>
+            <div class="view-item"><span class="vl">Điện thoại</span><span class="vv">{{ viewModal.data.phone || '—' }}</span></div>
+            <div class="view-item"><span class="vl">Giới tính</span><span class="vv">{{ viewModal.data.gender || '—' }}</span></div>
+            <div class="view-item"><span class="vl">Ngày sinh</span><span class="vv">{{ formatDate(viewModal.data.date_of_birth) }}</span></div>
+            <div class="view-item"><span class="vl">Ngày tham gia</span><span class="vv">{{ formatDate(viewModal.data.join_date) }}</span></div>
+            <div class="view-item"><span class="vl">Gói tập</span><span class="vv">{{ viewModal.data.package || 'Chưa có' }}</span></div>
+            <div class="view-item"><span class="vl">Hết hạn</span><span class="vv">{{ formatDate(viewModal.data.end_date) }}</span></div>
+            <div class="view-item"><span class="vl">Check-in cuối</span><span class="vv">{{ viewModal.data.last_check_in_label || 'Chưa check-in' }}</span></div>
+            <div class="view-item"><span class="vl">Liên hệ khẩn cấp</span><span class="vv">{{ viewModal.data.emergency_contact || '—' }}</span></div>
+            <div class="view-item"><span class="vl">Loại hội viên</span><span class="vv">{{ viewModal.data.membership_type || '—' }}</span></div>
+          </div>
+          <div v-if="viewModal.data.health_notes" class="view-notes">
+            <span class="vl">Ghi chú sức khỏe</span>
+            <p class="vv">{{ viewModal.data.health_notes }}</p>
+          </div>
+          <div v-if="viewModal.data.subscriptions && viewModal.data.subscriptions.length" class="view-section">
+            <div class="view-section-title">Lịch sử gói tập</div>
+            <div v-for="sub in viewModal.data.subscriptions" :key="sub.id" class="sub-item">
+              <span class="sub-plan">{{ sub.plan?.plan_name || '—' }}</span>
+              <span class="sub-dates">{{ formatDate(sub.start_date) }} → {{ formatDate(sub.end_date) }}</span>
+              <span class="status-badge" :class="sub.status === 'active' ? 'st-active' : 'st-expired'">{{ sub.status }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeView">Đóng</button>
+          <button class="btn-primary" @click="openEditFromView"><i class="fas fa-pen"></i> Chỉnh sửa</button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- ===== MODAL CHỈNH SỬA ===== -->
+  <transition name="modal-fade">
+    <div v-if="editModal.show" class="modal-overlay" @click.self="closeEdit">
+      <div class="modal-box modal-edit">
+        <div class="modal-header">
+          <h2 class="modal-title"><i class="fas fa-pen"></i> Chỉnh sửa hội viên</h2>
+          <button class="modal-close" @click="closeEdit"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="edit-grid">
+            <div class="form-group">
+              <label>Họ tên đầy đủ</label>
+              <input v-model="editForm.full_name" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input v-model="editForm.email" type="email" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Số điện thoại</label>
+              <input v-model="editForm.phone" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Giới tính</label>
+              <select v-model="editForm.gender" class="form-input">
+                <option value="">— Chọn —</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ngày sinh</label>
+              <input v-model="editForm.date_of_birth" type="date" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Mã thẻ</label>
+              <input v-model="editForm.card_number" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Liên hệ khẩn cấp</label>
+              <input v-model="editForm.emergency_contact" type="text" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Loại hội viên</label>
+              <input v-model="editForm.membership_type" type="text" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group full-width">
+            <label>Ghi chú sức khỏe</label>
+            <textarea v-model="editForm.health_notes" class="form-input" rows="3"></textarea>
+          </div>
+          <p v-if="editModal.error" class="edit-error"><i class="fas fa-exclamation-circle"></i> {{ editModal.error }}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeEdit">Hủy</button>
+          <button class="btn-primary" @click="saveEdit" :disabled="editModal.saving">
+            <i :class="editModal.saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+            {{ editModal.saving ? 'Đang lưu...' : 'Lưu thay đổi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
 </template>
 
 <script>
@@ -225,6 +342,15 @@ export default {
       loading: false,
       fetchError: null,
       actionLoading: null,
+
+      // ---- Modals ----
+      viewModal: { show: false, loading: false, data: null },
+      editModal: { show: false, saving: false, error: null, memberId: null },
+      editForm: {
+        full_name: '', email: '', phone: '', gender: '',
+        date_of_birth: '', card_number: '',
+        emergency_contact: '', membership_type: '', health_notes: '',
+      },
 
       // ---- Filters ----
       searchQ: '',
@@ -321,13 +447,57 @@ export default {
     },
 
     /* ──────── ACTIONS ──────── */
-    viewMember(m) {
-      // TODO: thêm route /nhanvien/hoivien/:id vào router khi có trang chi tiết
-      this.showToast(`Chi tiết hội viên: ${m.full_name} (ID: ${m.id})`, 'success')
+    async viewMember(m) {
+      this.viewModal = { show: true, loading: true, data: null }
+      try {
+        const res = await memberApi.getOne(m.id)
+        this.viewModal.data = res.data
+        this.viewModal.loading = false
+      } catch (err) {
+        this.viewModal.show = false
+        this.showToast(err?.response?.data?.message || 'Không thể tải chi tiết hội viên.', 'error')
+      }
+    },
+    closeView() {
+      this.viewModal = { show: false, loading: false, data: null }
+    },
+    openEditFromView() {
+      const member = this.viewModal.data
+      this.closeView()
+      if (member) this.editMember(member)
     },
     editMember(m) {
-      // TODO: thêm route /nhanvien/hoivien/:id/edit vào router khi có trang chỉnh sửa
-      this.showToast(`Chỉnh sửa: ${m.full_name} — chức năng đang phát triển.`, 'success')
+      this.editForm = {
+        full_name:         m.full_name || '',
+        email:             m.email || '',
+        phone:             m.phone || '',
+        gender:            m.gender || '',
+        date_of_birth:     m.date_of_birth || '',
+        card_number:       m.card_number || '',
+        emergency_contact: m.emergency_contact || '',
+        membership_type:   m.membership_type || '',
+        health_notes:      m.health_notes || '',
+      }
+      this.editModal = { show: true, saving: false, error: null, memberId: m.id }
+    },
+    closeEdit() {
+      this.editModal = { show: false, saving: false, error: null, memberId: null }
+    },
+    async saveEdit() {
+      this.editModal.saving = true
+      this.editModal.error = null
+      try {
+        await memberApi.update(this.editModal.memberId, this.editForm)
+        this.closeEdit()
+        this.showToast('Cập nhật hội viên thành công!', 'success')
+        await this.loadAll()
+      } catch (err) {
+        const msg = err?.response?.data?.message
+          || Object.values(err?.response?.data?.errors || {})[0]?.[0]
+          || 'Lưu thất bại. Vui lòng kiểm tra lại.'
+        this.editModal.error = msg
+        this.editModal.saving = false
+      }
     },
     async toggleHold(m) {
       const newStatus = m.status === 'on_hold' ? 'active' : 'on_hold'
@@ -854,5 +1024,151 @@ export default {
   .new-today-card { margin-left: 0; }
   .hv-table       { font-size: 0.78rem; }
 }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 100%;
+  overflow: hidden;
+}
+.modal-view { max-width: 620px; }
+.modal-edit { max-width: 700px; }
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+.modal-title i { color: #2d7a3a; }
+.modal-close {
+  width: 32px; height: 32px;
+  border: none; border-radius: 8px;
+  background: #f1f5f9; color: #64748b;
+  cursor: pointer; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: #fee2e2; color: #dc2626; }
+.modal-loading {
+  display: flex; align-items: center; gap: 12px;
+  padding: 48px 24px; justify-content: center; color: #64748b;
+}
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+}
+/* View modal */
+.view-hero {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg,#f0fdf4,#dcfce7);
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+}
+.view-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+.view-name { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+.view-email { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; }
+.view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.view-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.vl { font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; }
+.vv { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+.view-notes { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+.view-section { margin-top: 16px; }
+.view-section-title { font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.sub-item {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+  padding: 9px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.sub-plan { font-weight: 600; font-size: 0.84rem; color: #1e293b; }
+.sub-dates { font-size: 0.75rem; color: #64748b; }
+/* Edit modal */
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full-width { grid-column: 1/-1; }
+.form-group label { font-size: 0.75rem; font-weight: 600; color: #475569; }
+.form-input {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #f8fafc;
+  width: 100%;
+  box-sizing: border-box;
+}
+.form-input:focus { border-color: #2d7a3a; background: #fff; box-shadow: 0 0 0 3px rgba(45,122,58,0.08); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+.edit-error { color: #dc2626; font-size: 0.83rem; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+/* Buttons */
+.btn-primary {
+  background: #1a4d24; color: #fff;
+  border: none; border-radius: 9px;
+  padding: 10px 22px;
+  font-size: 0.86rem; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 6px;
+  transition: all 0.2s;
+}
+.btn-primary:hover:not(:disabled) { background: #133a1b; }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-secondary {
+  background: #f1f5f9; color: #475569;
+  border: 1.5px solid #e2e8f0; border-radius: 9px;
+  padding: 10px 20px;
+  font-size: 0.86rem; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { background: #e2e8f0; }
+/* Modal transition */
+.modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.25s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.modal-fade-enter-from .modal-box, .modal-fade-leave-to .modal-box { transform: scale(0.95) translateY(10px); }
 
 </style>
