@@ -24,69 +24,14 @@
     <!-- ===== AI ANALYSIS BANNER + STATS ROW ===== -->
     <div class="top-row">
       <!-- AI Panel Card -->
-      <div class="ai-panel-card">
-        <div class="ai-panel-header">
-          <div class="ai-panel-icon-wrap">
-            <i class="fas fa-robot"></i>
-          </div>
-          <div>
-            <div class="ai-panel-title">Phân tích hiệu quả</div>
-          </div>
-          <div class="ai-badge-active"><i class="fas fa-circle"></i> AI INSIGHTS ACTIVE</div>
-        </div>
-
-        <div class="ai-panel-body">
-          <!-- Revenue by plan bar chart -->
-          <div class="revenue-by-plan">
-            <div class="rbp-title">DOANH THU THEO TỪNG GÓI</div>
-            <div v-for="pkg in planStats" :key="pkg.name" class="rbp-item">
-              <div class="rbp-label">{{ pkg.name }}</div>
-              <div class="rbp-bar-wrap">
-                <div class="rbp-bar" :style="{ width: pkg.pct + '%', background: pkg.color }"></div>
-              </div>
-              <div class="rbp-pct">{{ pkg.pct }}%</div>
-            </div>
-          </div>
-
-          <!-- Placeholder chart area -->
-          <div class="chart-placeholder">
-            <div class="chart-placeholder-inner">
-              <i class="fas fa-chart-bar chart-ph-icon"></i>
-              <div class="chart-ph-text">Biểu đồ hiệu suất gói tập</div>
-              <div class="chart-ph-sub">Dữ liệu được cập nhật theo thời gian thực</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       <!-- Stats column -->
       <div class="stats-col">
         <!-- Member Growth Card -->
-        <div class="stat-card">
-          <div class="stat-card-inner">
-            <div class="stat-icon-wrap green">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-data">
-              <div class="stat-label">Tăng trưởng hội viên</div>
-              <div class="stat-value green-text">+12.5%</div>
-              <div class="stat-sub">So với tháng trước</div>
-            </div>
-          </div>
-        </div>
+        
         <!-- Churn Rate Card -->
-        <div class="stat-card">
-          <div class="stat-card-inner">
-            <div class="stat-icon-wrap purple">
-              <i class="fas fa-user-minus"></i>
-            </div>
-            <div class="stat-data">
-              <div class="stat-label">Tỷ lệ rời bỏ (Churn)</div>
-              <div class="stat-value purple-text">2.4%</div>
-              <div class="stat-sub">Thấp hơn mục tiêu 1%</div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
 
