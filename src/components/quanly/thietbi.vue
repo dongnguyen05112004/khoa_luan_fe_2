@@ -98,32 +98,53 @@
     <!-- MAIN CONTENT -->
     <div v-else class="content-area" :class="{ 'with-panel': selectedDevice }">
 
-      <!-- Device Grid -->
-      <div class="device-grid">
-        <div v-if="filteredDevices.length === 0" class="empty-state">
-          <i class="fas fa-box-open"></i>
-          <p>Không tìm thấy thiết bị nào</p>
+      <!-- Wrapper cho danh sách và phân trang -->
+      <div class="list-wrapper">
+        <!-- Device Grid -->
+        <div class="device-grid">
+          <div v-if="paginatedDevices.length === 0" class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>Không tìm thấy thiết bị nào</p>
+          </div>
+          <div v-for="device in paginatedDevices" :key="device.id" class="device-card"
+            :class="{ 'is-selected': selectedDevice && selectedDevice.id === device.id }" @click="selectDevice(device)">
+            <div class="device-img-wrap">
+              <div class="device-status-badge" :class="device.status">{{ statusLabel(device.status) }}</div>
+              <div class="device-img-placeholder" :style="imgBgFor(device.status)">
+                <i :class="iconFor(device.type)" class="device-img-icon"></i>
+              </div>
+            </div>
+            <div class="device-info">
+              <div class="device-name">{{ device.equipment_name || '—' }}</div>
+              <div class="device-meta">
+                <span class="device-meta-item"><i class="fas fa-tag"></i> {{ device.serial_number || '—' }}</span>
+                <span class="device-meta-item"><i class="fas fa-map-marker-alt"></i> {{ device.location || (device.branch
+                  && device.branch.name) || '—' }}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-detail" @click.stop="selectDevice(device)"><i class="fas fa-eye"></i> Chi tiết</button>
+              <button class="btn-delete-card" @click.stop="confirmDelete(device)" title="Xóa"><i
+                  class="fas fa-trash-alt"></i></button>
+            </div>
+          </div>
         </div>
-        <div v-for="device in filteredDevices" :key="device.id" class="device-card"
-          :class="{ 'is-selected': selectedDevice && selectedDevice.id === device.id }" @click="selectDevice(device)">
-          <div class="device-img-wrap">
-            <div class="device-status-badge" :class="device.status">{{ statusLabel(device.status) }}</div>
-            <div class="device-img-placeholder" :style="imgBgFor(device.status)">
-              <i :class="iconFor(device.type)" class="device-img-icon"></i>
-            </div>
-          </div>
-          <div class="device-info">
-            <div class="device-name">{{ device.equipment_name || '—' }}</div>
-            <div class="device-meta">
-              <span class="device-meta-item"><i class="fas fa-tag"></i> {{ device.serial_number || '—' }}</span>
-              <span class="device-meta-item"><i class="fas fa-map-marker-alt"></i> {{ device.location || (device.branch
-                && device.branch.name) || '—' }}</span>
-            </div>
-          </div>
-          <div class="card-actions">
-            <button class="btn-detail" @click.stop="selectDevice(device)"><i class="fas fa-eye"></i> Chi tiết</button>
-            <button class="btn-delete-card" @click.stop="confirmDelete(device)" title="Xóa"><i
-                class="fas fa-trash-alt"></i></button>
+
+        <!-- Pagination -->
+        <div class="tk-pagination" v-if="totalPages > 1">
+          <span class="tk-pag-info">
+            Hiển thị {{ pagStart }}-{{ pagEnd }} trong {{ filteredDevices.length }} thiết bị
+          </span>
+          <div class="tk-pag-controls">
+            <button class="tk-pag-btn" :disabled="currentPage === 1" @click="currentPage--">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button v-for="p in visiblePages" :key="p" class="tk-pag-btn"
+              :class="{ 'tk-pag-active': p === currentPage, 'tk-pag-ellipsis': p === '...' }" :disabled="p === '...'"
+              @click="p !== '...' && (currentPage = p)">{{ p }}</button>
+            <button class="tk-pag-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+              <i class="fas fa-chevron-right"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -445,6 +466,8 @@ export default {
         { value: 'maintenance', label: 'Bảo trì', icon: 'fas fa-tools' },
         { value: 'broken', label: 'Hỏng', icon: 'fas fa-exclamation-triangle' },
       ],
+      currentPage: 1,
+      perPage: 24,
     }
   },
 
@@ -466,6 +489,42 @@ export default {
         return matchSearch && matchStatus
       })
     },
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredDevices.length / this.perPage))
+    },
+    paginatedDevices() {
+      const start = (this.currentPage - 1) * this.perPage
+      return this.filteredDevices.slice(start, start + this.perPage)
+    },
+    pagStart() {
+      if (this.filteredDevices.length === 0) return 0
+      return (this.currentPage - 1) * this.perPage + 1
+    },
+    pagEnd() {
+      return Math.min(this.currentPage * this.perPage, this.filteredDevices.length)
+    },
+    visiblePages() {
+      const pages = [], total = this.totalPages, cur = this.currentPage
+      if (total <= 5) {
+        for (let i = 1; i <= total; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        if (cur > 3) pages.push('...')
+        for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i)
+        if (cur < total - 2) pages.push('...')
+        pages.push(total)
+      }
+      return pages
+    },
+  },
+
+  watch: {
+    searchQuery() {
+      this.currentPage = 1
+    },
+    filterStatus() {
+      this.currentPage = 1
+    }
   },
 
   mounted() {
@@ -1035,6 +1094,14 @@ export default {
 
 .content-area.with-panel {
   grid-template-columns: 1fr 380px;
+}
+
+.list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 500px;
+  justify-content: space-between;
 }
 
 /* DEVICE GRID */
@@ -1804,5 +1871,69 @@ export default {
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
+}
+
+/* Pagination */
+.tk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tk-pag-info {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.tk-pag-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tk-pag-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  padding: 0 8px;
+  font-family: inherit;
+}
+
+.tk-pag-btn:hover:not(:disabled) {
+  border-color: #2d7a3a;
+  color: #2d7a3a;
+}
+
+.tk-pag-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tk-pag-active {
+  background: #2d7a3a !important;
+  color: #fff !important;
+  border-color: #2d7a3a !important;
+}
+
+.tk-pag-ellipsis {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
 }
 </style>

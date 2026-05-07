@@ -18,7 +18,7 @@
             <label class="tk-filter-label">CHỨC VỤ / VAI TRÒ</label>
             <select v-model="filterRole" class="tk-filter-select">
               <option value="">Tất cả</option>
-              <option v-for="r in roles" :key="r.id" :value="r.name">{{ roleLabel(r.name) }}</option>
+              <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
             </select>
           </div>
           <div class="tk-filter-group">
@@ -114,7 +114,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="person in paginatedList" :key="person.id" class="tk-tr">
+          <tr v-for="person in people" :key="person.id" class="tk-tr">
             <td class="tk-td-id">#{{ person.id }}</td>
             <td class="tk-td-name">
               <div class="tk-name-cell">
@@ -142,7 +142,7 @@
               </button>
             </td>
           </tr>
-          <tr v-if="!loading && paginatedList.length === 0">
+          <tr v-if="!loading && people.length === 0">
             <td colspan="6" class="tk-empty">
               <i class="fas fa-user-slash"></i>
               <p>Không tìm thấy kết quả phù hợp</p>
@@ -154,7 +154,7 @@
       <!-- Pagination -->
       <div class="tk-pagination">
         <span class="tk-pag-info">
-          Hiện thị {{ pagStart }}-{{ pagEnd }} trong {{ filteredList.length.toLocaleString() }} kết quả
+          Hiện thị {{ pagStart }}-{{ pagEnd }} trong {{ totalItems.toLocaleString() }} kết quả
         </span>
         <div class="tk-pag-controls">
           <button class="tk-pag-btn" :disabled="currentPage === 1" @click="currentPage--">
@@ -208,7 +208,7 @@
                 <label class="add-lbl">CHỨC VỤ / VAI TRÒ <span class="req">*</span></label>
                 <select v-model="addForm.role_id" class="add-fi">
                   <option value="" disabled>-- Chọn chức vụ --</option>
-                  <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.name) }}</option>
+                  <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
                 </select>
               </div>
               <div class="add-fg">
@@ -466,35 +466,8 @@ export default {
       if (this.appliedStatus) c++
       return c
     },
-    filteredList() {
-      const q = this.searchQuery.toLowerCase()
-      let list = this.people
-      if (q) {
-        list = list.filter(p =>
-          (p.name || '').toLowerCase().includes(q) ||
-          String(p.id).toLowerCase().includes(q) ||
-          (p.chucVu || '').toLowerCase().includes(q) ||
-          (p.email || '').toLowerCase().includes(q)
-        )
-      }
-      if (this.appliedRole) {
-        list = list.filter(p => p.roleName === this.appliedRole)
-      }
-      if (this.appliedStatus) {
-        list = list.filter(p => p.state === this.appliedStatus)
-      }
-      return list
-    },
     totalPages() {
       return this.serverTotalPages
-    },
-    paginatedList() {
-      // Data đã được phân trang từ server, nhưng nếu filter local thì slice
-      if (this.searchQuery) {
-        const s = 0
-        return this.filteredList.slice(s, this.perPage)
-      }
-      return this.people
     },
     pagStart() {
       return (this.currentPage - 1) * this.perPage + 1
@@ -535,6 +508,8 @@ export default {
   methods: {
     // ─── Map role name → nhãn tiếng Việt ────────────────────
     roleLabel(name) {
+      if (!name) return 'Không rõ'
+      const lowerName = name.toLowerCase()
       const map = {
         admin: 'Quản trị viên',
         manager: 'Quản lý',
@@ -543,16 +518,18 @@ export default {
         receptionist: 'Lễ tân',
         member: 'Hội viên',
       }
-      return map[name] || (name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Không rõ')
+      return map[lowerName] || (lowerName.charAt(0).toUpperCase() + lowerName.slice(1))
     },
 
     // ─── Map dữ liệu API → định dạng FE ─────────────────────
     mapUser(u) {
-      const roleName = u.role ? u.role.name : ''
-      const isMember = roleName === 'member'
+      const roleObj = u.role || {}
+      const roleName = roleObj.role_name || roleObj.name || u.role_name || ''
+      const lowerRoleName = roleName.toLowerCase()
+      const isMember = lowerRoleName === 'member'
 
       // Xác định chức vụ hiển thị (tiếng Việt)
-      const chucVu = this.roleLabel(roleName)
+      const chucVu = this.roleLabel(lowerRoleName)
 
       // Trạng thái
       const stateMap = { active: 'ĐANG HOẠT ĐỘNG', inactive: 'TẠM NGƯNG', banned: 'BỊ KHÓA' }
@@ -592,12 +569,12 @@ export default {
         console.warn('fetchRoles failed, dùng danh sách mặc định:', e.message)
         // Fallback nếu BE chưa có endpoint /roles
         this.roles = [
-          { id: 1, name: 'admin' },
-          { id: 2, name: 'manager' },
-          { id: 3, name: 'staff' },
-          { id: 4, name: 'trainer' },
-          { id: 5, name: 'receptionist' },
-          { id: 6, name: 'member' },
+          { id: 1, name: 'admin', role_name: 'admin' },
+          { id: 2, name: 'manager', role_name: 'manager' },
+          { id: 3, name: 'staff', role_name: 'staff' },
+          { id: 4, name: 'trainer', role_name: 'trainer' },
+          { id: 5, name: 'receptionist', role_name: 'receptionist' },
+          { id: 6, name: 'member', role_name: 'member' },
         ]
       }
     },
@@ -609,7 +586,7 @@ export default {
       try {
         const params = { page, per_page: this.perPage }
         if (search) params.search = search
-        if (this.appliedRole) params.role = this.appliedRole
+        if (this.appliedRole) params.role_id = this.appliedRole
         if (this.appliedStatus) params.state = this.appliedStatus
 
         const res = await userApi.getAll(params)
@@ -689,7 +666,7 @@ export default {
             : '—'
 
           this.selectedPerson.detail = {
-            chucDanh: emp?.position || u.role?.name || '—',
+            chucDanh: emp?.position || u.role?.role_name || u.role?.name || '—',
             chiNhanh: u.branch?.name || '—',
             namsanXuat: emp?.hire_date
               ? new Date(emp.hire_date).toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })
