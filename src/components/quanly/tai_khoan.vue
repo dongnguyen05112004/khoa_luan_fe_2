@@ -48,8 +48,8 @@
           <i class="fas fa-user-tie"></i>
         </div>
         <div class="tk-stat-body">
-          <div class="tk-stat-change positive">+6% so với tháng trước</div>
-          <div class="tk-stat-label">TỔNG NHÂN VIÊN</div>
+          <div class="tk-stat-change positive">+6% vs last mo</div>
+          <div class="tk-stat-label">TOTAL STAFF</div>
           <div class="tk-stat-value">{{ stats.totalStaff }}</div>
         </div>
       </div>
@@ -58,8 +58,8 @@
           <i class="fas fa-users"></i>
         </div>
         <div class="tk-stat-body">
-          <div class="tk-stat-change positive">+128 mới</div>
-          <div class="tk-stat-label">HỘI VIÊN ĐANG HOẠT ĐỘNG</div>
+          <div class="tk-stat-change positive">+128 new</div>
+          <div class="tk-stat-label">ACTIVE MEMBERS</div>
           <div class="tk-stat-value">{{ stats.activeMembers.toLocaleString() }}</div>
         </div>
       </div>
@@ -69,9 +69,9 @@
         </div>
         <div class="tk-stat-body">
           <div class="tk-stat-change neutral" style="color: transparent">—</div>
-          <div class="tk-stat-label">SỨC KHỪE HỆ THỐNG</div>
+          <div class="tk-stat-label">OPERATIONAL HEALTH</div>
           <div class="tk-stat-value green-val">{{ stats.operationalHealth }}</div>
-          <div class="tk-stat-sub optimal">Tốt ưu</div>
+          <div class="tk-stat-sub optimal">Optimal</div>
         </div>
         <div class="tk-stat-toggle">
           <div class="toggle-pill on"></div>
