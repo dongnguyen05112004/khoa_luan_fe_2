@@ -5,7 +5,7 @@
       <!-- Brand -->
       <div class="pt-brand">
         <div class="brand-logo">
-          <i class="fas fa-dumbbell"></i>
+          <img src="@/assets/logo.png" alt="SmartGym AI Logo" class="brand-logo-img" />
         </div>
         <div class="brand-text" v-show="!sidebarCollapsed">
           <div class="brand-name">SmartGym</div>
@@ -51,10 +51,7 @@
         </router-link>
       </nav>
 
-      <!-- Footer -->
-      <div class="pt-sidebar-footer" v-show="!sidebarCollapsed">
-        <span class="version-tag">V2.4.0-AI</span>
-      </div>
+
     </aside>
 
     <!-- ===== MAIN ===== -->
@@ -193,10 +190,14 @@ export default {
   background: rgba(255,255,255,0.15);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-size: 1rem;
   flex-shrink: 0;
   border: 1px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+}
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .brand-name { font-size: 0.95rem; font-weight: 700; color: #fff; letter-spacing: 0.4px; }
 .brand-role { font-size: 0.67rem; color: rgba(255,255,255,0.55); margin-top: 2px; }
@@ -297,18 +298,6 @@ export default {
 .pt-nav-item.active .nav-ico { color: #a8e6b5; }
 .nav-ico { font-size: 0.9rem; width: 18px; text-align: center; flex-shrink: 0; }
 
-/* Footer */
-.pt-sidebar-footer {
-  padding: 12px 16px 0;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-.version-tag {
-  font-size: 0.68rem;
-  color: rgba(255,255,255,0.4);
-  background: rgba(255,255,255,0.07);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
 
 /* ===== MAIN ===== */
 .pt-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }

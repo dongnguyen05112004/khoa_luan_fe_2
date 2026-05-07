@@ -292,15 +292,7 @@
                 <div class="tkm-info-label">GHI CHÚ SỨC KHỎE</div>
                 <div class="tkm-goal-text">"{{ selectedPerson?.detail?.mucTieu || 'Chưa có thông tin' }}"</div>
               </div>
-
-              <!-- Medical alert -->
-              <div class="tkm-medical-alert">
-                <i class="fas fa-heart-pulse tkm-medical-icon"></i>
-                <div class="tkm-medical-content">
-                  <div class="tkm-medical-title">TIỀN SỬ Y TẾ & LƯU Ý</div>
-                  <div class="tkm-medical-text">{{ selectedPerson?.detail?.tienSuYTe || 'Không có thông tin y tế đặc biệt.' }}</div>
-                </div>
-              </div>
+ 
             </div>
 
             <!-- Right: Dịch vụ đang dùng -->

@@ -5,7 +5,7 @@
       <!-- Brand -->
       <div class="sidebar-brand">
         <div class="brand-avatar">
-          <img src="https://ui-avatars.com/api/?name=Admin&background=ffffff&color=2d7a3a&bold=true&size=40" alt="Admin" />
+          <img src="@/assets/logo.png" alt="SmartGym AI Logo" />
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
           <div class="brand-title">SMARTGYM AI</div>
@@ -46,10 +46,7 @@
         </router-link>
       </nav>
 
-      <!-- Version badge at bottom -->
-      <div class="sidebar-footer" v-show="!sidebarCollapsed">
-        <span class="version-badge">V2.4.0-AI</span>
-      </div>
+
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -168,6 +165,7 @@ export default {
   height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  object-fit: cover;
 }
 .brand-title {
   font-size: 1rem;
@@ -243,18 +241,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* Footer version */
-.sidebar-footer {
-  padding: 12px 16px 0;
-  border-top: 1px solid rgba(255,255,255,0.15);
-}
-.version-badge {
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.5);
-  background: rgba(255,255,255,0.08);
-  padding: 3px 10px;
-  border-radius: 20px;
-}
 
 /* ===== MAIN ===== */
 .main-wrapper {
