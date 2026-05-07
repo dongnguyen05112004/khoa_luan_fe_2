@@ -234,7 +234,7 @@
             <div class="forecast-title">Dự báo Hiệu suất Sắp tới</div>
             <div class="forecast-desc">Dựa trên dữ liệu lịch sử, các chiến dịch ra mắt từ ngày 10 đến 15 tháng 2 có <strong>tỷ lệ tương tác cao hơn 14%</strong> do nhu cầu chuẩn bị cho kỳ nghỉ xuân trong khu vực.</div>
           </div>
-          <button class="btn-draft" @click="scheduleDraft">Lên lịch Bản nháp</button>
+          
         </div>
       </div>
     </div>
