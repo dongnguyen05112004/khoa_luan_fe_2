@@ -300,8 +300,7 @@
                 <i class="fas fa-heart-pulse tkm-medical-icon"></i>
                 <div class="tkm-medical-content">
                   <div class="tkm-medical-title">TIỀN SỬ Y TẾ & LƯU Ý</div>
-                  <div class="tkm-medical-text">{{ selectedPerson?.detail?.tienSuYTe || 'Không có thông tin y tế đặc
-                    biệt.' }}</div>
+                  <div class="tkm-medical-text">{{ selectedPerson?.detail?.tienSuYTe || 'Không có thông tin y tế đặc biệt.' }}</div>
                 </div>
               </div>
             </div>
