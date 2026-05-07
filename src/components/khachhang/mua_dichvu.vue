@@ -23,10 +23,16 @@
       </div>
       <template v-else>
 
-      <!-- Cảnh báo mua chồng chéo -->
+      <!-- Cảnh báo gói tập -->
       <div class="mk-alert" v-if="hasActiveSubscription">
         <i class="fas fa-triangle-exclamation"></i>
-        <span>Cảnh báo mua chồng chéo: Bạn đang có gói tập còn hiệu lực. Việc mua gói mới sẽ cộng dồn thời gian sử dụng.</span>
+        <span>Bạn đang có gói tập còn hiệu lực. Hệ thống không hỗ trợ mua chồng chéo, vui lòng sử dụng hết gói cũ hoặc thực hiện gia hạn.</span>
+      </div>
+
+      <!-- Cảnh báo PT -->
+      <div class="mk-alert" v-if="activePtContract">
+        <i class="fas fa-triangle-exclamation"></i>
+        <span>Bạn đang có hợp đồng PT đang hoạt động. Vui lòng hoàn thành hợp đồng hiện tại trước khi đăng ký gói mới.</span>
       </div>
 
       <!-- Header + plan-type toggle -->
@@ -80,11 +86,17 @@
               <!-- CTA -->
               <button
                 class="mk-btn-register"
-                :class="{ primary: plan.featured }"
-                @click="openPurchase(plan)"
+                :class="{ primary: plan.featured, disabled: hasActiveSubscription }"
+                @click="!hasActiveSubscription && openPurchase(plan)"
+                :disabled="hasActiveSubscription"
               >
-                Đăng ký ngay
+                {{ getMembershipBtnLabel(plan) }}
               </button>
+              <div v-if="activeSubscription && activeSubscription.plan_id === plan.id && activeSubscription.state === 'pending'" class="text-center mt-2">
+                <button class="btn btn-link btn-sm text-danger text-decoration-none" @click="cancelService('plan', activeSubscription.id)">
+                  <i class="fas fa-times-circle me-1"></i> Hủy đăng ký
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -107,7 +119,19 @@
               <div class="mk-pt-meta">TRỌN GÓI {{ pt.durationLabel }}</div>
               <div class="mk-pt-price">{{ formatPrice(pt.price) }} VND</div>
             </div>
-            <button class="mk-btn-detail" @click="openPurchase(pt)">Xem chi tiết</button>
+            <button 
+              class="mk-btn-detail" 
+              @click="!activePtContract && openPurchase(pt)"
+              :class="{ disabled: activePtContract }"
+              :disabled="activePtContract"
+            >
+              {{ getPtBtnLabel(pt, 'marketplace') }}
+            </button>
+            <div v-if="activePtContract && activePtContract.trainer_id === pt.id && activePtContract.state === 'pending'" class="text-center mt-2">
+              <button class="btn btn-link btn-sm text-danger text-decoration-none" @click="cancelService('pt', activePtContract.id)">
+                <i class="fas fa-times-circle me-1"></i> Hủy đăng ký
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -163,8 +187,13 @@
               </div>
 
               <!-- CTA -->
-              <button class="btn-book" @click="openBook(trainer)">
-                Đặt Lịch Ngay
+              <button 
+                class="btn-book" 
+                @click="!activePtContract && openBook(trainer)"
+                :class="{ disabled: activePtContract }"
+                :disabled="activePtContract"
+              >
+                {{ getPtBtnLabel(trainer, 'trainer') }}
               </button>
             </div>
           </div>
@@ -453,6 +482,34 @@ export default {
   },
 
   methods: {
+    getMembershipBtnLabel(plan) {
+      if (!this.activeSubscription) return 'Đăng ký ngay'
+      
+      // Nếu chính là gói này đang active/pending
+      if (this.activeSubscription.plan_id === plan.id) {
+        const state = (this.activeSubscription.state || '').toLowerCase()
+        if (state === 'pending' || state === 'unpaid') return 'Đang chờ thanh toán'
+        return 'Đã có gói tập'
+      }
+      
+      // Nếu đang có gói khác
+      return 'Đăng ký ngay'
+    },
+    getPtBtnLabel(item, mode) {
+      if (!this.activePtContract) return mode === 'marketplace' ? 'Xem chi tiết' : 'Đặt Lịch Ngay'
+      
+      // Đối với PT, kiểm tra xem có phải đúng HLV này không
+      const activeTrainerId = this.activePtContract.trainer_id
+      const currentId = item.isPt ? (item._raw?.id || item.id) : item.id
+      
+      if (activeTrainerId === currentId) {
+        const state = (this.activePtContract.state || '').toLowerCase()
+        if (state === 'pending' || state === 'unpaid') return 'Đang chờ thanh toán'
+        return mode === 'marketplace' ? 'Đã có hợp đồng' : 'Đã có PT'
+      }
+      
+      return mode === 'marketplace' ? 'Xem chi tiết' : 'Đặt Lịch Ngay'
+    },
     // ──────────────── FETCH DATA ────────────────
     async fetchAll() {
       await Promise.all([ this.fetchPlans(), this.fetchTrainers(), this.fetchMyActive() ])
@@ -539,6 +596,22 @@ export default {
       }
     },
 
+    async cancelService(type, id) {
+      const msg = type === 'plan' ? 'Bạn có chắc chắn muốn hủy đăng ký gói tập này không?' : 'Bạn có chắc chắn muốn hủy đăng ký hợp đồng PT này không?'
+      if (!confirm(msg)) return
+
+      try {
+        const url = type === 'plan' ? `/api/services/cancel-plan/${id}` : `/api/services/cancel-pt/${id}`
+        const payload = type === 'plan' ? { reason: 'Người dùng tự hủy trên giao diện' } : {}
+        
+        await axios.post(url, payload)
+        alert('Đã hủy đăng ký thành công.')
+        await this.fetchMyActive()
+      } catch (error) {
+        console.error('Lỗi khi hủy dịch vụ:', error)
+        alert('Không thể hủy dịch vụ. Vui lòng thử lại sau.')
+      }
+    },
     // ──────────────── HELPERS ────────────────
     calcEndDate(days) {
       const d = new Date(); d.setDate(d.getDate() + (days || 0))
@@ -1229,7 +1302,14 @@ export default {
   color: #fff;
   box-shadow: 0 4px 14px rgba(22,163,74,.3);
 }
-.mk-btn-register.primary:hover { opacity: .92; }
+.mk-btn-register.primary:hover:not(:disabled) { opacity: .92; }
+.mk-btn-register.disabled, .mk-btn-detail.disabled, .btn-book.disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
 
 /* ── PT PACKAGES ── */
 .mk-pt-list {

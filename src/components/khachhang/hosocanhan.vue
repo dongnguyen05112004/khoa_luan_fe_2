@@ -18,7 +18,7 @@
 
         <!-- Info -->
         <div class="profile-info">
-          <h2 class="profile-name">{{ user.name }}</h2>
+          <h2 class="profile-name">{{ user.full_name || user.name }}</h2>
           <p class="profile-id"><i class="fas fa-id-badge me-1"></i> ID: #{{ user.memberId }}</p>
           <div class="profile-badges">
             <span class="badge-tag gold"><i class="fas fa-star me-1"></i>{{ user.memberType }}</span>
@@ -170,9 +170,85 @@
       <ChiSoSucKhoe :showOnlyHealth="true" />
     </div>
 
-    <!-- ===== TAB: LỊCH SỬ ĐO LƯỜNG ===== -->
     <div v-if="activeTab === 'history'" class="tab-content">
       <ChiSoSucKhoe :showOnlyHistory="true" />
+    </div>
+
+    <!-- ===== TAB: DỊCH VỤ CỦA TÔI ===== -->
+    <div v-if="activeTab === 'services'" class="tab-content">
+      <div class="row g-4">
+        <!-- Membership Card -->
+        <div class="col-md-6">
+          <div class="info-card h-100">
+            <div class="info-card-label">GÓI TẬP HIỆN TẠI</div>
+            <div v-if="activeSubscription" class="service-display-card">
+              <div class="service-status-row">
+                <span class="service-badge" :class="activeSubscription.state">
+                  {{ serviceStatusLabel(activeSubscription.state) }}
+                </span>
+                <span class="service-date" v-if="activeSubscription.end_date">
+                  Hết hạn: {{ new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') }}
+                </span>
+              </div>
+              <h4 class="service-name">{{ activeSubscription.plan_name || 'Gói tập' }}</h4>
+              <p class="service-desc">{{ activeSubscription.description }}</p>
+              <div class="service-price-row" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
+                <span class="price-label">Số tiền cần thanh toán:</span>
+                <span class="price-value">{{ (activeSubscription.price || 0).toLocaleString() }} đ</span>
+              </div>
+              <div class="payment-notice" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
+                <i class="fas fa-info-circle me-1"></i> Vui lòng đến quầy lễ tân để hoàn tất thanh toán.
+                <div class="mt-2 text-end">
+                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('plan', activeSubscription.id)">Hủy đăng ký</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-service">
+              <i class="fas fa-box-open mb-2"></i>
+              <p>Bạn chưa đăng ký gói tập nào.</p>
+              <router-link to="/khachhang/mua_dich_vu" class="btn-go-buy">Mua gói ngay</router-link>
+            </div>
+          </div>
+        </div>
+
+        <!-- PT Card -->
+        <div class="col-md-6">
+          <div class="info-card h-100">
+            <div class="info-card-label">HỢP ĐỒNG PT</div>
+            <div v-if="activePtContract" class="service-display-card pt-card">
+              <div class="service-status-row">
+                <span class="service-badge" :class="activePtContract.state">
+                  {{ serviceStatusLabel(activePtContract.state) }}
+                </span>
+                <span class="service-sessions">
+                  Còn lại: {{ activePtContract.remaining_sessions }}/{{ activePtContract.total_sessions }} buổi
+                </span>
+              </div>
+              <div class="trainer-brief">
+                <img :src="activePtContract.trainer_avatar || 'https://ui-avatars.com/api/?name=HLV&background=1a3a2a&color=fff'" class="trainer-mini-img" />
+                <div>
+                  <h4 class="service-name mb-0">HLV {{ activePtContract.trainer_name }}</h4>
+                  <p class="service-desc mb-0">Chuyên môn: {{ activePtContract.specialization }}</p>
+                </div>
+              </div>
+              <div class="service-price-row mt-3" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
+                <span class="price-label">Số tiền cần thanh toán:</span>
+                <span class="price-value">{{ (activePtContract.price || 0).toLocaleString() }} đ</span>
+              </div>
+              <div class="payment-notice mt-2" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
+                <div class="text-end">
+                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('pt', activePtContract.id)">Hủy đăng ký</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-service">
+              <i class="fas fa-user-tie mb-2"></i>
+              <p>Bạn chưa có hợp đồng huấn luyện viên.</p>
+              <router-link to="/khachhang/mua_dich_vu" class="btn-go-buy">Tìm HLV ngay</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== TOAST SUCCESS ===== -->
@@ -182,16 +258,7 @@
       </div>
     </transition>
 
-    <!-- ===== ACTION FOOTER ===== -->
-    <div class="profile-footer">
-      <div class="save-error" v-if="saveError && !showEditModal">{{ saveError }}</div>
-      <button class="btn-cancel" @click="handleCancel">Hủy bỏ</button>
-      <button class="btn-save" @click="handleSave" :disabled="saving">
-        <i class="fas fa-spinner fa-spin me-2" v-if="saving"></i>
-        <i class="fas fa-save me-2" v-else></i>
-        {{ saving ? 'Đang lưu...' : 'Lưu hồ sơ' }}
-      </button>
-    </div>
+ 
 
     <!-- ===== EDIT MODAL ===== -->
     <div class="modal-overlay" v-if="showEditModal" @click.self="showEditModal = false">
@@ -206,7 +273,7 @@
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label-sm">Họ và tên</label>
-              <input type="text" class="form-control form-control-sm" v-model="editForm.name" />
+              <input type="text" class="form-control form-control-sm" v-model="editForm.full_name" />
             </div>
             <div class="col-6">
               <label class="form-label-sm">Số điện thoại</label>
@@ -273,6 +340,7 @@ export default {
         { key: 'general', label: 'Thông tin chung' },
         { key: 'health',  label: 'Chỉ số sức khỏe' },
         { key: 'history', label: 'Lịch sử đo lường' },
+        { key: 'services', label: 'Dịch vụ của tôi' },
       ],
       user: {
         name:       '',
@@ -291,6 +359,8 @@ export default {
         medicalHistory: [],
         aiRecommendation: null,
       },
+      activeSubscription: null,
+      activePtContract: null,
       biometrics: [
         { key: 'weight', label: 'CÂN NẶNG', value: '--', unit: 'kg', icon: 'fas fa-shopping-bag', iconBg: '#e8f5e9', change: undefined },
         { key: 'height', label: 'CHIỀU CAO', value: '--', unit: 'cm', icon: 'fas fa-arrows-alt-v', iconBg: '#e8f5e9', change: undefined },
@@ -299,7 +369,7 @@ export default {
         { key: 'bmi', label: 'BMI', value: '--', unit: '', icon: 'fas fa-chart-bar', iconBg: '#e8f5e9', change: undefined },
       ],
       editForm: {
-        name:   '',
+        full_name: '',
         phone:  '',
         dob:    '',
         gender: '',
@@ -382,7 +452,8 @@ export default {
 
         // Map user data
         this.user = {
-          name: data.full_name || '',
+          name: data.name || '',
+          full_name: data.full_name || '',
           memberId: data.card_number || `ID-${data.id}`,
           status: data.state || 'active',
           memberType: plan.full_name || 'Chưa đăng ký gói',
@@ -415,6 +486,27 @@ export default {
             ];
         }
 
+        // Fetch My Active Services (Plans & PT)
+        try {
+          const resActive = await axios.get('/api/services/my-active')
+          this.activeSubscription = resActive.data.active_plan || null
+          this.activePtContract   = resActive.data.active_pt_contract || null
+          
+          // Update header badges based on active plan
+          if (this.activeSubscription) {
+            const stateLabel = this.activeSubscription.state === 'pending' || this.activeSubscription.state === 'unpaid' 
+              ? ' (Chờ thanh toán)' 
+              : ''
+            this.user.memberType = (this.activeSubscription.plan_name || 'Gói tập') + stateLabel
+            this.user.access = this.activeSubscription.description || ''
+          } else {
+            this.user.memberType = 'Chưa đăng ký gói'
+            this.user.access = 'Kinetic Atelier member'
+          }
+        } catch (e) {
+          console.warn('Lỗi lấy thông tin dịch vụ active:', e)
+        }
+
       } catch (error) {
         console.error('Lỗi lấy hồ sơ:', error);
       } finally {
@@ -423,7 +515,7 @@ export default {
     },
     openEditModal() {
       this.editForm = {
-        name:   this.user.name,
+        full_name: this.user.full_name,
         phone:  this.user.phone,
         dob:    this.user.rawDob,
         gender: this.user.rawGender || 'male',
@@ -433,63 +525,67 @@ export default {
       }
       this.showEditModal = true
     },
+    async cancelService(type, id) {
+      const msg = type === 'plan' ? 'Bạn có chắc chắn muốn hủy đăng ký gói tập này không?' : 'Bạn có chắc chắn muốn hủy đăng ký hợp đồng PT này không?'
+      if (!confirm(msg)) return
+
+      try {
+        const url = type === 'plan' ? `/api/services/cancel-plan/${id}` : `/api/services/cancel-pt/${id}`
+        const payload = type === 'plan' ? { reason: 'Người dùng tự hủy trên giao diện' } : {}
+        
+        await axios.post(url, payload)
+        alert('Đã hủy thành công.')
+        await this.fetchProfile()
+      } catch (error) {
+        console.error('Lỗi khi hủy dịch vụ:', error)
+        alert('Không thể hủy dịch vụ. Vui lòng thử lại sau.')
+      }
+    },
     async saveEdit() {
       if (this.saving) return
       this.saving = true
       this.saveError = ''
       try {
-        // Gửi thẳng lên API – BE sẽ ghép goal vào health_notes
+        // Gửi dữ liệu lên API - BE sẽ xử lý lưu vào bảng users và member_profiles
         const payload = {
-          name:              this.editForm.name,
+          full_name:         this.editForm.full_name,
           phone:             this.editForm.phone,
           gender:            this.editForm.gender,
-          date_of_birth:     this.editForm.dob     || undefined,
-          goal:              this.editForm.goal     || undefined,
-          health_notes:      this.editForm.health_notes || undefined,
-          emergency_contact: this.editForm.emergency_contact || undefined,
+          date_of_birth:     this.editForm.dob || null,
+          goal:              this.editForm.goal || null,
+          health_notes:      this.editForm.health_notes || null,
+          emergency_contact: this.editForm.emergency_contact || null,
         }
         await axios.post('/api/customer/profile/update', payload)
+        
         this.showEditModal = false
-        // Tải lại dữ liệu mới từ server
+        // Tải lại dữ liệu mới từ server để cập nhật giao diện đồng bộ với BE
         await this.fetchProfile()
+        
         this.saveSuccess = true
         setTimeout(() => { this.saveSuccess = false }, 3000)
       } catch (error) {
         console.error('Lỗi khi lưu hồ sơ:', error)
-        this.saveError = error.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ.'
-      } finally {
-        this.saving = false
-      }
-    },
-    async handleSave() {
-      // Lưu trực tiếp các trường hiện tại của user (không qua modal)
-      this.saving = true
-      this.saveError = ''
-      try {
-        const payload = {
-          name:              this.user.name,
-          phone:             this.user.phone,
-          gender:            this.user.rawGender,
-          date_of_birth:     this.user.rawDob     || undefined,
-          goal:              this.user.goal        || undefined,
-          health_notes:      this.user.healthNotes || undefined,
-          emergency_contact: this.user.emergencyContact || undefined,
+        if (error.response?.data?.errors) {
+          this.saveError = Object.values(error.response.data.errors).flat()[0]
+        } else {
+          this.saveError = error.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ.'
         }
-        await axios.post('/api/customer/profile/update', payload)
-        await this.fetchProfile()
-        this.saveSuccess = true
-        setTimeout(() => { this.saveSuccess = false }, 3000)
-      } catch (error) {
-        console.error('Lỗi khi lưu hồ sơ:', error)
-        this.saveError = error.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ.'
       } finally {
         this.saving = false
       }
     },
-    handleCancel() {
-      this.$router.go(-1)
+
+    serviceStatusLabel(state) {
+      const map = {
+        active: 'Đang hoạt động',
+        pending: 'Chờ thanh toán',
+        unpaid: 'Chưa thanh toán',
+        expired: 'Đã hết hạn',
+        cancelled: 'Đã hủy'
+      }
+      return map[state] || state
     },
-    userStateLabel,
     async generateAI() {
       this.generatingAI = true;
       try {
@@ -809,29 +905,120 @@ export default {
 .biometric-label {
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.05em;
   color: #94a3b8;
+  margin-bottom: 2px;
   text-transform: uppercase;
-  margin-bottom: 4px;
 }
 .biometric-value {
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 800;
   color: #1e293b;
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  flex-wrap: wrap;
 }
-.biometric-unit { font-size: 0.9rem; font-weight: 500; color: #94a3b8; }
+.biometric-unit { font-size: 0.75rem; color: #64748b; font-weight: 600; margin-left: 2px; }
 .biometric-change {
-  font-size: 0.88rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  min-width: 44px;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
-.biometric-change.neg { color: #ef4444; }
 .biometric-change.pos { color: #22c55e; }
+.biometric-change.neg { color: #ef4444; }
+
+/* ── SERVICE TAB STYLES ── */
+.service-display-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+.service-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.service-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.service-badge.active { background: #dcfce7; color: #15803d; }
+.service-badge.pending, .service-badge.unpaid { background: #fef3c7; color: #b45309; }
+.service-date, .service-sessions {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+.service-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.service-desc {
+  font-size: 0.85rem;
+  color: #475569;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.service-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+}
+.price-label { font-size: 0.8rem; color: #64748b; }
+.price-value { font-size: 1rem; font-weight: 800; color: #2d7a3a; }
+
+.payment-notice {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fffbeb;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: #92400e;
+}
+
+.empty-service {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+.empty-service i { font-size: 2.5rem; color: #e2e8f0; }
+.empty-service p { font-size: 0.9rem; margin-bottom: 16px; }
+.btn-go-buy {
+  background: #2d7a3a;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.btn-go-buy:hover { color: #fff; opacity: 0.9; }
+
+.trainer-brief {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.trainer-mini-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+}
 
 /* BMI badge */
 .bmi-badge {
