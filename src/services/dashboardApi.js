@@ -329,8 +329,11 @@ export function formatPendingContracts(contracts) {
     .filter(c => c.days_left !== undefined && c.days_left <= 30)
     .slice(0, 5)
     .map(c => ({
-      id:      c.id,
-      name:    c.member_name,
-      package: c.package_label ?? c.package ?? 'Không rõ gói',
+      id:              c.id,
+      name:            c.member_name,
+      package:         c.package_label ?? c.package ?? 'Không rõ gói',
+      contractNumber:  c.contract_number ?? `#CN-${String(c.id).padStart(4, '0')}`,
+      planId:          c.plan_id,
+      daysLeft:        c.days_left,
     }))
 }

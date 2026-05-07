@@ -489,6 +489,7 @@ export default {
     handleCancel() {
       this.$router.go(-1)
     },
+    userStateLabel,
     async generateAI() {
       this.generatingAI = true;
       try {

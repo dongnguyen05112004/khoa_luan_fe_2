@@ -149,16 +149,28 @@
       <div class="right-card">
         <div class="right-card-header">
           <h3>Hợp đồng chờ ký</h3>
+          <span class="contract-count-badge" v-if="pendingContracts.length">{{ pendingContracts.length }}</span>
         </div>
         <div class="contract-list">
+          <div v-if="pendingContracts.length === 0" class="contract-empty">
+            <i class="fas fa-check-circle"></i>
+            <span>Không có hợp đồng chờ</span>
+          </div>
           <div v-for="contract in pendingContracts" :key="contract.id" class="contract-item">
             <div class="contract-info">
               <div class="contract-name">{{ contract.name }}</div>
               <div class="contract-meta">{{ contract.package }}</div>
+              <div class="contract-days" v-if="contract.daysLeft !== undefined">
+                <i class="fas fa-clock"></i> Còn {{ contract.daysLeft }} ngày
+              </div>
             </div>
             <div class="contract-actions">
-              <button class="btn-approve" @click="approveContract(contract)">Đồng ý</button>
-              <button class="btn-reject" @click="rejectContract(contract)">Từ chối</button>
+              <button class="btn-approve" @click="approveContract(contract)">
+                <i class="fas fa-check"></i> Xử lý
+              </button>
+              <button class="btn-reject" @click="rejectContract(contract)">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -372,12 +384,22 @@ export default {
       this.$router.push('/nhanvien/hoi_vien_moi')
     },
 
+    /**
+     * Bấm "Đồng ý" → chuyển sang trang Quản lý Hợp đồng
+     * và truyền contractId để trang đó tự tìm + chọn hợp đồng đó
+     */
     approveContract(contract) {
-      this.$router.push(`/nhanvien/hop_dong`)
+      this.$router.push({
+        path: '/nhanvien/hop_dong',
+        query: {
+          select: contract.id,
+          search: contract.name,
+        },
+      })
     },
 
     rejectContract(contract) {
-      // TODO: gọi contractApi.cancel(contract.id, reason) nếu cần
+      if (!confirm(`Xác nhận bỏ qua hợp đồng của ${contract.name}?`)) return
       this.pendingContracts = this.pendingContracts.filter(c => c.id !== contract.id)
     },
   },
@@ -807,12 +829,38 @@ export default {
 .contract-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+.contract-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  color: #90a49a;
+  font-size: 0.78rem;
+  justify-content: center;
+}
+.contract-empty i { color: #2d7a3a; font-size: 1rem; }
+.contract-count-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  line-height: 1.4;
 }
 .contract-item {
-  padding: 10px;
+  padding: 10px 12px;
   background: #f7faf8;
   border-radius: 10px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.contract-item:hover {
+  background: #edf7ef;
+  border-color: #a5d6b0;
+  transform: translateX(2px);
 }
 .contract-name {
   font-size: 0.8rem;
@@ -823,33 +871,56 @@ export default {
 .contract-meta {
   font-size: 0.68rem;
   color: #90a49a;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
+}
+.contract-days {
+  font-size: 0.66rem;
+  color: #f57c00;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 .contract-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
-.btn-approve, .btn-reject {
+.btn-approve {
   flex: 1;
-  padding: 6px 0;
+  padding: 6px 8px;
   border-radius: 8px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
+  background: #2d7a3a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
-.btn-approve {
-  background: #e8f5e9;
-  color: #2d7a3a;
+.btn-approve:hover {
+  background: #245f2e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45,122,58,0.3);
 }
-.btn-approve:hover { background: #c8e6c9; }
 .btn-reject {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
   background: #fce4ec;
   color: #c62828;
 }
-.btn-reject:hover { background: #ef9a9a; }
+.btn-reject:hover { background: #ef9a9a; transform: translateY(-1px); }
 
 /* Responsive */
 @media (max-width: 1100px) {

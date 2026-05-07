@@ -156,7 +156,7 @@ const handleLogin = async () => {
       'manager' : '/quanly/baocao',
       'staff'   : '/nhanvien',
       'trainer' : '/PT',
-      'member'  : '/khachhang/ho_so_ca_nhan',
+      'member'  : '/khachhang/chi_so_suc_khoe',
     }
 
     const redirectUrl = redirectMap[roleName] ?? '/dangnhap'

@@ -20,22 +20,22 @@
 
       <!-- Nav -->
       <nav class="nv-nav">
-        <router-link to="/nhanvien" class="nv-nav-item" active-class="active" exact>
+        <router-link to="/nhanvien" class="nv-nav-item" exact-active-class="active" exact>
           <i class="fas fa-home nav-ico"></i>
           <span v-show="!sidebarCollapsed">Tổng quan</span>
         </router-link>
 
-        <router-link to="/nhanvien/quanlyhoivien" class="nv-nav-item" active-class="active">
-          <i class="fas fa-file-contract nav-ico"></i>
+        <router-link to="/nhanvien/quanlyhoivien" class="nv-nav-item" exact-active-class="active">
+          <i class="fas fa-users nav-ico"></i>
           <span v-show="!sidebarCollapsed">Hội viên</span>
         </router-link>
 
-        <router-link to="/nhanvien/hop_dong" class="nv-nav-item" active-class="active">
+        <router-link to="/nhanvien/hop_dong" class="nv-nav-item" exact-active-class="active">
           <i class="fas fa-file-contract nav-ico"></i>
           <span v-show="!sidebarCollapsed">Hợp đồng</span>
         </router-link>
 
-        <router-link to="/nhanvien/thu_tien" class="nv-nav-item" active-class="active">
+        <router-link to="/nhanvien/thu_tien" class="nv-nav-item" exact-active-class="active">
           <i class="fas fa-credit-card nav-ico"></i>
           <span v-show="!sidebarCollapsed">Thanh toán</span>
         </router-link>

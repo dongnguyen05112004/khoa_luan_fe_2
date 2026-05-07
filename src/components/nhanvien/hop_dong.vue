@@ -106,7 +106,11 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="c in paginatedContracts" :key="c.id">
+                <tr
+                  v-for="c in paginatedContracts"
+                  :key="c.id"
+                  :class="{ 'row-highlighted': highlightedContractId === c.id }"
+                >
                   <td>
                     <span class="contract-id">{{ c.contractId }}</span>
                   </td>
@@ -376,6 +380,10 @@ export default {
 
       // ── Hủy hợp đồng ──────────────────────────────────────────────
       cancelReason: '',
+
+      // ── Navigate từ dashboard (query param: select, search) ──────────────
+      fromDashboard: false,
+      highlightedContractId: null,
     }
   },
 
@@ -714,6 +722,29 @@ export default {
       this.fetchStats(),
       this.fetchPlans(),   // load danh sách gói cho dropdown gia hạn
     ])
+
+    // ── Tự động chọn hợp đồng khi được navigate từ Dashboard ──────────────
+    const selectId = this.$route?.query?.select
+    const searchName = this.$route?.query?.search
+
+    if (selectId) {
+      this.fromDashboard = true
+      this.highlightedContractId = Number(selectId)
+
+      // Điền tên vào ô tìm kiếm để lấy kết quả thu hẹp
+      if (searchName) this.searchQ = searchName
+
+      // Tìm hợp đồng trong danh sách đã fetch
+      const found = this.contracts.find(c => c.id === Number(selectId))
+      if (found) {
+        this.selectContract(found)
+        // Scroll đến sidebar (panel gia hạn) để người dùng thấy ngầy
+        this.$nextTick(() => {
+          const sidebar = document.querySelector('.hd-sidebar')
+          if (sidebar) sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      }
+    }
   },
 }
 </script>
@@ -974,6 +1005,13 @@ export default {
 }
 .hd-table tr:last-child td { border-bottom: none; }
 .hd-table tbody tr:hover td { background: #fafbfc; }
+.hd-table tbody tr.row-highlighted td {
+  background: #f0fdf4;
+  border-bottom-color: #bbf7d0;
+}
+.hd-table tbody tr.row-highlighted td:first-child {
+  border-left: 3px solid #2d7a3a;
+}
 
 .contract-id {
   font-family: 'Courier New', monospace;

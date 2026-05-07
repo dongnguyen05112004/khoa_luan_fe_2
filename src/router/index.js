@@ -142,6 +142,11 @@ const routes = [
         component: () => import('../layout/wrapper/khachhang.vue'),
         meta: { layout: "khachhang" },
         children: [
+            // Redirect mặc định: /khachhang → /khachhang/chi_so_suc_khoe
+            {
+                path: '',
+                redirect: '/khachhang/chi_so_suc_khoe',
+            },
             // ── NHÓM 2: Tài khoản & Hồ sơ ──
             {
                 path: 'ho_so_ca_nhan',

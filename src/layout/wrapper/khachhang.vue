@@ -21,19 +21,10 @@
       <!-- Nav -->
       <nav class="sidebar-nav">
 
-        <!-- ── NHÓM 2: Quản lý tài khoản & hồ sơ ── -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">TÀI KHOẢN & HỒ SƠ</div>
-        <div class="nav-divider" v-show="sidebarCollapsed"></div>
-
-        <router-link to="/khachhang/ho_so_ca_nhan" class="nav-item" active-class="active">
-          <i class="fas fa-user-circle nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Hồ sơ cá nhân</span>
+        <router-link to="/khachhang/chi_so_suc_khoe" class="nav-item" active-class="active">
+          <i class="fas fa-chart-line nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Chỉ số sức khỏe</span>
         </router-link>
- 
-
-        <!-- ── NHÓM 3: Dịch vụ & tiện ích ── -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">DỊCH VỤ & TIỆN ÍCH</div>
-        <div class="nav-divider" v-show="sidebarCollapsed"></div>
 
         <router-link to="/khachhang/qr_checkin" class="nav-item" active-class="active">
           <i class="fas fa-qrcode nav-icon"></i>
@@ -45,23 +36,14 @@
           <span v-show="!sidebarCollapsed">Mua dịch vụ</span>
         </router-link>
 
-        <router-link to="/khachhang/hop_dong" class="nav-item" active-class="active">
-          <i class="fas fa-file-contract nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Quản lý hợp đồng</span>
-        </router-link>
-
-        <!-- ── NHÓM 4: Theo dõi tiến trình ── -->
-        <div class="nav-section-label" v-show="!sidebarCollapsed">THEO DÕI TIẾN TRÌNH</div>
-        <div class="nav-divider" v-show="sidebarCollapsed"></div>
-
-        <router-link to="/khachhang/bieu_do_suc_khoe" class="nav-item" active-class="active">
-          <i class="fas fa-chart-line nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Biểu đồ sức khỏe</span>
+        <router-link to="/khachhang/ho_so_ca_nhan" class="nav-item" active-class="active">
+          <i class="fas fa-user-circle nav-icon"></i>
+          <span v-show="!sidebarCollapsed">Hồ sơ cá nhân</span>
         </router-link>
 
         <router-link to="/khachhang/giam_sat_muc_tieu" class="nav-item" active-class="active">
           <i class="fas fa-bullseye nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Giám sát mục tiêu</span>
+          <span v-show="!sidebarCollapsed">Theo dõi tiến trình</span>
         </router-link>
 
         <router-link to="/khachhang/phan_hoi_ai" class="nav-item" active-class="active">
