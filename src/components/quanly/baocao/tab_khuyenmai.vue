@@ -129,11 +129,6 @@
             <div class="ls-val">{{ campaigns.length > 0 ? Math.round(statsActive / campaigns.length * 100) : 0 }}%</div>
             <div class="ls-trend" style="color:#7c3aed"><i class="fas fa-bolt"></i> Tỷ lệ hoạt động</div>
           </div>
-          <div class="ai-suggest-card">
-            <div class="ais-hd"><i class="fas fa-robot" style="color:#7c3aed"></i> ĐỀ XUẤT TỪ AI</div>
-            <p class="ais-txt">Chạy khuyến mãi "Chuẩn bị cho mùa hè" để đạt tương tác cao.</p>
-            <a href="#" class="ais-link">Khám phá chiến lược <i class="fas fa-arrow-right"></i></a>
-          </div>
         </div>
 
         <!-- Table -->
@@ -776,7 +771,7 @@ export default {
 .btn-add-camp:hover { opacity:.9; transform:translateY(-1px); }
 
 /* Stats row */
-.list-stats { display:grid; grid-template-columns:1fr 1fr 1fr 1.2fr; gap:14px; }
+.list-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
 .ls-card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
 .ls-lbl { font-size:.62rem; font-weight:700; color:#94a3b8; letter-spacing:.4px; margin-bottom:6px; }
 .ls-val { font-size:1.7rem; font-weight:800; color:#0f172a; margin-bottom:4px; }
