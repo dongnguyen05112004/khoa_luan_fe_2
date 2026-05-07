@@ -219,17 +219,18 @@
 </template>
 
 <script>
-import TabGiuChan     from './baocao/tab_giuchan.vue'
-import TabGoiTap      from './baocao/tab_goitap.vue'
-import TabKhuyenMai   from './baocao/tab_khuyenmai.vue'
-import TabPhanHoi     from './baocao/tab_phanhoi.vue'
-import TabBaoCao      from './baocao/tab_baocao.vue'
-import TabAI          from './baocao/tab_ai.vue'
+import TabGiuChan            from './baocao/tab_giuchan.vue'
+import TabGoiTap             from './baocao/tab_goitap.vue'
+import TabKhuyenMai          from './baocao/tab_khuyenmai.vue'
+import TabKhuyenMaiPhanTich  from './baocao/tab_khuyenmai_phantich.vue'
+import TabPhanHoi            from './baocao/tab_phanhoi.vue'
+import TabBaoCao             from './baocao/tab_baocao.vue'
+import TabAI                 from './baocao/tab_ai.vue'
 import axios from 'axios';
 
 export default {
   name: 'AdminDashboard',
-  components: { TabGiuChan, TabGoiTap, TabKhuyenMai, TabPhanHoi, TabBaoCao, TabAI },
+  components: { TabGiuChan, TabGoiTap, TabKhuyenMai, TabKhuyenMaiPhanTich, TabPhanHoi, TabBaoCao, TabAI },
   data() {
     return {
       aiReport: null,
@@ -310,10 +311,10 @@ export default {
   computed: {
     currentTabComponent() {
       const map = {
-        tongquan:   null,         // rendered inline (KPI + AI + Charts)
+        tongquan:   null,                      // rendered inline (KPI + AI + Charts)
         giuchan:    'TabGiuChan',
         goitap:     'TabGoiTap',
-        khuyenmai:  'TabKhuyenMai',
+        khuyenmai:  'TabKhuyenMaiPhanTich',
         phanhoi:    'TabPhanHoi',
         baocao:     'TabBaoCao',
         ai:         'TabAI',

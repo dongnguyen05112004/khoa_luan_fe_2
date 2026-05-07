@@ -88,7 +88,7 @@
             <td class="col-role">
               <span class="role-badge" :class="'role-' + getRoleClass(acc)">{{ getRoleName(acc) }}</span>
             </td>
-            <td class="col-status">
+            <td class="col-status mt-1">
               <span class="status-dot" :class="acc.state === 'active' ? 'dot-active' : 'dot-locked'"></span>
               <span :class="acc.state === 'active' ? 'text-active' : 'text-locked'">
                 {{ acc.state === 'active' ? 'Hoạt động' : 'Đã khoá' }}
@@ -175,11 +175,14 @@
             <div class="form-row">
               <div class="form-group">
                 <label><i class="fas fa-shield-alt form-label-icon"></i> Vai trò <span class="required">*</span></label>
-                <select v-model="newAcc.role_id">
-                  <option :value="1">ADMIN</option>
+                <select v-model="newAcc.role_id" :class="{ 'input-error': createErrors.role_id }" @change="createErrors.role_id = ''">
+                  <option :value="null" disabled>-- Chọn vai trò --</option>
                   <option :value="2">MANAGER</option>
                   <option :value="3">STAFF</option>
+                  <option :value="4">PT</option>
+                  <option :value="5">MEMBER</option>
                 </select>
+                <span class="error-msg" v-if="createErrors.role_id">{{ createErrors.role_id }}</span>
               </div>
               <div class="form-group">
                 <label><i class="fas fa-lock form-label-icon"></i> Mật khẩu <span class="required">*</span></label>
@@ -247,9 +250,10 @@
               <div class="form-group">
                 <label><i class="fas fa-shield-alt form-label-icon"></i> Vai trò <span class="required">*</span></label>
                 <select v-model="editAcc.role_id">
-                  <option :value="1">ADMIN</option>
                   <option :value="2">MANAGER</option>
                   <option :value="3">STAFF</option>
+                  <option :value="4">PT</option>
+                  <option :value="5">MEMBER</option>
                 </select>
               </div>
               <div class="form-group">
@@ -305,6 +309,53 @@
             <button class="btn-cancel" @click="closeEditModal">Huỷ bỏ</button>
             <button class="btn-save" @click="saveEdit">
               <i class="fas fa-save"></i> Lưu thay đổi
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ======================== -->
+    <!-- MODAL: ĐẶT LẠI MẬT KHẨU -->
+    <!-- ======================== -->
+    <transition name="modal-fade">
+      <div class="modal-overlay" v-if="showResetModal" @click.self="showResetModal = false">
+        <div class="modal-box">
+          <div class="modal-header">
+            <div class="modal-header-icon" style="background: #e0f2fe; color: #0284c7;"><i class="fas fa-key"></i></div>
+            <div>
+              <h2>Đặt lại mật khẩu</h2>
+              <p>Cấp lại mật khẩu mới cho tài khoản <strong>{{ resetPwUser?.full_name || resetPwUser?.name }}</strong></p>
+            </div>
+            <button class="modal-close" @click="showResetModal = false"><i class="fas fa-times"></i></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label>Mật khẩu mới <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <input v-model="resetForm.newPassword" :type="showResetPw ? 'text' : 'password'" placeholder="Nhập mật khẩu mới..." />
+                <button class="input-eye-btn" type="button" @click="showResetPw = !showResetPw">
+                  <i :class="showResetPw ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label>Xác nhận mật khẩu mới <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <input v-model="resetForm.confirmPassword" :type="showResetPw ? 'text' : 'password'" placeholder="Nhập lại mật khẩu..." :class="{ 'input-error': resetError }" />
+                <button class="input-eye-btn" type="button" @click="showResetPw = !showResetPw">
+                  <i :class="showResetPw ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
+              <span class="error-msg" v-if="resetError" style="margin-top: 5px;">{{ resetError }}</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="showResetModal = false">Huỷ bỏ</button>
+            <button class="btn-save" @click="submitResetPassword">
+              <i class="fas fa-check"></i> Xác nhận
             </button>
           </div>
         </div>
@@ -439,7 +490,7 @@ export default {
       // Create modal
       showCreateModal: false,
       newAcc: { name: '', email: '', role_id: null, password: '' },
-      createErrors: { name: '', email: '', password: '' },
+      createErrors: { name: '', email: '', password: '', role_id: '' },
       showNewPw: false,
 
       // Edit modal
@@ -448,6 +499,13 @@ export default {
       editErrors: { name: '', email: '', password: '' },
       showChangePw: false,
       showEditPw: false,
+
+      // Reset Password modal
+      showResetModal: false,
+      resetPwUser: null,
+      resetForm: { newPassword: '', confirmPassword: '' },
+      resetError: '',
+      showResetPw: false,
 
       // Detail modal
       showDetailModal: false,
@@ -548,7 +606,7 @@ export default {
     // ---- Create ----
     openCreateModal() {
       this.newAcc = { name: '', email: '', role_id: null, password: '' }
-      this.createErrors = { name: '', email: '', password: '' }
+      this.createErrors = { name: '', email: '', password: '', role_id: '' }
       this.showNewPw = false
       this.showCreateModal = true
     },
@@ -560,6 +618,7 @@ export default {
       if (!this.newAcc.email.trim()) { this.createErrors.email = 'Vui lòng nhập email'; valid = false }
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newAcc.email)) { this.createErrors.email = 'Email không hợp lệ'; valid = false }
       if (!this.newAcc.password.trim()) { this.createErrors.password = 'Vui lòng nhập mật khẩu'; valid = false }
+      if (!this.newAcc.role_id) { this.createErrors.role_id = 'Vui lòng chọn vai trò'; valid = false }
       
       if (!valid) return
 
@@ -667,14 +726,16 @@ export default {
 
     // 7. Xoá user — DELETE /api/users/{id}
     async deleteAccount(acc) {
-      if (!confirm(`Bạn có chắc muốn xoá tài khoản "${acc.name}" không?`)) return;
+      const accName = acc.full_name || acc.name || 'này';
+      if (!confirm(`Bạn có chắc muốn xoá tài khoản "${accName}" không?`)) return;
       try {
         await axios.delete(`/api/users/${acc.id}`);
         this.accounts = this.accounts.filter(a => a.id !== acc.id);
-        this.showToast('fas fa-trash', `Đã xoá tài khoản ${acc.name}`);
+        this.showToast('fas fa-trash', `Đã xoá tài khoản ${accName}`);
       } catch (error) {
         console.error('Lỗi xoá user:', error);
-        this.showToast('fas fa-times-circle', 'Xoá tài khoản thất bại!');
+        const errMsg = error.response?.data?.message || 'Xoá tài khoản thất bại!';
+        this.showToast('fas fa-times-circle', errMsg);
       }
     },
 
@@ -742,7 +803,42 @@ export default {
     },
 
     resetPassword(acc) {
-      this.showToast('fas fa-key', `Đã gửi yêu cầu đặt lại mật khẩu cho ${acc.name}`);
+      this.resetPwUser = acc;
+      this.resetForm = { newPassword: '', confirmPassword: '' };
+      this.resetError = '';
+      this.showResetPw = false;
+      this.showResetModal = true;
+    },
+    async submitResetPassword() {
+      if (!this.resetForm.newPassword) {
+        this.resetError = 'Vui lòng nhập mật khẩu mới';
+        return;
+      }
+      if (this.resetForm.newPassword.length < 8) {
+        this.resetError = 'Mật khẩu phải có ít nhất 8 ký tự';
+        return;
+      }
+      if (this.resetForm.newPassword !== this.resetForm.confirmPassword) {
+        this.resetError = 'Mật khẩu xác nhận không khớp';
+        return;
+      }
+
+      try {
+        const payload = {
+          name: this.resetPwUser.name,
+          email: this.resetPwUser.email,
+          role_id: this.resetPwUser.role_id,
+          state: this.resetPwUser.state,
+          password: this.resetForm.newPassword
+        };
+        await axios.put(`/api/users/${this.resetPwUser.id}`, payload);
+        
+        this.showResetModal = false;
+        this.showToast('fas fa-check-circle', `Đã đặt lại mật khẩu cho ${this.resetPwUser.full_name || this.resetPwUser.name}`);
+      } catch (error) {
+        console.error("Lỗi đặt lại mật khẩu:", error);
+        this.resetError = error.response?.data?.message || 'Đặt lại mật khẩu thất bại!';
+      }
     },
     resetFilter() {
       this.filterRole = ''; this.filterStatus = ''; this.searchQuery = ''

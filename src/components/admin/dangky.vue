@@ -37,13 +37,7 @@
         <div class="col-md-7 bg-white d-flex flex-column">
 
           <!-- Top bar -->
-          <div class="d-flex justify-content-end align-items-center gap-3 px-4 pt-3 pb-2 border-bottom">
-            <i class="bi bi-question-circle text-muted fs-5" style="cursor:pointer;"></i>
-            <i class="bi bi-globe text-muted fs-5" style="cursor:pointer;"></i>
-            <div class="rounded-circle overflow-hidden" style="width:36px;height:36px;">
-              <img src="https://ui-avatars.com/api/?name=Guest&background=6035d0&color=fff&size=36" alt="avatar" class="w-100 h-100 object-fit-cover">
-            </div>
-          </div>
+           
 
           <!-- Form content -->
           <div class="p-4 p-md-5 flex-grow-1 overflow-auto">
@@ -75,10 +69,10 @@
                   </div>
                 </div>
                 <div class="col-6">
-                  <label class="form-label custom-label">Số điện thoại <span class="text-danger">*</span></label>
+                  <label class="form-label custom-label">Số điện thoại</label>
                   <div class="custom-input-group">
                     <input v-model="form.soDienThoai" type="tel" class="form-control shadow-none border-0 px-0 fw-medium"
-                      placeholder="090 123 4567" required>
+                      placeholder="090 123 4567">
                   </div>
                 </div>
               </div>
@@ -92,10 +86,10 @@
                   </div>
                 </div>
                 <div class="col-6">
-                  <label class="form-label custom-label">CMND/CCCD <span class="text-danger">*</span></label>
+                  <label class="form-label custom-label">CMND/CCCD</label>
                   <div class="custom-input-group">
                     <input v-model="form.cmnd" type="text" class="form-control shadow-none border-0 px-0 fw-medium"
-                      placeholder="012345678912" required>
+                      placeholder="012345678912">
                   </div>
                 </div>
               </div>
@@ -130,38 +124,6 @@
                     class="form-text mt-1" style="font-size:0.7rem; color:#dc2626;">
                     <i class="bi bi-exclamation-circle"></i> Mật khẩu không khớp
                   </div>
-                </div>
-              </div>
-
-              <!-- ── SECTION 2: Gói hội viên ── -->
-              <div class="section-title mb-3">
-                <i class="bi bi-credit-card-2-front me-2 text-purple"></i>
-                <span class="fw-bold">Lựa chọn gói Hội Viên</span>
-              </div>
-
-              <div class="row g-3 mb-3">
-                <div v-for="plan in plans" :key="plan.id" class="col-6">
-                  <div class="plan-card p-3 rounded-3 border position-relative cursor-pointer"
-                    :class="{ 'plan-selected': selectedPlan === plan.id }"
-                    @click="selectedPlan = plan.id">
-                    <span v-if="plan.badge"
-                      class="badge badge-recommend position-absolute top-0 start-50 translate-middle px-2 py-1">
-                      {{ plan.badge }}
-                    </span>
-                    <div class="fw-bold text-dark small mb-1" :class="{ 'mt-2': plan.badge }">{{ plan.ten }}</div>
-                    <div class="price-value fw-bold mb-1">{{ plan.gia }}</div>
-                    <div class="text-muted" style="font-size:0.75rem;">{{ plan.moTa }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Ngày kích hoạt -->
-              <div class="mb-4">
-                <label class="form-label custom-label">Ngày bắt đầu kích hoạt</label>
-                <div class="custom-input-group d-flex align-items-center">
-                  <input v-model="form.ngayKichHoat" type="date"
-                    class="form-control shadow-none border-0 px-0 fw-medium flex-grow-1">
-                  <i class="bi bi-calendar3 text-muted ms-2"></i>
                 </div>
               </div>
 
@@ -210,14 +172,6 @@ const showConfirm = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 const loading = ref(false)
-const selectedPlan = ref('nam')
-
-const plans = [
-  { id: 'thang', ten: 'Tháng', gia: '800.000đ', moTa: 'Tập luyện tự do không giới hạn.', badge: null },
-  { id: 'quy',   ten: 'Quý',   gia: '2.100.000đ', moTa: 'Tiết kiệm 15% so với gói tháng.', badge: null },
-  { id: 'nam',   ten: 'Năm',   gia: '7.200.000đ', moTa: 'Tặng kèm 2 buổi PT & Túi tập Gym.', badge: 'ĐỀ XUẤT CHO BẠN' },
-  { id: 'pt',    ten: 'Gói PT',gia: '5.000.000đ', moTa: '10 buổi huấn luyện cá nhân AI-assisted.', badge: null },
-]
 
 const form = reactive({
   hoTen: '',
@@ -232,8 +186,8 @@ const handleRegister = async () => {
   successMsg.value = ''
 
   // Validate phía FE
-  if (!form.hoTen || !form.email || !form.matKhau || !form.soDienThoai) {
-    errorMsg.value = 'Vui lòng điền đầy đủ thông tin bắt buộc.'
+  if (!form.hoTen || !form.email || !form.matKhau) {
+    errorMsg.value = 'Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Mật khẩu).'
     return
   }
   if (form.matKhau.length < 8) {
@@ -333,46 +287,6 @@ const goToLogin = () => router.push('/dangnhap')
 .custom-input-group .form-control::placeholder {
   color: #cbd5e1;
   font-weight: 500;
-}
-
-/* ── Section title ── */
-.section-title {
-  font-size: 0.95rem;
-  color: #1e293b;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 18px;
-}
-.text-purple { color: #6035d0; }
-
-/* ── Plan cards ── */
-.plan-card {
-  border-color: #e2e8f0 !important;
-  background: #f8f9fa;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  min-height: 90px;
-}
-.plan-card:hover {
-  border-color: #a78bfa !important;
-  background: #faf5ff;
-}
-.plan-selected {
-  border-color: #6035d0 !important;
-  background: #fff !important;
-  box-shadow: 0 0 0 3px rgba(96, 53, 208, 0.12);
-}
-.price-value {
-  font-size: 1rem;
-  color: #6035d0;
-}
-.badge-recommend {
-  background: linear-gradient(90deg, #6035d0, #22d3ee);
-  color: white;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  border-radius: 20px;
-  white-space: nowrap;
 }
 
 /* ── Submit Button ── */

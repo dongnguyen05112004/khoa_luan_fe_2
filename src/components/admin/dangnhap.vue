@@ -136,6 +136,10 @@ const handleLogin = async () => {
     const res = await axios.post('http://localhost:8000/api/login', {
       email: form.email,
       password: form.password,
+    }, {
+      headers: {
+        'Accept': 'application/json'
+      }
     })
 
     const { token, user } = res.data
@@ -158,8 +162,15 @@ const handleLogin = async () => {
     const redirectUrl = redirectMap[roleName] ?? '/dangnhap'
     router.push(redirectUrl)
   } catch (err) {
-    const msg = err.response?.data?.message
-    errorMsg.value = msg || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+    console.error('Lỗi đăng nhập:', err)
+    if (err.response?.data?.errors) {
+      // Lấy lỗi đầu tiên từ object errors
+      const firstError = Object.values(err.response.data.errors)[0][0]
+      errorMsg.value = firstError
+    } else {
+      const msg = err.response?.data?.message
+      errorMsg.value = msg || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
+    }
   } finally {
     loading.value = false
   }

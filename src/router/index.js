@@ -125,7 +125,7 @@ const routes = [
             },
             {
                 path: '/quanly/khuyenmai',
-                component: () => import('../components/quanly/baocao/tab_khuyenmai.vue'),
+                component: () => import('../components/quanly/baocao/tab_khuyenmai_phantich.vue'),
             },
             {
                 path: '/quanly/taikhoan',

@@ -40,10 +40,10 @@
                       <div class="success-icon mx-auto mb-3">
                         <i class="bi bi-envelope-check-fill fs-1 text-success-custom"></i>
                       </div>
-                      <h2 class="fw-bold text-dark mb-1">Kiểm tra email của bạn</h2>
+                      <h2 class="fw-bold text-dark mb-1">Yêu cầu đã được nhận</h2>
                       <p class="text-muted fs-sm mb-4">
-                        Chúng tôi đã gửi mã xác nhận đến <strong>{{ email }}</strong>.<br>
-                        Sao chép mã từ email rồi dán vào ô bên dưới.
+                        Nếu email <strong>{{ email }}</strong> tồn tại trong hệ thống, bạn sẽ nhận được một thư chứa mã xác nhận.<br>
+                        Vui lòng kiểm tra hòm thư và dán mã vào ô bên dưới.
                       </p>
                     </div>
 
@@ -159,29 +159,12 @@
                   </template>
 
                 </div>
-
-                <!-- Footer support -->
-                <div class="d-flex align-items-center mt-5 px-lg-3">
-                  <div class="support-icon bg-light rounded-circle d-flex align-items-center justify-content-center me-3 text-muted flex-shrink-0">
-                    <i class="bi bi-headset fs-5"></i>
-                  </div>
-                  <div>
-                    <div class="fs-xs text-muted text-uppercase fw-bold">Cần hỗ trợ?</div>
-                    <div class="fw-bold text-dark fs-sm">Liên hệ hotline 1900 8888</div>
-                  </div>
-                </div>
               </div>
-
             </div>
           </div>
 
           <div class="d-flex justify-content-center justify-content-md-between align-items-center mt-4 text-muted fs-xs px-3 flex-wrap gap-2">
             <div>© 2026 Nhóm 36. All rights reserved.</div>
-            <div class="d-flex gap-3 fw-medium">
-              <a href="#" class="text-muted text-decoration-none hover-dark">Quy định</a>
-              <a href="#" class="text-muted text-decoration-none hover-dark">Bảo mật</a>
-              <a href="#" class="text-muted text-decoration-none hover-dark">Hỗ trợ</a>
-            </div>
           </div>
 
         </div>

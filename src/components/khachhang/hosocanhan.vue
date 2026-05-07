@@ -33,17 +33,18 @@
       </div>
 
       <!-- Tabs -->
-      <div class="profile-tabs">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="tab-btn"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+      <ul class="nav nav-tabs px-4 border-0">
+        <li class="nav-item" v-for="tab in tabs" :key="tab.key">
+          <button
+            class="nav-link border-0 text-secondary fw-semibold"
+            style="background: transparent;"
+            :class="{ 'active text-success border-bottom border-success border-3': activeTab === tab.key }"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+          </button>
+        </li>
+      </ul>
     </div>
 
     <!-- ===== TAB: THÔNG TIN CHUNG ===== -->
@@ -174,11 +175,21 @@
       <ChiSoSucKhoe :showOnlyHistory="true" />
     </div>
 
+    <!-- ===== TOAST SUCCESS ===== -->
+    <transition name="toast-fade">
+      <div class="save-toast" v-if="saveSuccess">
+        <i class="fas fa-check-circle me-2"></i> Hồ sơ đã được lưu thành công!
+      </div>
+    </transition>
+
     <!-- ===== ACTION FOOTER ===== -->
     <div class="profile-footer">
+      <div class="save-error" v-if="saveError && !showEditModal">{{ saveError }}</div>
       <button class="btn-cancel" @click="handleCancel">Hủy bỏ</button>
-      <button class="btn-save" @click="handleSave">
-        <i class="fas fa-save me-2"></i>Lưu hồ sơ
+      <button class="btn-save" @click="handleSave" :disabled="saving">
+        <i class="fas fa-spinner fa-spin me-2" v-if="saving"></i>
+        <i class="fas fa-save me-2" v-else></i>
+        {{ saving ? 'Đang lưu...' : 'Lưu hồ sơ' }}
       </button>
     </div>
 
@@ -228,10 +239,15 @@
           </div>
         </div>
         <div class="edit-modal-footer">
-          <button class="btn-cancel" @click="showEditModal = false">Hủy</button>
-          <button class="btn-save" @click="saveEdit">
-            <i class="fas fa-check me-1"></i>Lưu thay đổi
-          </button>
+          <div class="save-error" v-if="saveError">{{ saveError }}</div>
+          <div class="edit-modal-footer-btns">
+            <button class="btn-cancel" @click="showEditModal = false" :disabled="saving">Hủy</button>
+            <button class="btn-save" @click="saveEdit" :disabled="saving">
+              <i class="fas fa-spinner fa-spin me-1" v-if="saving"></i>
+              <i class="fas fa-check me-1" v-else></i>
+              {{ saving ? 'Đang lưu...' : 'Lưu thay đổi' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -292,6 +308,9 @@ export default {
         emergency_contact: ''
       },
       loading: true,
+      saving: false,
+      saveSuccess: false,
+      saveError: '',
       generatingAI: false
     }
   },
@@ -299,6 +318,7 @@ export default {
     await this.fetchProfile();
   },
   methods: {
+    userStateLabel,
     async fetchProfile() {
       this.loading = true;
       try {
@@ -307,7 +327,7 @@ export default {
         
         const profile = data.member_profile || {};
         const sub = data.active_subscription || {};
-        const plan = sub.membership_plan || {};
+        const plan = sub.plan || {};
         const metrics = data.health_metrics || [];
         const aiRecs = data.ai_recommendations || [];
 
@@ -362,10 +382,10 @@ export default {
 
         // Map user data
         this.user = {
-          name: data.name || '',
+          name: data.full_name || '',
           memberId: data.card_number || `ID-${data.id}`,
           status: data.state || 'active',
-          memberType: plan.name || 'Chưa đăng ký gói',
+          memberType: plan.full_name || 'Chưa đăng ký gói',
           access: plan.description || '',
           phone: data.phone || '',
           dob: dobStr,
@@ -413,48 +433,57 @@ export default {
       }
       this.showEditModal = true
     },
-    saveEdit() {
-      // Just map to local state before saving
-      this.user.name   = this.editForm.name
-      this.user.phone  = this.editForm.phone
-      this.user.rawDob    = this.editForm.dob
-      this.user.rawGender = this.editForm.gender
-      this.user.gender = this.editForm.gender === 'male' ? 'Nam' : (this.editForm.gender === 'female' ? 'Nữ' : 'Khác')
-      this.user.goal   = this.editForm.goal
-      this.user.healthNotes = this.editForm.health_notes
-      this.user.emergencyContact = this.editForm.emergency_contact
-      
-      // Update dob string and age
-      if (this.user.rawDob) {
-          const dobDate = new Date(this.user.rawDob);
-          const today = new Date();
-          let age = today.getFullYear() - dobDate.getFullYear();
-          if (today.getMonth() < dobDate.getMonth() || (today.getMonth() === dobDate.getMonth() && today.getDate() < dobDate.getDate())) {
-              age--;
-          }
-          this.user.age = age;
-          this.user.dob = `${String(dobDate.getDate()).padStart(2, '0')}/${String(dobDate.getMonth() + 1).padStart(2, '0')}/${dobDate.getFullYear()}`;
+    async saveEdit() {
+      if (this.saving) return
+      this.saving = true
+      this.saveError = ''
+      try {
+        // Gửi thẳng lên API – BE sẽ ghép goal vào health_notes
+        const payload = {
+          name:              this.editForm.name,
+          phone:             this.editForm.phone,
+          gender:            this.editForm.gender,
+          date_of_birth:     this.editForm.dob     || undefined,
+          goal:              this.editForm.goal     || undefined,
+          health_notes:      this.editForm.health_notes || undefined,
+          emergency_contact: this.editForm.emergency_contact || undefined,
+        }
+        await axios.post('/api/customer/profile/update', payload)
+        this.showEditModal = false
+        // Tải lại dữ liệu mới từ server
+        await this.fetchProfile()
+        this.saveSuccess = true
+        setTimeout(() => { this.saveSuccess = false }, 3000)
+      } catch (error) {
+        console.error('Lỗi khi lưu hồ sơ:', error)
+        this.saveError = error.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ.'
+      } finally {
+        this.saving = false
       }
-
-      this.showEditModal = false
     },
     async handleSave() {
+      // Lưu trực tiếp các trường hiện tại của user (không qua modal)
+      this.saving = true
+      this.saveError = ''
       try {
         const payload = {
-            name: this.user.name,
-            phone: this.user.phone,
-            gender: this.user.rawGender,
-            date_of_birth: this.user.rawDob,
-            goal: this.user.goal,
-            health_notes: this.user.healthNotes,
-            emergency_contact: this.user.emergencyContact
-        };
-        await axios.post('/api/customer/profile/update', payload);
-        alert('Hồ sơ đã được lưu thành công!');
-        this.fetchProfile(); // Refresh data
+          name:              this.user.name,
+          phone:             this.user.phone,
+          gender:            this.user.rawGender,
+          date_of_birth:     this.user.rawDob     || undefined,
+          goal:              this.user.goal        || undefined,
+          health_notes:      this.user.healthNotes || undefined,
+          emergency_contact: this.user.emergencyContact || undefined,
+        }
+        await axios.post('/api/customer/profile/update', payload)
+        await this.fetchProfile()
+        this.saveSuccess = true
+        setTimeout(() => { this.saveSuccess = false }, 3000)
       } catch (error) {
-        console.error('Lỗi khi lưu hồ sơ:', error);
-        alert('Có lỗi xảy ra khi lưu hồ sơ.');
+        console.error('Lỗi khi lưu hồ sơ:', error)
+        this.saveError = error.response?.data?.message || 'Có lỗi xảy ra khi lưu hồ sơ.'
+      } finally {
+        this.saving = false
       }
     },
     handleCancel() {
@@ -916,10 +945,45 @@ export default {
 .form-label-sm { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 .edit-modal-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid #f1f5f9;
   background: #f8fafc;
 }
+.edit-modal-footer-btns { display: flex; justify-content: flex-end; gap: 12px; }
+
+/* ── SAVE ERROR ── */
+.save-error {
+  font-size: 0.8rem;
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+/* ── SAVE TOAST ── */
+.save-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.35);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+}
+.toast-fade-enter-active, .toast-fade-leave-active { transition: all 0.3s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(-12px); }
+
+/* ── DISABLED BUTTONS ── */
+.btn-save:disabled { opacity: 0.65; cursor: not-allowed; transform: none !important; }
+.btn-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

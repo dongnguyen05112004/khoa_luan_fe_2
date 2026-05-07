@@ -1,105 +1,123 @@
 <template>
-  <div class="pt-wrap">
-    <!-- Header row -->
-    <div class="pt-header">
-      <div>
-        <div class="pt-eyebrow">TRUNG TÂM PHÂN TÍCH DOANH NGHIỆP</div>
-        <h2 class="pt-title">Phân tích Khuyến mãi</h2>
-        <p class="pt-sub">Theo dõi hiệu suất thời gian thực và tối ưu hóa chiến dịch dựa trên AI.</p>
+  <div class="kp-wrap">
+
+    <!-- ── Top Stats Bar ── -->
+    <div class="top-stats-bar">
+      <div class="ts-item" v-for="s in topStats" :key="s.label">
+        <div class="ts-label">{{ s.label }}</div>
+        <div class="ts-value" :class="s.valClass">{{ s.value }}</div>
+        <div class="ts-sub" v-if="s.sub">{{ s.sub }}</div>
       </div>
-      <div class="pt-header-right">
-        <button class="btn-period"><i class="fas fa-calendar-alt"></i> 30 ngày qua <i class="fas fa-chevron-down"></i></button>
-        <button class="btn-dl"><i class="fas fa-download"></i></button>
+      <!-- AI Score – special green card -->
+      <div class="ts-item ts-ai">
+        <div class="ts-ai-score">94<span class="ts-ai-denom">/100</span></div>
+        <div class="ts-ai-label">ĐIỂM TỐI ƯU AI</div>
+        <div class="ts-ai-sub"><i class="fas fa-arrow-up"></i> Phiên hiệu suất đỉnh cao</div>
       </div>
     </div>
 
-    <!-- KPI Row -->
+    <!-- ── Page Header ── -->
+    <div class="kp-header">
+      <div class="kp-header-left">
+        <h2 class="kp-title">PHÂN TÍCH HIỆU QUẢ KHUYẾN MÃI</h2>
+        <p class="kp-sub">Phân tích và tối ưu hóa chi phí tiếp thị phòng tập. Theo dõi phễu chuyển đổi và hiệu quả từng chiến dịch theo thời gian thực.</p>
+      </div>
+      <div class="kp-header-actions">
+        <button class="btn-export"><i class="fas fa-file-export"></i> Xuất báo cáo</button>
+        <button class="btn-new"><i class="fas fa-plus"></i> Chiến dịch mới</button>
+      </div>
+    </div>
+
+    <!-- ── KPI Cards Row ── -->
     <div class="kpi-row">
-      <div class="kpi-c" v-for="k in kpis" :key="k.label">
-        <div class="kpi-top">
-          <div class="kpi-icon-box" :class="k.ic"><i :class="k.icon"></i></div>
-          <span class="kpi-trend" :class="k.trendClass">{{ k.trend }}</span>
+      <div class="kpi-card" v-for="k in kpiCards" :key="k.label">
+        <div class="kpi-top-row">
+          <div class="kpi-icon-box" :class="k.iconBg"><i :class="k.icon"></i></div>
+          <span class="kpi-badge-trend" :class="k.trendClass">{{ k.trend }}</span>
         </div>
-        <div class="kpi-lbl">{{ k.label }}</div>
-        <div class="kpi-val">{{ k.value }}</div>
-        <div class="kpi-bar"><div class="kpi-bar-fill" :style="{ width: k.pct + '%', background: k.barColor }"></div></div>
+        <div class="kpi-value">{{ k.value }}</div>
+        <div class="kpi-label">{{ k.label }}</div>
+        <div class="kpi-desc">{{ k.desc }}</div>
       </div>
     </div>
 
-    <!-- Chart + AI card -->
-    <div class="chart-row">
-      <!-- Bar Chart -->
-      <div class="chart-card">
-        <div class="chart-head">
-          <span class="chart-title">So sánh Hiệu suất Chiến dịch</span>
-          <div class="chart-legend">
-            <span class="leg-dot green"></span><span class="leg-txt">Chuyển đổi</span>
-            <span class="leg-dot purple"></span><span class="leg-txt">Lượt nhập</span>
-          </div>
-        </div>
-        <div class="bar-chart">
-          <div class="bar-group" v-for="g in chartData" :key="g.label">
-            <div class="bars">
-              <div class="bar green-bar" :style="{ height: g.conv + 'px' }" :title="g.conv + '%'"></div>
-              <div class="bar purple-bar" :style="{ height: g.enter + 'px' }" :title="g.enter + '%'"></div>
+    <!-- ── Funnel + Campaign Table ── -->
+    <div class="body-row">
+
+      <!-- LEFT: Funnel Chart -->
+      <div class="funnel-panel premium-card">
+        <div class="panel-title"><i class="fas fa-filter"></i> BIỂU ĐỒ PHỄU CHUYỂN ĐỔI</div>
+
+        <!-- Funnel Steps -->
+        <div class="funnel-steps">
+          <div class="funnel-step" v-for="(step, i) in funnelSteps" :key="i">
+            <div class="funnel-bar-wrap">
+              <div
+                class="funnel-bar"
+                :class="step.cls"
+                :style="{ width: step.pct + '%' }"
+              >
+                <span class="funnel-bar-label">{{ step.label }}</span>
+                <span class="funnel-bar-icon"><i :class="step.icon"></i></span>
+              </div>
             </div>
-            <div class="bar-label">{{ g.label }}</div>
+            <div class="funnel-value">{{ step.value }}</div>
+          </div>
+        </div>
+
+        <!-- AI Insight Box -->
+        <div class="funnel-ai-box">
+          <div class="funnel-ai-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+          <div class="funnel-ai-text">
+            <div class="funnel-ai-title">THÔNG TIN THÔNG MINH TỪ AI</div>
+            <p>Phân tích các giai đoạn chuyển đổi cho thấy sự rút giảm giữa 'Quan tâm' và 'Mua hàng' đó được cải thiện 4% sau khi thay đổi nội dung sáng tạo cho chiến dịch 'Summer Blast'.</p>
           </div>
         </div>
       </div>
 
-      <!-- AI Strategy Card -->
-      <div class="ai-strat-card">
-        <div class="ai-strat-badge"><i class="fas fa-wand-magic-sparkles"></i> CHIẾN LƯỢC TỐI ƯU BỞI AI</div>
-        <div class="ai-strat-title">Cải tiến New Year VIP</div>
-        <p class="ai-strat-desc">Dựa trên 24 tháng lịch sử, hồ sơ chiến dịch này có 92% xác suất vượt qua các khách hàng tiềm năng hiện tại trong Quý.</p>
-        <div class="ai-strat-metrics">
-          <div class="ai-metric">
-            <span class="ai-metric-lbl">Chuyển đổi kỳ vọng</span>
-            <span class="ai-metric-val green">+18.5%</span>
-          </div>
-          <div class="ai-metric">
-            <span class="ai-metric-lbl">Doanh thu dự kiến</span>
-            <span class="ai-metric-val">85.400.000 VNĐ</span>
-          </div>
+      <!-- RIGHT: Campaign Comparison Table -->
+      <div class="campaign-panel premium-card">
+        <div class="panel-title-row">
+          <div class="panel-title"><i class="fas fa-chart-bar"></i> So sánh chiến dịch đang chạy</div>
+          <div class="panel-sub">Chi tiết hiệu suất theo nền tảng và loại chiến dịch.</div>
         </div>
-        <button class="btn-apply">Áp dụng chiến lược ngay</button>
-      </div>
-    </div>
 
-    <!-- Growth signal -->
-    <div class="growth-card">
-      <div class="growth-icon"><i class="fas fa-arrow-trend-up"></i></div>
-      <div>
-        <div class="growth-title">TÍN HIỆU TĂNG TRƯỞNG</div>
-        <div class="growth-text">Các phiên tối (6PM–9PM) đang cho thấy tỉ lệ quy đổi voucher cao hơn 45% trong tuần này.</div>
-      </div>
-    </div>
-
-    <!-- Recent campaigns -->
-    <div class="recent-section">
-      <div class="recent-title">Chi tiết chiến dịch gần đây</div>
-      <div class="recent-list">
-        <div class="recent-item" v-for="c in recent" :key="c.name">
-          <div class="recent-icon" :class="c.ic"><i :class="c.icon"></i></div>
-          <div class="recent-info">
-            <div class="recent-name">{{ c.name }}</div>
-            <div class="recent-tags">
-              <span v-for="t in c.tags" :key="t" class="recent-tag">{{ t }}</span>
+        <!-- Table Header -->
+        <div class="camp-table">
+          <div class="camp-thead">
+            <div class="camp-th">TÊN CHIẾN DỊCH</div>
+            <div class="camp-th center">LƯỢT DÙNG</div>
+            <div class="camp-th center">CTR</div>
+            <div class="camp-th center">TRẠNG THÁI</div>
+            <div class="camp-th center">ROI</div>
+          </div>
+          <div class="camp-tbody">
+            <div class="camp-row" v-for="c in mappedCampaigns" :key="c.id || c.name">
+              <div class="camp-td camp-name-cell">
+                <div class="camp-icon-box" :class="c.iconBg"><i :class="c.icon"></i></div>
+                <div>
+                  <div class="camp-name">{{ c.name }}</div>
+                  <div class="camp-type">{{ c.type }}</div>
+                  <span class="camp-tag" v-if="c.tag">{{ c.tag }}</span>
+                </div>
+              </div>
+              <div class="camp-td center camp-uses">{{ c.uses }}</div>
+              <div class="camp-td center camp-ctr">{{ c.ctr }}</div>
+              <div class="camp-td center">
+                <span class="camp-status" :class="c.statusClass">{{ c.status }}</span>
+              </div>
+              <div class="camp-td center camp-roi">{{ c.roi }}</div>
             </div>
           </div>
-          <div class="recent-stats">
-            <div class="rs"><div class="rs-lbl">SỬ DỤNG</div><div class="rs-val">{{ c.uses }}</div></div>
-            <div class="rs"><div class="rs-lbl">CTR</div><div class="rs-val">{{ c.ctr }}</div></div>
-            <div class="rs"><div class="rs-lbl">ROI</div><div class="rs-val green-txt">{{ c.roi }}</div></div>
-          </div>
-          <div class="recent-avatars">
-            <div class="av" v-for="(a, i) in c.avatars" :key="i" :style="{ background: a }"></div>
-          </div>
-          <button class="btn-more"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+
+        <!-- View all link -->
+        <div class="camp-view-all">
+          <a href="#" class="camp-view-link">Xem tất cả 18 chiến dịch <i class="fas fa-arrow-right"></i></a>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -108,108 +126,674 @@ export default {
   name: 'TabKhuyenMaiPhanTich',
   data() {
     return {
-      kpis: [
-        { label: 'Số lần sử dụng', value: '12,482', trend: '+12.4%', trendClass: 'tr-green', icon: 'fas fa-ticket-alt', ic: 'ic-green', barColor: '#16a34a', pct: 74 },
-        { label: 'Doanh thu tạo ra', value: '42.910.000 VNĐ', trend: '+8.1%', trendClass: 'tr-green', icon: 'fas fa-coins', ic: 'ic-blue', barColor: '#2563eb', pct: 60 },
-        { label: 'Tỷ lệ chuyển đổi (%)', value: '24.8%', trend: '+3.2%', trendClass: 'tr-green', icon: 'fas fa-percent', ic: 'ic-purple', barColor: '#7c3aed', pct: 82 },
-        { label: 'Khuyến mãi đang chạy', value: '14', trend: 'Ổn định', trendClass: 'tr-gray', icon: 'fas fa-tag', ic: 'ic-orange', barColor: '#f59e0b', pct: 50 },
+      topStats: [
+        { label: 'Tỉ lệ chuyển đổi trực tiếp', value: '12.4%', sub: '+2.1% so với hôm qua' },
+        { label: 'Mã khuyến mãi đang chạy', value: '18', sub: 'Trên 4 nền tảng' },
+        { label: 'Doanh thu ước tính', value: '286.500.000 VNĐ', sub: 'Tháng này' },
       ],
-      chartData: [
-        { label: 'SUMMER BLITZ', conv: 80, enter: 100 },
-        { label: 'FLASH SALE',   conv: 50, enter: 70  },
-        { label: 'NEW YEAR VIP', conv: 120, enter: 140 },
-        { label: 'REFER-A-FRIEND', conv: 60, enter: 80 },
-        { label: 'LOYALTY TIER', conv: 70, enter: 95  },
+      kpiCards: [
+        { label: 'Tổng mã đã dùng', value: '3,842', trend: '+12% so với năm ngoái', trendClass: 'trend-green', icon: 'fas fa-ticket-alt', iconBg: 'icon-green', desc: 'Số lượng mã khuyến mãi được quy đổi bởi các cặp thành viên giảm giá.' },
+        { label: 'Doanh thu từ khuyến mãi', value: '1.164.800.000 VNĐ', trend: 'Tri Vũ', trendClass: 'trend-blue', icon: 'fas fa-coins', iconBg: 'icon-blue', desc: 'Tổng doanh thu trực tiếp tạo ra từ các lượt đăng ký có sử dụng giảm giá.' },
+        { label: 'Tỷ lệ chuyển đổi', value: '21.8%', trend: 'Tiềm năng cao', trendClass: 'trend-purple', icon: 'fas fa-percent', iconBg: 'icon-purple', desc: 'Tỷ lệ chuyển đổi tổng từ khách hàng tiếp cận sang mua thẻ thành viên.' },
       ],
-      recent: [
-        { name: 'Summer Blitz 2024', tags: ['Kết thúc sau 4 ngày', 'Tập trung Mạng xã hội'], uses: '4,120', ctr: '12.4%', roi: '3.2x', ic: 'ic-green', icon: 'fas fa-sun', avatars: ['#6366f1','#2d7a3a','#f59e0b'] },
-        { name: 'Khuyến mãi Flash Cuối tuần', tags: ['Hoàn thành', 'Email Marketing'], uses: '1,890', ctr: '8.1%', roi: '2.4x', ic: 'ic-purple', icon: 'fas fa-bolt', avatars: ['#7c3aed','#ec4899'] },
+      funnelSteps: [
+        { label: 'PHÁT HÀNH (TIẾP CẬN)', value: '142,500', pct: 100, cls: 'funnel-green',  icon: 'fas fa-bullhorn' },
+        { label: 'LƯỢT QUAN TÂM',        value: '32,140',  pct: 70,  cls: 'funnel-teal',   icon: 'fas fa-eye' },
+        { label: 'LƯỢT CHUYỂN ĐỔI',      value: '6,842',   pct: 40,  cls: 'funnel-purple', icon: 'fas fa-shopping-cart' },
       ],
+      loading: false,
+      errorMsg: '',
+      showEditModal: false,
+      editingId: null,
+      editForm: { name: '', code: '', discount: 20, startDate: '', endDate: '', usage_limit: '', desc: '' },
+      editing: false,
+      editError: '',
+      campaigns: [],
     }
+  },
+
+  computed: {
+    mappedCampaigns() {
+      const iconMap = [
+        { icon: 'fas fa-sun',      iconBg: 'icon-yellow' },
+        { icon: 'fab fa-facebook', iconBg: 'icon-blue'   },
+        { icon: 'fas fa-user-tie', iconBg: 'icon-orange' },
+        { icon: 'fas fa-envelope', iconBg: 'icon-purple' },
+        { icon: 'fas fa-tag',      iconBg: 'icon-green'  },
+      ]
+      const now = new Date()
+      return this.campaigns.map((c, i) => {
+        const start = c.start_date ? new Date(c.start_date) : null
+        const end   = c.end_date   ? new Date(c.end_date)   : null
+        const isRunning = (start && end) ? (now >= start && now <= end) : c.active
+        const ic = iconMap[i % iconMap.length]
+        return {
+          id:          c.id,
+          name:        c.name,
+          type:        c.target || 'KHUYẾN MÃI',
+          tag:         i === 0 ? 'HIỆU QUẢ NHẤT' : '',
+          icon:        ic.icon,
+          iconBg:      ic.iconBg,
+          uses:        c.usage_limit ? String(c.usage_limit) : '—',
+          ctr:         c._raw?.discount ? `${c._raw.discount}%` : '—',
+          status:      isRunning ? 'Đang chạy' : (end && now > end ? 'Đã kết thúc' : 'Sắp diễn ra'),
+          statusClass: isRunning ? 'status-running' : 'status-done',
+          roi:         '—',
+        }
+      })
+    },
+    statsActive() {
+      return this.campaigns.filter(c => c.active).length
+    },
+  },
+
+  mounted() {
+    this.fetchPromotions()
+  },
+
+  methods: {
+    async fetchPromotions() {
+      this.loading = true
+      this.errorMsg = ''
+      try {
+        const { promotionApi } = await import('@/services/promotionApi.js')
+        const res  = await promotionApi.getAll()
+        const data = res.data
+        const list = Array.isArray(data) ? data : (data.data || [])
+        this.campaigns = list.map((p, i) => this.mapPromotion(p, i))
+      } catch (err) {
+        console.error('fetchPromotions error:', err)
+        this.errorMsg = err?.response?.data?.message || err.message || 'Lỗi tải dữ liệu'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    mapPromotion(p, idx = 0) {
+      const colors   = ['#2d7a3a', '#6366f1', '#f59e0b', '#ec4899', '#14b8a6']
+      const now      = new Date()
+      const start    = p.start_date ? new Date(p.start_date) : null
+      const end      = p.end_date   ? new Date(p.end_date)   : null
+      const isActive = (start && end) ? (now >= start && now <= end) : true
+      const period   = (p.start_date && p.end_date)
+        ? `${new Date(p.start_date).toLocaleDateString('vi-VN')} – ${new Date(p.end_date).toLocaleDateString('vi-VN')}`
+        : (p.start_date ? new Date(p.start_date).toLocaleDateString('vi-VN') : 'Đang diễn ra')
+      return {
+        id:          p.id,
+        name:        p.title || p.name,
+        target:      p.description || 'Tất cả hội viên',
+        code:        p.code || '—',
+        period,
+        discount:    p.discount ? `GIẢM ${p.discount}%` : '—',
+        active:      isActive,
+        color:       colors[idx % colors.length],
+        start_date:  p.start_date,
+        end_date:    p.end_date,
+        usage_limit: p.usage_limit,
+        _raw:        p,
+      }
+    },
+
+    async deletePromo(c) {
+      if (!c) return
+      if (!confirm(`Xóa chiến dịch "${c.name}"?`)) return
+      try {
+        const { promotionApi } = await import('@/services/promotionApi.js')
+        await promotionApi.remove(c.id)
+        this.campaigns = this.campaigns.filter(x => x.id !== c.id)
+      } catch (err) {
+        alert(err?.response?.data?.message || 'Lỗi khi xóa chiến dịch')
+      }
+    },
+
+    openEdit(c) {
+      if (!c) return
+      this.editingId = c.id
+      this.editError = ''
+      const raw = c._raw || {}
+      this.editForm = {
+        name:        raw.title       || c.name || '',
+        code:        raw.code        || (c.code !== '—' ? c.code : '') || '',
+        discount:    raw.discount    != null ? raw.discount : 20,
+        startDate:   raw.start_date  ? raw.start_date.substring(0, 10) : '',
+        endDate:     raw.end_date    ? raw.end_date.substring(0, 10)   : '',
+        usage_limit: raw.usage_limit || '',
+        desc:        raw.description || '',
+      }
+      this.showEditModal = true
+    },
+
+    closeEdit() {
+      this.showEditModal = false
+      this.editingId = null
+      this.editError = ''
+    },
+
+    async submitEdit() {
+      if (!this.editForm.name) { this.editError = 'Vui lòng nhập tên chiến dịch.'; return }
+      this.editing = true
+      this.editError = ''
+      try {
+        const { promotionApi } = await import('@/services/promotionApi.js')
+        const payload = {
+          title:       this.editForm.name,
+          code:        this.editForm.code        || undefined,
+          discount:    this.editForm.discount    || undefined,
+          description: this.editForm.desc        || undefined,
+          start_date:  this.editForm.startDate   || undefined,
+          end_date:    this.editForm.endDate     || undefined,
+          usage_limit: this.editForm.usage_limit || undefined,
+        }
+        const res     = await promotionApi.update(this.editingId, payload)
+        const updated = res.data?.data ?? res.data
+        const idx     = this.campaigns.findIndex(x => x.id === this.editingId)
+        if (idx !== -1) this.campaigns.splice(idx, 1, this.mapPromotion(updated, idx))
+        this.closeEdit()
+      } catch (err) {
+        this.editError = err?.response?.data?.errors
+          ? Object.values(err.response.data.errors).flat().join(', ')
+          : (err?.response?.data?.message || 'Lỗi khi cập nhật')
+      } finally {
+        this.editing = false
+      }
+    },
+
+    getCampaignById(id) {
+      return this.campaigns.find(c => c.id === id) || null
+    },
   },
 }
 </script>
 
 <style scoped>
-.pt-wrap { display:flex; flex-direction:column; gap:18px; font-family:'Segoe UI',sans-serif; color:#1e293b; }
-.pt-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-.pt-eyebrow { font-size:.65rem; font-weight:700; color:#7c3aed; letter-spacing:.6px; margin-bottom:4px; }
-.pt-title { font-size:1.6rem; font-weight:800; color:#0f172a; margin:0 0 4px; }
-.pt-sub { font-size:.78rem; color:#64748b; margin:0; max-width:380px; }
-.pt-header-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-.btn-period { display:flex; align-items:center; gap:6px; padding:7px 14px; border:1.5px solid #e2e8f0; border-radius:9px; background:#fff; font-size:.8rem; color:#475569; cursor:pointer; }
-.btn-dl { width:34px; height:34px; border:1.5px solid #e2e8f0; border-radius:9px; background:#fff; color:#475569; cursor:pointer; font-size:.85rem; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* KPI */
-.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.kpi-c { background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-.kpi-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-.kpi-icon-box { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.82rem; }
-.ic-green  { background:#dcfce7; color:#16a34a; }
-.ic-blue   { background:#dbeafe; color:#2563eb; }
-.ic-purple { background:#ede9fe; color:#7c3aed; }
-.ic-orange { background:#fef3c7; color:#d97706; }
-.kpi-trend { font-size:.68rem; font-weight:700; padding:2px 7px; border-radius:20px; }
-.tr-green { background:#dcfce7; color:#16a34a; }
-.tr-gray  { background:#f1f5f9; color:#64748b; }
-.kpi-lbl { font-size:.68rem; color:#94a3b8; margin-bottom:4px; }
-.kpi-val { font-size:1.35rem; font-weight:800; color:#0f172a; margin-bottom:8px; }
-.kpi-bar { height:4px; background:#f1f5f9; border-radius:20px; overflow:hidden; }
-.kpi-bar-fill { height:100%; border-radius:20px; }
+/* ─── Root ─── */
+.kp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+}
 
-/* Chart row */
-.chart-row { display:grid; grid-template-columns:1fr 260px; gap:16px; }
-.chart-card { background:#fff; border-radius:14px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-.chart-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
-.chart-title { font-size:.9rem; font-weight:700; color:#1e293b; }
-.chart-legend { display:flex; align-items:center; gap:10px; }
-.leg-dot { width:10px; height:10px; border-radius:50%; }
-.leg-dot.green  { background:#2d7a3a; }
-.leg-dot.purple { background:#7c3aed; }
-.leg-txt { font-size:.72rem; color:#64748b; margin-right:4px; }
-.bar-chart { display:flex; align-items:flex-end; gap:12px; height:160px; padding-bottom:24px; position:relative; }
-.bar-group { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
-.bars { display:flex; gap:4px; align-items:flex-end; height:130px; }
-.bar { width:16px; border-radius:4px 4px 0 0; transition:height .4s; }
-.green-bar  { background:linear-gradient(180deg,#2d7a3a,#166534); }
-.purple-bar { background:linear-gradient(180deg,#7c3aed,#6366f1); }
-.bar-label { font-size:.55rem; color:#94a3b8; font-weight:600; text-align:center; white-space:nowrap; }
+/* ─── Top Stats Bar ─── */
+.top-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 180px;
+  gap: 12px;
+}
+.ts-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ts-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ts-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+.ts-sub {
+  font-size: 0.72rem;
+  color: #10b981;
+  font-weight: 600;
+}
 
-/* AI Strategy */
-.ai-strat-card { background:linear-gradient(135deg,#5b21b6 0%,#4f46e5 100%); border-radius:14px; padding:18px; color:#fff; display:flex; flex-direction:column; gap:12px; }
-.ai-strat-badge { font-size:.62rem; font-weight:700; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:5px; width:fit-content; }
-.ai-strat-title { font-size:1rem; font-weight:800; }
-.ai-strat-desc { font-size:.72rem; color:rgba(255,255,255,.82); line-height:1.55; margin:0; }
-.ai-strat-metrics { display:flex; flex-direction:column; gap:8px; background:rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; }
-.ai-metric { display:flex; justify-content:space-between; align-items:center; }
-.ai-metric-lbl { font-size:.7rem; color:rgba(255,255,255,.75); }
-.ai-metric-val { font-size:.85rem; font-weight:800; }
-.ai-metric-val.green { color:#4ade80; }
-.btn-apply { padding:10px; border:2px solid rgba(255,255,255,.7); border-radius:9px; background:transparent; color:#fff; font-size:.82rem; font-weight:700; cursor:pointer; transition:background .15s; }
-.btn-apply:hover { background:rgba(255,255,255,.15); }
+/* AI Score Card */
+.ts-ai {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border-color: #16a34a;
+  color: #fff;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(22,163,74,0.3);
+}
+.ts-ai-score {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+.ts-ai-denom {
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.ts-ai-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.5px;
+}
+.ts-ai-sub {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.75);
+}
 
-/* Growth */
-.growth-card { display:flex; align-items:center; gap:14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px 18px; }
-.growth-icon { width:36px; height:36px; border-radius:50%; background:#16a34a; color:#fff; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
-.growth-title { font-size:.65rem; font-weight:700; color:#16a34a; letter-spacing:.5px; margin-bottom:4px; }
-.growth-text { font-size:.78rem; color:#475569; }
+/* ─── Page Header ─── */
+.kp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+.kp-title {
+  margin: 0 0 6px;
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+.kp-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  max-width: 520px;
+  line-height: 1.6;
+}
+.kp-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-export:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+.btn-new {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(22,163,74,0.3);
+  transition: all 0.2s;
+}
+.btn-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22,163,74,0.4);
+}
 
-/* Recent */
-.recent-section {}
-.recent-title { font-size:.92rem; font-weight:700; color:#1e293b; margin-bottom:12px; }
-.recent-list { display:flex; flex-direction:column; gap:10px; }
-.recent-item { background:#fff; border-radius:12px; padding:14px 16px; box-shadow:0 2px 10px rgba(0,0,0,.06); display:flex; align-items:center; gap:14px; }
-.recent-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; }
-.recent-info { flex:1; min-width:0; }
-.recent-name { font-size:.85rem; font-weight:700; color:#1e293b; margin-bottom:4px; }
-.recent-tags { display:flex; gap:6px; flex-wrap:wrap; }
-.recent-tag { font-size:.65rem; color:#64748b; background:#f1f5f9; padding:2px 7px; border-radius:20px; }
-.recent-stats { display:flex; gap:20px; }
-.rs { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.rs-lbl { font-size:.6rem; font-weight:700; color:#94a3b8; letter-spacing:.3px; }
-.rs-val { font-size:.88rem; font-weight:800; color:#1e293b; }
-.green-txt { color:#16a34a; }
-.recent-avatars { display:flex; }
-.av { width:24px; height:24px; border-radius:50%; margin-left:-6px; border:2px solid #fff; }
-.btn-more { width:30px; height:30px; border:1.5px solid #e2e8f0; border-radius:8px; background:#fff; color:#64748b; cursor:pointer; font-size:.8rem; }
+/* ─── KPI Cards ─── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.kpi-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.25s;
+}
+.kpi-card:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+}
+.kpi-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.kpi-icon-box {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.icon-green  { background: #dcfce7; color: #16a34a; }
+.icon-blue   { background: #dbeafe; color: #2563eb; }
+.icon-purple { background: #ede9fe; color: #7c3aed; }
+.icon-yellow { background: #fef9c3; color: #ca8a04; }
+.icon-orange { background: #ffedd5; color: #ea580c; }
+
+.kpi-badge-trend {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.trend-green  { background: #dcfce7; color: #16a34a; }
+.trend-blue   { background: #dbeafe; color: #2563eb; }
+.trend-purple { background: #ede9fe; color: #7c3aed; }
+
+.kpi-value {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.1;
+}
+.kpi-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+.kpi-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* ─── Body Row: Funnel + Table ─── */
+.body-row {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Premium Card Base */
+.premium-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.panel-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+.panel-title i { color: #7c3aed; }
+
+/* ─── Funnel Panel ─── */
+.funnel-panel {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.funnel-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.funnel-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.funnel-bar-wrap {
+  flex: 1;
+}
+.funnel-bar {
+  height: 52px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  transition: width 0.6s cubic-bezier(.22,.68,0,1.2);
+}
+.funnel-bar-label {
+  font-size: 0.63rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+.funnel-bar-icon {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.85rem;
+}
+.funnel-green  { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.funnel-teal   { background: linear-gradient(90deg, #7c3aed, #8b5cf6); }
+.funnel-purple { background: linear-gradient(90deg, #a855f7, #c084fc); }
+
+.funnel-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 68px;
+  text-align: right;
+}
+
+/* AI insight box */
+.funnel-ai-box {
+  display: flex;
+  gap: 12px;
+  background: #f8f5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 14px;
+}
+.funnel-ai-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.funnel-ai-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #7c3aed;
+  letter-spacing: 0.4px;
+  margin-bottom: 5px;
+}
+.funnel-ai-text p {
+  margin: 0;
+  font-size: 0.73rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+/* ─── Campaign Panel ─── */
+.campaign-panel {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+.panel-title-row {
+  margin-bottom: 16px;
+}
+.panel-title-row .panel-title {
+  margin-bottom: 4px;
+}
+.panel-sub {
+  font-size: 0.73rem;
+  color: #94a3b8;
+}
+
+/* Table */
+.camp-table {
+  flex: 1;
+}
+.camp-thead {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 0.8fr;
+  gap: 4px;
+  padding: 0 6px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.camp-th {
+  font-size: 0.63rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.4px;
+}
+.camp-th.center { text-align: center; }
+
+.camp-tbody {
+  display: flex;
+  flex-direction: column;
+}
+.camp-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 0.8fr;
+  gap: 4px;
+  padding: 12px 6px;
+  border-bottom: 1px solid #f8fafc;
+  align-items: center;
+  transition: background 0.15s;
+}
+.camp-row:hover { background: #f8fafc; border-radius: 10px; }
+.camp-row:last-child { border-bottom: none; }
+
+.camp-td { font-size: 0.82rem; color: #334155; }
+.camp-td.center { text-align: center; }
+
+.camp-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.camp-icon-box {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+.camp-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+.camp-type {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.camp-tag {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 1px 6px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.camp-uses {
+  font-weight: 700;
+  color: #1e293b;
+}
+.camp-ctr {
+  font-weight: 600;
+  color: #475569;
+}
+.camp-roi {
+  font-weight: 800;
+  color: #16a34a;
+}
+
+/* Status Badge */
+.camp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.status-running {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.status-running::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: pulse-dot 1.5s infinite;
+}
+.status-done {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* View All */
+.camp-view-all {
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+.camp-view-link {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7c3aed;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap 0.2s;
+}
+.camp-view-link:hover { gap: 10px; color: #6d28d9; }
+
+/* ─── Animations ─── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px) {
+  .body-row { grid-template-columns: 1fr; }
+  .top-stats-bar { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .kpi-row { grid-template-columns: 1fr; }
+  .top-stats-bar { grid-template-columns: 1fr 1fr; }
+  .camp-thead, .camp-row { grid-template-columns: 2fr 1fr 1fr; }
+  .camp-th:nth-child(3), .camp-td:nth-child(3),
+  .camp-th:nth-child(5), .camp-td:nth-child(5) { display: none; }
+}
 </style>
