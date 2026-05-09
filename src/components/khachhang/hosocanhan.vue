@@ -77,6 +77,7 @@
             </div>
           </div>
 
+
           <!-- Medical History -->
           <div class="info-card">
             <div class="info-card-label">TIỀN SỬ BỆNH LÝ</div>
@@ -174,82 +175,7 @@
       <ChiSoSucKhoe :showOnlyHistory="true" />
     </div>
 
-    <!-- ===== TAB: DỊCH VỤ CỦA TÔI ===== -->
-    <div v-if="activeTab === 'services'" class="tab-content">
-      <div class="row g-4">
-        <!-- Membership Card -->
-        <div class="col-md-6">
-          <div class="info-card h-100">
-            <div class="info-card-label">GÓI TẬP HIỆN TẠI</div>
-            <div v-if="activeSubscription" class="service-display-card">
-              <div class="service-status-row">
-                <span class="service-badge" :class="activeSubscription.state">
-                  {{ serviceStatusLabel(activeSubscription.state) }}
-                </span>
-                <span class="service-date" v-if="activeSubscription.end_date">
-                  Hết hạn: {{ new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') }}
-                </span>
-              </div>
-              <h4 class="service-name">{{ activeSubscription.plan_name || 'Gói tập' }}</h4>
-              <p class="service-desc">{{ activeSubscription.description }}</p>
-              <div class="service-price-row" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
-                <span class="price-label">Số tiền cần thanh toán:</span>
-                <span class="price-value">{{ (activeSubscription.price || 0).toLocaleString() }} đ</span>
-              </div>
-              <div class="payment-notice" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
-                <i class="fas fa-info-circle me-1"></i> Vui lòng đến quầy lễ tân để hoàn tất thanh toán.
-                <div class="mt-2 text-end">
-                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('plan', activeSubscription.id)">Hủy đăng ký</button>
-                </div>
-              </div>
-            </div>
-            <div v-else class="empty-service">
-              <i class="fas fa-box-open mb-2"></i>
-              <p>Bạn chưa đăng ký gói tập nào.</p>
-              <router-link to="/khachhang/mua_dich_vu" class="btn-go-buy">Mua gói ngay</router-link>
-            </div>
-          </div>
-        </div>
 
-        <!-- PT Card -->
-        <div class="col-md-6">
-          <div class="info-card h-100">
-            <div class="info-card-label">HỢP ĐỒNG PT</div>
-            <div v-if="activePtContract" class="service-display-card pt-card">
-              <div class="service-status-row">
-                <span class="service-badge" :class="activePtContract.state">
-                  {{ serviceStatusLabel(activePtContract.state) }}
-                </span>
-                <span class="service-sessions">
-                  Còn lại: {{ activePtContract.remaining_sessions }}/{{ activePtContract.total_sessions }} buổi
-                </span>
-              </div>
-              <div class="trainer-brief">
-                <img :src="activePtContract.trainer_avatar || 'https://ui-avatars.com/api/?name=HLV&background=1a3a2a&color=fff'" class="trainer-mini-img" />
-                <div>
-                  <h4 class="service-name mb-0">HLV {{ activePtContract.trainer_name }}</h4>
-                  <p class="service-desc mb-0">Chuyên môn: {{ activePtContract.specialization }}</p>
-                </div>
-              </div>
-              <div class="service-price-row mt-3" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
-                <span class="price-label">Số tiền cần thanh toán:</span>
-                <span class="price-value">{{ (activePtContract.price || 0).toLocaleString() }} đ</span>
-              </div>
-              <div class="payment-notice mt-2" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
-                <div class="text-end">
-                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('pt', activePtContract.id)">Hủy đăng ký</button>
-                </div>
-              </div>
-            </div>
-            <div v-else class="empty-service">
-              <i class="fas fa-user-tie mb-2"></i>
-              <p>Bạn chưa có hợp đồng huấn luyện viên.</p>
-              <router-link to="/khachhang/mua_dich_vu" class="btn-go-buy">Tìm HLV ngay</router-link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- ===== TOAST SUCCESS ===== -->
     <transition name="toast-fade">
@@ -319,6 +245,8 @@
       </div>
     </div>
 
+
+
   </div>
 </template>
 
@@ -340,7 +268,6 @@ export default {
         { key: 'general', label: 'Thông tin chung' },
         { key: 'health',  label: 'Chỉ số sức khỏe' },
         { key: 'history', label: 'Lịch sử đo lường' },
-        { key: 'services', label: 'Dịch vụ của tôi' },
       ],
       user: {
         name:       '',
@@ -381,7 +308,7 @@ export default {
       saving: false,
       saveSuccess: false,
       saveError: '',
-      generatingAI: false
+      generatingAI: false,
     }
   },
   async mounted() {
@@ -525,22 +452,6 @@ export default {
       }
       this.showEditModal = true
     },
-    async cancelService(type, id) {
-      const msg = type === 'plan' ? 'Bạn có chắc chắn muốn hủy đăng ký gói tập này không?' : 'Bạn có chắc chắn muốn hủy đăng ký hợp đồng PT này không?'
-      if (!confirm(msg)) return
-
-      try {
-        const url = type === 'plan' ? `/api/services/cancel-plan/${id}` : `/api/services/cancel-pt/${id}`
-        const payload = type === 'plan' ? { reason: 'Người dùng tự hủy trên giao diện' } : {}
-        
-        await axios.post(url, payload)
-        alert('Đã hủy thành công.')
-        await this.fetchProfile()
-      } catch (error) {
-        console.error('Lỗi khi hủy dịch vụ:', error)
-        alert('Không thể hủy dịch vụ. Vui lòng thử lại sau.')
-      }
-    },
     async saveEdit() {
       if (this.saving) return
       this.saving = true
@@ -576,29 +487,6 @@ export default {
       }
     },
 
-    serviceStatusLabel(state) {
-      const map = {
-        active: 'Đang hoạt động',
-        pending: 'Chờ thanh toán',
-        unpaid: 'Chưa thanh toán',
-        expired: 'Đã hết hạn',
-        cancelled: 'Đã hủy'
-      }
-      return map[state] || state
-    },
-    async generateAI() {
-      this.generatingAI = true;
-      try {
-        await axios.post('/api/ai-recommendations/generate');
-        await this.fetchProfile();
-      } catch (error) {
-        console.error('Lỗi khi tạo AI:', error);
-        const msg = error.response?.data?.error || error.response?.data?.message || 'Vui lòng thử lại sau.';
-        alert('Có lỗi xảy ra khi gọi AI: ' + msg);
-      } finally {
-        this.generatingAI = false;
-      }
-    },
   },
 }
 </script>
@@ -763,6 +651,7 @@ export default {
 .field-value.goal { color: #2d7a3a; }
 .field-age        { font-size: 0.82rem; color: #64748b; font-weight: 400; }
 
+
 /* ── MEDICAL HISTORY ── */
 .medical-item {
   display: flex;
@@ -798,6 +687,119 @@ export default {
   font-size: 0.8rem;
   flex-shrink: 0;
 }
+
+/* ── VNPay Button ── */
+.btn-pay-vnpay {
+  background: #005baa; /* VNPay Blue */
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+.btn-pay-vnpay:hover:not(:disabled) {
+  background: #004a8c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,91,170,0.25);
+}
+.btn-pay-vnpay:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-pay-vietqr {
+  background: #fff;
+  color: #ea1d2c; /* VietQR Redish */
+  border: 1px solid #ea1d2c;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+.btn-pay-vietqr:hover {
+  background: #fff5f5;
+  border-color: #d11a27;
+}
+
+/* ── QR MODAL ── */
+.qr-modal {
+  background: #fff;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  animation: modalScale 0.3s ease;
+}
+@keyframes modalScale {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.qr-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.qr-modal-header h5 { margin: 0; font-size: 1.1rem; color: #1e293b; }
+.qr-modal-body { padding: 24px; }
+.qr-instruction { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+.qr-image-wrap {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+.qr-img { width: 100%; height: 100%; object-fit: contain; }
+.qr-details {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+}
+.qr-detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+.qr-detail-item:last-child { margin-bottom: 0; }
+.qr-detail-item .label { color: #64748b; }
+.qr-detail-item .value { color: #1e293b; font-weight: 600; }
+
+.qr-notice {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 16px;
+  font-style: italic;
+}
+.qr-modal-footer { padding: 16px 20px; border-top: 1px solid #f1f5f9; }
+.btn-done {
+  width: 100%;
+  background: #2d7a3a;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-done:hover { background: #23612d; }
 .medical-title {
   font-size: 0.88rem;
   font-weight: 700;

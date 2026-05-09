@@ -40,7 +40,7 @@
            
 
           <!-- Form content -->
-          <div class="p-4 p-md-5 flex-grow-1 overflow-auto">
+          <div ref="scrollContainer" class="p-4 p-md-5 flex-grow-1 overflow-auto">
 
             <div class="mb-4">
               <h2 class="fw-bold text-dark mb-1">Đăng Ký Hội Viên</h2>
@@ -167,6 +167,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const scrollContainer = ref(null)
 const showPassword = ref(false)
 const showConfirm = ref(false)
 const errorMsg = ref('')
@@ -177,6 +178,7 @@ const form = reactive({
   hoTen: '',
   soDienThoai: '',
   email: '',
+  cmnd: '',
   matKhau: '',
   xacNhanMatKhau: '',
 })
@@ -206,6 +208,7 @@ const handleRegister = async () => {
       full_name:             form.hoTen,
       phone:                 form.soDienThoai,
       email:                 form.email,
+      cmnd:                  form.cmnd,
       password:              form.matKhau,
       password_confirmation: form.xacNhanMatKhau,
     })
@@ -220,16 +223,26 @@ const handleRegister = async () => {
     setTimeout(() => router.push('/dangnhap'), 1500)
 
   } catch (err) {
-    // Xử lý lỗi validation Laravel (trả về errors object)
-    const errors = err.response?.data?.errors
-    if (errors) {
-      const first = Object.values(errors)[0]
-      errorMsg.value = Array.isArray(first) ? first[0] : first
+    console.error('Lỗi đăng ký:', err)
+    const responseData = err.response?.data
+    
+    if (responseData?.errors) {
+      // Lỗi validation từ Laravel (object errors)
+      const errors = responseData.errors
+      const firstError = Object.values(errors)[0]
+      errorMsg.value = Array.isArray(firstError) ? firstError[0] : firstError
+    } else if (responseData?.message) {
+      // Thông báo lỗi chung từ server
+      errorMsg.value = responseData.message
     } else {
-      errorMsg.value = err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.'
+      // Lỗi mạng hoặc lỗi không xác định
+      errorMsg.value = 'Đăng ký thất bại. Vui lòng kiểm tra kết nối và thử lại.'
     }
   } finally {
     loading.value = false
+    if (errorMsg.value && scrollContainer.value) {
+      scrollContainer.value.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 }
 

@@ -39,6 +39,11 @@
           <i class="fas fa-credit-card nav-ico"></i>
           <span v-show="!sidebarCollapsed">Thanh toán</span>
         </router-link>
+        
+        <router-link to="/nhanvien/xac_nhan_online" class="nv-nav-item" exact-active-class="active">
+          <i class="fas fa-mobile-alt nav-ico"></i>
+          <span v-show="!sidebarCollapsed">Xác nhận Online</span>
+        </router-link>
       </nav>
 
 

@@ -104,6 +104,10 @@ const routes = [
                 component: () => import('../components/nhanvien/xuly_thanh_toan.vue'),
             },
             {
+                path: '/nhanvien/xac_nhan_online',
+                component: () => import('../components/nhanvien/xac_nhan_online.vue'),
+            },
+            {
                 path: '/nhanvien/caidat',
                 component: () => import('../components/nhanvien/caidat.vue'),
             },

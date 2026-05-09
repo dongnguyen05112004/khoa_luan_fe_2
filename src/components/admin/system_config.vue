@@ -97,6 +97,72 @@
           </div>
         </div>
 
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <h6 class="fw-bold d-flex align-items-center gap-2 mb-4">
+              <i class="fas fa-university text-success"></i> Cấu hình Thanh toán (VietQR)
+            </h6>
+            <div class="row g-4">
+              <!-- Bank 1 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded border" :class="config.active_bank === '1' ? 'border-success bg-success-subtle' : 'bg-light'">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="small fw-bold">TÀI KHOẢN 1</span>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" v-model="config.active_bank" value="1">
+                      <label class="form-check-label very-small fw-bold">SỬ DỤNG</label>
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">NGÂN HÀNG</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_name_1">
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">SỐ TÀI KHOẢN</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_acc_1">
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">CHỦ TÀI KHOẢN</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_owner_1">
+                  </div>
+                  <div>
+                    <label class="very-small text-muted fw-bold">MÃ VIETQR (BANK ID)</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_id_1" placeholder="VD: 970418">
+                  </div>
+                </div>
+              </div>
+              <!-- Bank 2 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded border" :class="config.active_bank === '2' ? 'border-success bg-success-subtle' : 'bg-light'">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="small fw-bold">TÀI KHOẢN 2</span>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" v-model="config.active_bank" value="2">
+                      <label class="form-check-label very-small fw-bold">SỬ DỤNG</label>
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">NGÂN HÀNG</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_name_2">
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">SỐ TÀI KHOẢN</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_acc_2">
+                  </div>
+                  <div class="mb-2">
+                    <label class="very-small text-muted fw-bold">CHỦ TÀI KHOẢN</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_owner_2">
+                  </div>
+                  <div>
+                    <label class="very-small text-muted fw-bold">MÃ VIETQR (BANK ID)</label>
+                    <input type="text" class="form-control form-control-sm" v-model="config.bank_id_2" placeholder="VD: 970436">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="card border-0 shadow-sm mb-5">
           <div class="card-body p-4">
             <h6 class="fw-bold d-flex align-items-center gap-2 mb-4">
@@ -200,7 +266,20 @@ const DEFAULT_CONFIG = {
   maxReg: 500,
   audit: true,
   ai: true,
-  apiKey: 'sk-gemini-8v2k3l9n0x7m1p4q5r6t8u9w0z'
+  apiKey: 'sk-gemini-8v2k3l9n0x7m1p4q5r6t8u9w0z',
+  
+  // Bank Configs
+  bank_name_1: 'BIDV',
+  bank_acc_1: '5602059675',
+  bank_owner_1: 'NGUYEN HUU DONG',
+  bank_id_1: '970418',
+  
+  bank_name_2: 'Vietcombank',
+  bank_acc_2: '1032067073',
+  bank_owner_2: 'TRAN MINH QUANG',
+  bank_id_2: '970436',
+  
+  active_bank: '1'
 };
 
 export default {

@@ -263,6 +263,101 @@
 
     </div><!-- /trainers tab -->
 
+    <!-- ===== TAB: DỊCH VỤ CỦA TÔI ===== -->
+    <div v-if="activeTab === 'services'" class="tab-pane">
+      <div class="row g-4">
+        <!-- Membership Card -->
+        <div class="col-md-6">
+          <div class="info-card-plain h-100">
+            <div class="info-card-label">GÓI TẬP HIỆN TẠI</div>
+            <div v-if="activeSubscription" class="service-display-card">
+              <div class="service-status-row">
+                <span class="service-badge" :class="activeSubscription.state">
+                  {{ serviceStatusLabel(activeSubscription.state) }}
+                </span>
+                <span class="service-date" v-if="activeSubscription.end_date">
+                  Hết hạn: {{ new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') }}
+                </span>
+              </div>
+              <h4 class="service-name-plain">{{ activeSubscription.plan_name || 'Gói tập' }}</h4>
+              <p class="service-desc-plain">{{ activeSubscription.description }}</p>
+              <div class="service-price-row" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
+                <span class="price-label">Số tiền cần thanh toán:</span>
+                <span class="price-value">{{ (activeSubscription.price || 0).toLocaleString() }} đ</span>
+              </div>
+              <div class="payment-notice-box" v-if="activeSubscription.state === 'pending' || activeSubscription.state === 'unpaid'">
+                <i class="fas fa-info-circle me-1"></i> Vui lòng thanh toán để kích hoạt gói tập.
+                <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <button class="btn-pay-vnpay" @click="payOnline(activeSubscription.payment_id)" :disabled="loadingPayment">
+                    <i class="fas fa-credit-card me-1" v-if="!loadingPayment"></i>
+                    <i class="fas fa-spinner fa-spin me-1" v-else></i>
+                    VNPay
+                  </button>
+                  <button class="btn-pay-vietqr" @click="showVietQRModal(activeSubscription)">
+                    <i class="fas fa-qrcode me-1"></i>
+                    VietQR
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('plan', activeSubscription.id)">Hủy đăng ký</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-service">
+              <i class="fas fa-box-open mb-2"></i>
+              <p>Bạn chưa đăng ký gói tập nào.</p>
+              <button class="btn-go-buy" @click="activeTab = 'marketplace'">Mua gói ngay</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PT Card -->
+        <div class="col-md-6">
+          <div class="info-card-plain h-100">
+            <div class="info-card-label">HỢP ĐỒNG PT</div>
+            <div v-if="activePtContract" class="service-display-card pt-card">
+              <div class="service-status-row">
+                <span class="service-badge" :class="activePtContract.state">
+                  {{ serviceStatusLabel(activePtContract.state) }}
+                </span>
+                <span class="service-sessions">
+                  Còn lại: {{ activePtContract.remaining_sessions }}/{{ activePtContract.total_sessions }} buổi
+                </span>
+              </div>
+              <div class="trainer-brief">
+                <img :src="activePtContract.trainer_avatar || 'https://ui-avatars.com/api/?name=HLV&background=1a3a2a&color=fff'" class="trainer-mini-img" />
+                <div>
+                  <h4 class="service-name-plain mb-0">HLV {{ activePtContract.trainer_name }}</h4>
+                  <p class="service-desc-plain mb-0">Chuyên môn: {{ activePtContract.specialization }}</p>
+                </div>
+              </div>
+              <div class="service-price-row mt-3" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
+                <span class="price-label">Số tiền cần thanh toán:</span>
+                <span class="price-value">{{ (activePtContract.price || 0).toLocaleString() }} đ</span>
+              </div>
+              <div class="payment-notice-box mt-2" v-if="activePtContract.state === 'pending' || activePtContract.state === 'unpaid'">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <button class="btn-pay-vnpay" @click="payOnline(activePtContract.payment_id)" :disabled="loadingPayment">
+                    <i class="fas fa-credit-card me-1" v-if="!loadingPayment"></i>
+                    <i class="fas fa-spinner fa-spin me-1" v-else></i>
+                    VNPay
+                  </button>
+                  <button class="btn-pay-vietqr" @click="showVietQRModal(activePtContract)">
+                    <i class="fas fa-qrcode me-1"></i>
+                    VietQR
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger border-0 text-decoration-underline py-0" @click="cancelService('pt', activePtContract.id)">Hủy đăng ký</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-service">
+              <i class="fas fa-user-tie mb-2"></i>
+              <p>Bạn chưa có hợp đồng huấn luyện viên.</p>
+              <button class="btn-go-buy" @click="activeTab = 'trainers'">Tìm HLV ngay</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== BOOKING MODAL ===== -->
     <transition name="modal-fade">
       <div class="md-overlay" v-if="showBook" @click.self="showBook = false">
@@ -378,6 +473,58 @@
       </div>
     </transition>
 
+    <!-- ===== VIETQR MODAL ===== -->
+    <transition name="modal-fade">
+      <div class="md-overlay" v-if="vietqr.show" @click.self="vietqr.show = false">
+        <div class="md-modal qr-modal-fixed">
+          <div class="md-modal-header">
+            <h5 class="md-modal-title"><i class="fas fa-qrcode me-2" style="color:#2d7a3a;"></i>Thanh toán VietQR</h5>
+            <button class="md-modal-close" @click="vietqr.show = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="md-modal-body text-center">
+            <p class="qr-instruction">Quét mã bằng ứng dụng Ngân hàng hoặc Ví điện tử</p>
+            <div class="qr-image-wrap">
+              <img :src="vietqr.url" alt="VietQR" class="qr-img" />
+              <div class="qr-loading" v-if="!vietqr.url">
+                <i class="fas fa-spinner fa-spin"></i>
+              </div>
+            </div>
+            <div class="qr-details">
+              <div class="qr-detail-item">
+                <span class="label">Chủ tài khoản:</span>
+                <span class="value">{{ vietqr.accountOwner }}</span>
+              </div>
+              <div class="qr-detail-item">
+                <span class="label">Ngân hàng:</span>
+                <span class="value">{{ vietqr.bankName }}</span>
+              </div>
+              <div class="qr-detail-item">
+                <span class="label">Số tiền:</span>
+                <span class="value text-success fw-bold">{{ (vietqr.amount || 0).toLocaleString() }} đ</span>
+              </div>
+              <div class="qr-detail-item">
+                <span class="label">Nội dung:</span>
+                <span class="value text-primary fw-bold">{{ vietqr.content }}</span>
+              </div>
+            </div>
+            <div class="qr-notice-box-premium">
+              <i class="fas fa-shield-alt"></i>
+              <div>
+                <strong>Lưu ý:</strong> Sau khi chuyển khoản thành công, hệ thống sẽ được quản lý kích hoạt sau 5-10 phút đối soát.
+              </div>
+            </div>
+          </div>
+          <div class="md-modal-footer">
+            <button class="btn-book-confirm w-100 justify-content-center" @click="vietqr.show = false">
+              Tôi đã chuyển khoản
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -392,6 +539,7 @@ export default {
       tabs: [
         { key: 'marketplace', label: 'Marketplace' },
         { key: 'trainers',    label: 'Trainers' },
+        { key: 'services',    label: 'Dịch vụ của tôi' },
       ],
       trainers: [],
 
@@ -458,12 +606,49 @@ export default {
           durationLabel: '6 TUẦN',
           price: 4500000,
         },
+        {
+          id: 13,
+          badge: 'TEST PT 5K',
+          badgeCls: 'badge-blue',
+          name: 'Gói PT Test 5.000đ',
+          description: 'Gói tập thử nghiệm chức năng thanh toán PT.',
+          durationLabel: '1 BUỔI',
+          price: 5000,
+          isPt: true,
+        },
+        {
+          id: 14,
+          badge: 'TEST PT 7K',
+          badgeCls: 'badge-blue',
+          name: 'Gói PT Test 7.000đ',
+          description: 'Gói tập thử nghiệm chức năng thanh toán PT.',
+          durationLabel: '1 BUỔI',
+          price: 7000,
+          isPt: true,
+        },
       ],
 
       // ── Purchase confirm modal ──
       showPurchase: false,
       purchaseTarget: null,
       purchasing: false,
+
+      // ── My Services & Payment ──
+      loadingPayment: false,
+      memberId: 'MEMBER',
+      vietqr: {
+        show: false,
+        url: '',
+        amount: 0,
+        content: '',
+        bankName: '',
+        accountOwner: ''
+      },
+      systemConfig: {
+        active_bank: '1',
+        bank_id_1: '970418', bank_acc_1: '5602059675', bank_owner_1: 'NGUYEN HUU DONG',
+        bank_id_2: '970436', bank_acc_2: '1032067073', bank_owner_2: 'TRAN MINH QUANG',
+      }
     }
   },
 
@@ -479,6 +664,7 @@ export default {
 
   mounted() {
     this.fetchAll()
+    this.fetchSystemSettings()
   },
 
   methods: {
@@ -512,7 +698,30 @@ export default {
     },
     // ──────────────── FETCH DATA ────────────────
     async fetchAll() {
-      await Promise.all([ this.fetchPlans(), this.fetchTrainers(), this.fetchMyActive() ])
+      await Promise.all([ this.fetchPlans(), this.fetchTrainers(), this.fetchMyActive(), this.fetchProfile() ])
+    },
+
+    async fetchSystemSettings() {
+      try {
+        const { data } = await axios.get('/api/system-settings')
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            this.systemConfig[item.setting_key] = item.setting_value
+          })
+        }
+      } catch (e) {
+        console.warn('Lỗi lấy settings:', e)
+      }
+    },
+
+    async fetchProfile() {
+      try {
+        const res = await axios.get('/api/customer/profile')
+        const data = res.data.data
+        this.memberId = data.card_number || `ID-${data.id}`
+      } catch (e) {
+        console.warn('Lỗi lấy profile:', e)
+      }
     },
 
     async fetchPlans() {
@@ -646,7 +855,8 @@ export default {
         })
         alert(`Đăng ký gói PT với ${this.bookTarget.name} thành công!\nVui lòng đến quầy lễ tân để xác nhận thanh toán.`)
         this.showBook = false
-        this.fetchMyActive()
+        await this.fetchMyActive()
+        this.activeTab = 'services'
       } catch (err) {
         alert(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.')
       } finally {
@@ -702,12 +912,85 @@ export default {
         }
         alert('Đăng ký thành công! Vui lòng đến quầy lễ tân để thanh toán và kích hoạt.')
         this.showPurchase = false
-        this.fetchMyActive()
+        await this.fetchMyActive()
+        this.activeTab = 'services'
       } catch (err) {
         alert(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.')
       } finally {
         this.purchasing = false
       }
+    },
+
+    serviceStatusLabel(state) {
+      const map = {
+        active: 'Đang hoạt động',
+        pending: 'Chờ thanh toán',
+        unpaid: 'Chưa thanh toán',
+        expired: 'Đã hết hạn',
+        cancelled: 'Đã hủy'
+      }
+      return map[state] || state
+    },
+
+    async payOnline(paymentId) {
+      if (!paymentId) {
+        alert('Không tìm thấy thông tin thanh toán. Vui lòng liên hệ lễ tân.');
+        return;
+      }
+      this.loadingPayment = true;
+      try {
+        const response = await axios.post('/api/payment/create', { order_id: paymentId });
+        if (response.data.code === '00' && response.data.data) {
+          window.location.href = response.data.data;
+        } else {
+          alert('Lỗi khởi tạo thanh toán: ' + (response.data.message || 'Lỗi không xác định'));
+        }
+      } catch (error) {
+        console.error('Lỗi thanh toán:', error);
+        const msg = error.response?.data?.message || 'Không thể kết nối đến cổng thanh toán. Vui lòng thử lại sau.';
+        alert(msg);
+      } finally {
+        this.loadingPayment = false;
+      }
+    },
+
+    showVietQRModal(item) {
+      this.vietqr.amount = item.price || 0;
+      const prefix = item.plan_name ? 'TT-GOI' : 'TT-PT';
+      this.vietqr.content = `${prefix}-${this.memberId}-${item.id}`;
+      
+      // Lấy cấu hình bank từ system settings
+      const active = this.systemConfig.active_bank || '1';
+      const bankId = this.systemConfig[`bank_id_${active}`] || '970418';
+      const accountNo = this.systemConfig[`bank_acc_${active}`] || '5602059675';
+      const accountName = this.systemConfig[`bank_owner_${active}`] || 'NGUYEN HUU DONG';
+      const template = 'compact2'; 
+      
+      this.vietqr.url = `https://img.vietqr.io/image/${bankId}-${accountNo}-${template}.png?amount=${this.vietqr.amount}&addInfo=${encodeURIComponent(this.vietqr.content)}&accountName=${encodeURIComponent(accountName)}`;
+      
+      this.vietqr.bankName = this.getBankName(bankId);
+      this.vietqr.accountOwner = accountName;
+      this.vietqr.show = true;
+    },
+
+    getBankName(bin) {
+      const banks = {
+        '970418': 'BIDV',
+        '970436': 'Vietcombank',
+        '970415': 'VietinBank',
+        '970422': 'MBBank',
+        '970423': 'TPBank',
+        '970432': 'VPBank',
+        '970416': 'ACB',
+        '970403': 'Sacombank',
+        '970441': 'VIB',
+        '970405': 'Agribank',
+        '970407': 'Techcombank',
+        '970437': 'HDBank',
+        '970428': 'Nam A Bank',
+        '970448': 'OCB',
+      }
+      return banks[bin] || bin
     },
   },
 }
@@ -1030,7 +1313,7 @@ export default {
   flex-direction: column;
   overflow: hidden;
 }
-.md-modal-header {
+.md-modal-header, .qr-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1450,4 +1733,204 @@ export default {
   line-height: 1.5;
 }
 .purchase-notice i { color: #2d7a3a; flex-shrink: 0; margin-top: 2px; }
+
+/* ── MY SERVICES TAB STYLES ── */
+.info-card-plain {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid #f1f5f9;
+}
+.info-card-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.service-display-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.service-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.service-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+.service-badge.active { background: #dcfce7; color: #15803d; }
+.service-badge.pending, .service-badge.unpaid { background: #fff7ed; color: #c2410c; }
+.service-badge.expired { background: #f1f5f9; color: #64748b; }
+
+.service-date, .service-sessions {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.service-name-plain {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+.service-desc-plain {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.service-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px dashed #e2e8f0;
+}
+.price-label { font-size: 0.85rem; color: #64748b; }
+.price-value { font-size: 1.1rem; font-weight: 800; color: #0f4c2a; }
+
+.payment-notice-box {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.8rem;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.empty-service {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+.empty-service i { font-size: 2.5rem; color: #e2e8f0; }
+.btn-go-buy {
+  margin-top: 16px;
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #0f4c2a;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.trainer-brief {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+.trainer-mini-img {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* VNPay Button */
+.btn-pay-vnpay {
+  background: #005baa;
+  color: #fff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-pay-vnpay:hover:not(:disabled) { background: #004a8c; transform: translateY(-1px); }
+
+.btn-pay-vietqr {
+  background: #fff;
+  color: #ea1d2c;
+  border: 1.5px solid #ea1d2c;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-pay-vietqr:hover { background: #fff5f5; }
+
+/* QR Modal Specifics */
+.qr-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+}
+.qr-instruction { 
+  font-size: 0.9rem; 
+  color: #64748b; 
+  margin-bottom: 24px; 
+  font-weight: 500;
+}
+.qr-image-wrap {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 24px;
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  padding: 10px;
+}
+.qr-img { width: 100%; height: 100%; object-fit: contain; }
+.qr-details {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  border: 1px solid #f1f5f9;
+}
+.qr-detail-item {
+  display: flex; justify-content: space-between; font-size: 0.9rem;
+  align-items: center;
+}
+.qr-detail-item .label { color: #64748b; font-weight: 500; }
+.qr-detail-item .value { font-weight: 700; color: #1e293b; font-size: 1rem; }
+.qr-notice-box-premium {
+  font-size: 0.8rem; 
+  color: #475569; 
+  line-height: 1.5;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  background: #f1f5f9;
+  border-radius: 14px;
+  margin-top: 10px;
+}
+.qr-notice-box-premium i { color: #2d7a3a; font-size: 1.1rem; }
+
+.qr-modal-fixed {
+  max-width: 440px !important;
+}
 </style>
