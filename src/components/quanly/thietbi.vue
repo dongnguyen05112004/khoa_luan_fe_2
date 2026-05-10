@@ -165,7 +165,7 @@
             <div class="section-label"><i class="fas fa-circle-dot"></i> Trạng thái thiết bị</div>
             <div class="status-btn-group">
               <button v-for="s in statusOptions" :key="s.value"
-                :class="['status-opt-btn', s.value, selectedDevice.status === s.value ? 'active' : '']"
+                :class="['status-opt-btn', s.value, selectedDevice.status === s.value ? 'is-selected' : '']"
                 @click="quickUpdateStatus(s.value)" :disabled="savingStatus">
                 <i :class="s.icon"></i> {{ s.label }}
               </button>
@@ -1391,28 +1391,28 @@ export default {
   cursor: not-allowed;
 }
 
-.status-opt-btn.active.active {
+.status-opt-btn.active.is-selected {
   background: #dcfce7;
   border-color: #16a34a;
   color: #16a34a;
   font-weight: 700;
 }
 
-.status-opt-btn.maintenance.active {
+.status-opt-btn.maintenance.is-selected {
   background: #fef3c7;
   border-color: #d97706;
   color: #d97706;
   font-weight: 700;
 }
 
-.status-opt-btn.broken.active {
+.status-opt-btn.broken.is-selected {
   background: #fee2e2;
   border-color: #dc2626;
   color: #dc2626;
   font-weight: 700;
 }
 
-.status-opt-btn:not(.active):hover {
+.status-opt-btn:not(.is-selected):hover {
   background: #f1f5f9;
 }
 
