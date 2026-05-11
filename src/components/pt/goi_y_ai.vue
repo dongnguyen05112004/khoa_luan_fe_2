@@ -4,9 +4,9 @@
     <div class="page-header">
       <h1 class="page-title">Gợi ý lộ trình tập luyện bằng AI</h1>
       <div class="header-right">
-        <span class="header-date"><i class="fas fa-calendar"></i> Hôm nay, 24 Tháng 5, 2024</span>
+        <span class="header-date"><i class="fas fa-calendar"></i> Hôm nay, {{ currentDate }}</span>
         <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="Tìm kiếm..." /></div>
-        <button class="btn-bell"><i class="fas fa-bell"></i></button>
+        
       </div>
     </div>
 
@@ -50,7 +50,7 @@
           </div>
           <div class="member-meta">
             <span><i class="fas fa-bullseye"></i> Mục tiêu gốc: <b>{{ selectedMember.goal }}</b></span>
-            <span><i class="fas fa-calendar-alt"></i> Ngày tạo lộ trình: <b>24/05/2024</b></span>
+            <span><i class="fas fa-calendar-alt"></i> Ngày tạo lộ trình: <b>{{ formatSimpleDate(aiRecommendation?.created_at || new Date()) }}</b></span>
             <span><i class="fas fa-signal"></i> LEVEL: <b>{{ selectedMember.level }}</b></span>
           </div>
         </div>
@@ -251,6 +251,10 @@ export default {
     aiSuggestionsList() {
       if (!this.aiRecommendation || !this.aiRecommendation.ai_suggestions) return []
       return this.aiRecommendation.ai_suggestions.split('\n').filter(s => s.trim().length > 0).map(s => s.replace(/^- /, '').trim())
+    },
+    currentDate() {
+      const now = new Date();
+      return `${now.getDate()} Tháng ${now.getMonth() + 1}, ${now.getFullYear()}`;
     }
   },
   mounted() {
@@ -359,6 +363,10 @@ export default {
     formatDate(d) {
       if (!d) return '';
       return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    },
+    formatSimpleDate(d) {
+      if (!d) return '';
+      return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
   },
 }

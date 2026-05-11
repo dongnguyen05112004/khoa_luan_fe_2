@@ -299,9 +299,7 @@
               </div>
               <div v-else class="tkm-no-service">Chưa có dịch vụ nào đang hoạt động.</div>
 
-              <button class="tkm-add-service-btn">
-                <i class="fas fa-plus-circle"></i> Đăng ký thêm dịch vụ
-              </button>
+              
             </div>
           </div>
 
@@ -737,6 +735,19 @@ export default {
       this.currentPage = 1
       this.showFilter = false
       this.fetchUsers(1)
+    },
+
+    // ─── Đăng ký thêm dịch vụ ────────────────────────────────
+    goToAddService(person) {
+      this.showMemberModal = false;
+      this.$router.push({
+        path: '/nhanvien/xuly_thanh_toan',
+        query: {
+          member: person.name,
+          txId: 'CTR-' + Date.now().toString().slice(-4),
+          amount: 1000000
+        }
+      });
     },
 
     // ─── CSS helpers ─────────────────────────────────────────
