@@ -68,10 +68,7 @@
           </div>
         </div>
         <div class="pt-header-right">
-          <button class="nv-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="badge-dot"></span>
-          </button>
+          
           <button
             class="btn-logout"
             @click="handleLogout"
