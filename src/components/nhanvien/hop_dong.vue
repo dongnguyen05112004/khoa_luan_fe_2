@@ -27,7 +27,18 @@
         <div class="contract-card">
           <div class="contract-card-head">
             <span class="cc-title">Hợp đồng hiện tại</span>
-            <span class="badge-active">ĐANG HỪU LỰC</span>
+            <span
+              class="badge-active"
+              :class="{
+                'badge-expired':   currentContract.rawStatus === 'expired',
+                'badge-cancelled': currentContract.rawStatus === 'cancelled',
+              }"
+            >
+              {{ currentContract.rawStatus === 'active' ? 'ĐANG HIỆU LỰC'
+               : currentContract.rawStatus === 'expired' ? 'ĐÃ HẾT HẠN'
+               : currentContract.rawStatus === 'cancelled' ? 'ĐÃ HỦY'
+               : 'CHƯA CÓ' }}
+            </span>
           </div>
           <div class="cc-grid">
             <div class="cc-field">
@@ -39,7 +50,7 @@
               <div class="cc-value">{{ currentContract.package }}</div>
             </div>
             <div class="cc-field">
-              <div class="cc-label">NGÀY BẬT ĐẦU</div>
+              <div class="cc-label">NGÀY BẮT ĐẦU</div>
               <div class="cc-value">{{ currentContract.startDate }}</div>
             </div>
             <div class="cc-field">
@@ -65,8 +76,13 @@
           <div class="list-head">
             <span class="list-title">Danh sách hợp đồng</span>
             <div class="list-actions">
-              <button class="btn-filter"><i class="fas fa-filter"></i> Lọc</button>
-              <button class="btn-export"><i class="fas fa-file-export"></i> Xuất file</button>
+              <button class="btn-filter" @click="openFilter">
+                <i class="fas fa-filter"></i> Lọc
+                <span v-if="activeFilterCount > 0" class="filter-badge">{{ activeFilterCount }}</span>
+              </button>
+              <button class="btn-export" @click="exportCsv">
+                <i class="fas fa-file-export"></i> Xuất file
+              </button>
             </div>
           </div>
 
@@ -164,7 +180,11 @@
 
           <!-- Pagination -->
           <div class="pagination-bar">
-            <span class="pagination-info">Hiển thị 1 đến {{ paginatedContracts.length }} trong tổng {{ filteredContracts.length }} hợp đồng</span>
+          <span class="pagination-info">
+            Hiển thị {{ filteredContracts.length === 0 ? 0 : (currentPage - 1) * perPage + 1 }}
+            đến {{ Math.min(currentPage * perPage, filteredContracts.length) }}
+            trong tổng {{ filteredContracts.length }} hợp đồng
+          </span>
             <div class="pagination-controls">
               <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
                 <i class="fas fa-chevron-left"></i>
@@ -212,7 +232,7 @@
           <div class="side-field">
             <div class="side-label">NGÀY BẮT ĐẦU MỚI <span style="color:#ef4444">*</span></div>
             <div class="date-input-wrap">
-              <input type="date" class="side-date" v-model="renewDate" />
+              <input type="date" class="side-date" v-model="renewDate" :min="todayStr" />
             </div>
           </div>
           <button class="btn-renew" :disabled="renewLoading" @click="doRenew">
@@ -237,7 +257,7 @@
         </div>
 
         <!-- Billing Support -->
-        <div class="side-card billing-card">
+        <div class="side-card billing-card" @click="$router.push('/nhanvien/thu_tien')">
           <div class="billing-row">
             <div class="billing-icon"><i class="fas fa-headset"></i></div>
             <div class="billing-info">
@@ -313,6 +333,154 @@
       </div>
     </transition>
 
+    <!-- ===== Modal Lọc Nâng Cao ===== -->
+    <transition name="modal-fade">
+      <div v-if="showFilter" class="modal-overlay" @click.self="showFilter = false">
+        <div class="modal-box modal-filter">
+
+          <!-- Header -->
+          <div class="filter-header">
+            <div class="filter-header-left">
+              <div class="filter-header-icon">
+                <i class="fas fa-sliders-h"></i>
+              </div>
+              <div>
+                <div class="filter-header-title">Lọc nâng cao</div>
+                <div class="filter-header-sub">Tùy chỉnh điều kiện tìm kiếm hợp đồng</div>
+              </div>
+            </div>
+            <button class="filter-close-btn" @click="showFilter = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Active filter tags -->
+          <div class="filter-tags-row" v-if="activeFilterCount > 0">
+            <span class="filter-tag-label">Đang lọc:</span>
+            <span v-if="activeFilter.planId" class="filter-tag">
+              <i class="fas fa-dumbbell"></i>
+              {{ plans.find(p => p.id == activeFilter.planId)?.plan_name || 'Gói đã chọn' }}
+              <button @click="filterForm.planId = ''; activeFilter.planId = ''"><i class="fas fa-times"></i></button>
+            </span>
+            <span v-if="activeFilter.dateFrom" class="filter-tag">
+              <i class="fas fa-calendar-alt"></i>
+              Từ {{ activeFilter.dateFrom }}
+              <button @click="filterForm.dateFrom = ''; activeFilter.dateFrom = ''"><i class="fas fa-times"></i></button>
+            </span>
+            <span v-if="activeFilter.dateTo" class="filter-tag">
+              <i class="fas fa-calendar-alt"></i>
+              Đến {{ activeFilter.dateTo }}
+              <button @click="filterForm.dateTo = ''; activeFilter.dateTo = ''"><i class="fas fa-times"></i></button>
+            </span>
+            <span v-if="activeFilter.expiringWithin" class="filter-tag filter-tag-warn">
+              <i class="fas fa-clock"></i>
+              Hết hạn trong {{ activeFilter.expiringWithin }} ngày
+              <button @click="filterForm.expiringWithin = ''; activeFilter.expiringWithin = ''"><i class="fas fa-times"></i></button>
+            </span>
+          </div>
+
+          <!-- Body -->
+          <div class="filter-body">
+
+            <!-- Gói tập -->
+            <div class="filter-section">
+              <div class="filter-section-title">
+                <i class="fas fa-dumbbell"></i> Gói tập
+              </div>
+              <div class="filter-plan-grid">
+                <button
+                  class="filter-plan-btn"
+                  :class="{ active: filterForm.planId === '' }"
+                  @click="filterForm.planId = ''"
+                >
+                  <i class="fas fa-th-large"></i>
+                  <span>Tất cả</span>
+                </button>
+                <button
+                  v-for="p in plans"
+                  :key="p.id"
+                  class="filter-plan-btn"
+                  :class="{ active: String(filterForm.planId) === String(p.id) }"
+                  @click="filterForm.planId = p.id"
+                >
+                  <i class="fas fa-tag"></i>
+                  <span>{{ p.plan_name }}</span>
+                  <small v-if="p.duration_days">{{ p.duration_days }}d</small>
+                </button>
+              </div>
+            </div>
+
+            <!-- Khoảng ngày hết hạn -->
+            <div class="filter-section">
+              <div class="filter-section-title">
+                <i class="fas fa-calendar-range"></i> Khoảng ngày hết hạn
+              </div>
+              <div class="filter-date-row">
+                <div class="filter-date-field">
+                  <label class="filter-field-label">Từ ngày</label>
+                  <div class="filter-date-wrap">
+                    <i class="fas fa-calendar-alt filter-date-icon"></i>
+                    <input type="date" v-model="filterForm.dateFrom" class="filter-date-input" />
+                  </div>
+                </div>
+                <div class="filter-date-sep"><i class="fas fa-arrow-right"></i></div>
+                <div class="filter-date-field">
+                  <label class="filter-field-label">Đến ngày</label>
+                  <div class="filter-date-wrap">
+                    <i class="fas fa-calendar-alt filter-date-icon"></i>
+                    <input type="date" v-model="filterForm.dateTo" class="filter-date-input" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sắp hết hạn -->
+            <div class="filter-section">
+              <div class="filter-section-title">
+                <i class="fas fa-clock"></i> Sắp hết hạn trong
+              </div>
+              <div class="filter-expiry-grid">
+                <button
+                  v-for="opt in [
+                    { val: '',   label: 'Không lọc', icon: 'fa-ban' },
+                    { val: '7',  label: '7 ngày',    icon: 'fa-bolt' },
+                    { val: '14', label: '14 ngày',   icon: 'fa-fire' },
+                    { val: '30', label: '30 ngày',   icon: 'fa-hourglass-half' },
+                    { val: '60', label: '60 ngày',   icon: 'fa-hourglass-end' },
+                  ]"
+                  :key="opt.val"
+                  class="filter-expiry-btn"
+                  :class="{ active: filterForm.expiringWithin === opt.val, warn: opt.val !== '' }"
+                  @click="filterForm.expiringWithin = opt.val"
+                >
+                  <i :class="'fas ' + opt.icon"></i>
+                  {{ opt.label }}
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Footer -->
+          <div class="filter-footer">
+            <div class="filter-result-hint" v-if="activeFilterCount > 0">
+              <i class="fas fa-info-circle"></i>
+              {{ filteredContracts.length }} hợp đồng phù hợp
+            </div>
+            <div class="filter-footer-actions">
+              <button class="filter-btn-reset" @click="clearFilter">
+                <i class="fas fa-undo"></i> Xóa bộ lọc
+              </button>
+              <button class="filter-btn-apply" @click="applyFilter">
+                <i class="fas fa-check"></i> Áp dụng
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -353,6 +521,7 @@ export default {
         endDate: '—',
         progress: 0,
         warningMsg: '',
+        rawStatus: '',
       },
 
       // ── Stats (tổng quan) ─────────────────────────────────────────
@@ -384,25 +553,74 @@ export default {
       // ── Navigate từ dashboard (query param: select, search) ──────────────
       fromDashboard: false,
       highlightedContractId: null,
+
+      // ── Modal Lọc nâng cao ────────────────────────────────────────
+      showFilter: false,
+      filterForm: {
+        planId:    '',    // lọc theo gói tập
+        dateFrom:  '',    // ngày hết hạn từ
+        dateTo:    '',    // ngày hết hạn đến
+        expiringWithin: '', // sắp hết hạn trong N ngày
+      },
+      activeFilter: {},   // filter đang áp dụng (copy từ filterForm khi bấm Áp dụng)
     }
   },
 
   computed: {
+    // Ngày hôm nay dạng YYYY-MM-DD (dùng cho :min của input date)
+    todayStr() {
+      return new Date().toISOString().slice(0, 10)
+    },
+
     // ── Lọc phía client (trên dữ liệu đã fetch) ──────────────────
     filteredContracts() {
       let list = this.contracts
       const q = this.searchQ.trim().toLowerCase()
+
+      // 1. Tìm kiếm text
       if (q) {
         list = list.filter(c =>
           (c.memberName || '').toLowerCase().includes(q) ||
           (c.contractId || '').toLowerCase().includes(q)
         )
       }
+
+      // 2. Lọc tab trạng thái
       if (this.activeTab !== 'all') {
         const map = { active: 'active', expired: 'expired', cancelled: 'cancelled' }
         list = list.filter(c => c.rawStatus === map[this.activeTab])
       }
+
+      // 3. Lọc nâng cao (activeFilter)
+      const f = this.activeFilter
+      if (f.planId) {
+        list = list.filter(c => String(c.planId) === String(f.planId))
+      }
+      if (f.dateFrom) {
+        const from = new Date(f.dateFrom).getTime()
+        list = list.filter(c => c._end && new Date(c._end).getTime() >= from)
+      }
+      if (f.dateTo) {
+        const to = new Date(f.dateTo).getTime()
+        list = list.filter(c => c._end && new Date(c._end).getTime() <= to)
+      }
+      if (f.expiringWithin) {
+        const days = parseInt(f.expiringWithin)
+        const now  = Date.now()
+        const limit = now + days * 86400000
+        list = list.filter(c =>
+          c._end &&
+          c.rawStatus === 'active' &&
+          new Date(c._end).getTime() >= now &&
+          new Date(c._end).getTime() <= limit
+        )
+      }
+
       return list
+    },
+    // Đếm số filter đang active để hiển thị badge
+    activeFilterCount() {
+      return Object.values(this.activeFilter).filter(v => v !== '' && v != null).length
     },
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredContracts.length / this.perPage))
@@ -488,6 +706,7 @@ export default {
         memberName,
         avatarBg:     this.avatarColor(c.id),
         package:      pkg,
+        planId:       c.plan_id,
         status:       this.statusLabel(rawStatus),
         rawStatus,
         statusClass:  this.statusClass(rawStatus),
@@ -526,6 +745,7 @@ export default {
 
         // Cập nhật widget "hợp đồng hiện tại" (lấy hợp đồng active đầu tiên)
         const active = this.contracts.find(c => c.rawStatus === 'active')
+          || this.contracts[0]  // fallback: lấy hợp đồng đầu tiên nếu không có active
         if (active) {
           const days = this.daysLeft(active._end)
           this.currentContract = {
@@ -534,7 +754,8 @@ export default {
             startDate:  active.startDate,
             endDate:    active.expiryDate,
             progress:   this.calcProgress(active._start, active._end),
-            warningMsg: days !== null && days <= 30
+            rawStatus:  active.rawStatus,
+            warningMsg: active.rawStatus === 'active' && days !== null && days <= 30
               ? `Hợp đồng hết hạn trong ${days} ngày. Khuyến nghị gia hạn ngay.`
               : '',
           }
@@ -625,7 +846,20 @@ export default {
         return
       }
 
+      // Kiểm tra ngày bắt đầu không được nhỏ hơn ngày hiện tại
+      if (this.renewDate < this.todayStr) {
+        this.showToast('Ngày bắt đầu mới không được nhỏ hơn ngày hiện tại.', 'error')
+        return
+      }
+
       const chosen = this.contracts.find(c => c.id === this.selectedContractId)
+
+      // Không cho gia hạn hợp đồng đã bị hủy
+      if (chosen?.rawStatus === 'cancelled') {
+        this.showToast('Không thể gia hạn hợp đồng đã bị hủy.', 'error')
+        return
+      }
+
       const planName = this.plans.find(p => p.id == this.selectedPlanId)?.plan_name
         || `Gói #${this.selectedPlanId}`
       const confirm = window.confirm(
@@ -667,8 +901,8 @@ export default {
         this.showToast('Vui lòng chọn hợp đồng cần hủy từ danh sách.', 'error')
         return
       }
-      if (!this.cancelReason.trim() || this.cancelReason.trim().length < 5) {
-        this.showToast('Lý do hủy phải có ít nhất 5 ký tự.', 'error')
+      if (!this.cancelReason.trim()) {
+        this.showToast('Hãy nhập lý do hủy.', 'error')
         return
       }
       try {
@@ -702,12 +936,82 @@ export default {
       this.renewDate = new Date().toISOString().slice(0, 10)
       this.cancelReason = ''
       this.showToast(`Đã chọn: ${contract.contractId} – ${contract.memberName}`, 'success')
+
+      // Cập nhật card "Hợp đồng hiện tại" theo hợp đồng vừa chọn
+      const daysLeft = this.daysLeft(contract._end)
+      this.currentContract = {
+        memberName: contract.memberName,
+        package:    contract.package,
+        startDate:  contract.startDate,
+        endDate:    contract.expiryDate,
+        progress:   this.calcProgress(contract._start, contract._end),
+        rawStatus:  contract.rawStatus,
+        warningMsg: (contract.rawStatus === 'active' && daysLeft !== null && daysLeft <= 30 && daysLeft >= 0)
+          ? `Hợp đồng hết hạn trong ${daysLeft} ngày. Khuyến nghị gia hạn ngay.`
+          : '',
+      }
     },
 
     // ── TAB + PAGINATION ──────────────────────────────────────────
     setTab(key) {
       this.activeTab = key
       this.currentPage = 1
+    },
+
+    // ── MODAL LỌC NÂNG CAO ───────────────────────────────────────
+    openFilter() {
+      // Copy activeFilter vào filterForm để chỉnh sửa
+      this.filterForm = { ...this.activeFilter }
+      this.showFilter = true
+    },
+    applyFilter() {
+      this.activeFilter = { ...this.filterForm }
+      this.currentPage = 1
+      this.showFilter = false
+    },
+    clearFilter() {
+      this.filterForm  = { planId: '', dateFrom: '', dateTo: '', expiringWithin: '' }
+      this.activeFilter = {}
+      this.currentPage = 1
+      this.showFilter = false
+    },
+
+    // ── XUẤT FILE CSV ─────────────────────────────────────────────
+    exportCsv() {
+      const list = this.filteredContracts
+      if (list.length === 0) {
+        this.showToast('Không có dữ liệu để xuất.', 'error')
+        return
+      }
+
+      const headers = ['Mã HĐ', 'Hội viên', 'Gói tập', 'Trạng thái', 'Ngày bắt đầu', 'Ngày hết hạn', 'Giá trị (đ)']
+      const rows = list.map(c => [
+        c.contractId,
+        c.memberName,
+        c.package,
+        c.status,
+        c.startDate,
+        c.expiryDate,
+        c.price ? Number(c.price).toLocaleString('vi-VN') : '—',
+      ])
+
+      // Build CSV string với BOM UTF-8 để Excel đọc đúng tiếng Việt
+      const bom = '\uFEFF'
+      const csvContent = bom + [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+
+      // Tạo link download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url  = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const date = new Date().toISOString().slice(0, 10)
+      link.href     = url
+      link.download = `hop-dong-${date}.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+
+      this.showToast(`Đã xuất ${list.length} hợp đồng ra file CSV.`, 'success')
     },
   },
 
@@ -822,6 +1126,8 @@ export default {
   border-radius: 20px;
   letter-spacing: 0.5px;
 }
+.badge-expired   { background: #fee2e2; color: #dc2626; }
+.badge-cancelled { background: #fef3c7; color: #b45309; }
 .cc-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1047,6 +1353,7 @@ export default {
 .st-active  { background: #dcfce7; color: #16a34a; }
 .st-expired { background: #fee2e2; color: #dc2626; }
 .st-pending { background: #fef3c7; color: #b45309; }
+.st-cancelled { background: #f3f4f6; color: #6b7280; }
 
 .expiry-date { font-size: 0.82rem; color: #334155; font-weight: 500; }
 .expiry-red  { color: #dc2626; }
@@ -1397,5 +1704,354 @@ export default {
   .hd-sidebar { width: 100%; }
   .detail-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== MODAL LỌC NÂNG CAO ===== */
+.modal-filter {
+  max-width: 560px;
+  padding: 0;
+  overflow: visible;
+}
+
+/* Header */
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
+  border-radius: 16px 16px 0 0;
+}
+.filter-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.filter-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #2d7a3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+}
+.filter-header-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.filter-header-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+.filter-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 50%;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.filter-close-btn:hover { background: #fee2e2; color: #dc2626; }
+
+/* Active filter tags */
+.filter-tags-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 24px;
+  background: #fafbfc;
+  border-bottom: 1px solid #f1f5f9;
+}
+.filter-tag-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+}
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px 3px 10px;
+  border-radius: 20px;
+}
+.filter-tag.filter-tag-warn {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.filter-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  font-size: 0.65rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+.filter-tag button:hover { opacity: 1; }
+
+/* Body */
+.filter-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.filter-body::-webkit-scrollbar { width: 4px; }
+.filter-body::-webkit-scrollbar-track { background: transparent; }
+.filter-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+/* Section */
+.filter-section {}
+.filter-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+.filter-section-title i { color: #16a34a; font-size: 0.75rem; }
+
+/* Plan buttons grid */
+.filter-plan-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.filter-plan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.filter-plan-btn i { font-size: 0.7rem; color: #94a3b8; }
+.filter-plan-btn small {
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.filter-plan-btn:hover {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+.filter-plan-btn.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+.filter-plan-btn.active i,
+.filter-plan-btn.active small {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.2);
+}
+
+/* Date range */
+.filter-date-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.filter-date-field { flex: 1; }
+.filter-field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.filter-date-wrap {
+  position: relative;
+}
+.filter-date-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.filter-date-input {
+  width: 100%;
+  padding: 9px 10px 9px 30px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  color: #334155;
+  font-family: inherit;
+  outline: none;
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.filter-date-input:focus {
+  border-color: #16a34a;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+.filter-date-sep {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+
+/* Expiry quick-select */
+.filter-expiry-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.filter-expiry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.filter-expiry-btn i { font-size: 0.72rem; color: #94a3b8; }
+.filter-expiry-btn:hover {
+  border-color: #f59e0b;
+  color: #b45309;
+  background: #fffbeb;
+}
+.filter-expiry-btn.active.warn {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+.filter-expiry-btn.active.warn i { color: rgba(255,255,255,0.85); }
+.filter-expiry-btn.active:not(.warn) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+/* Footer */
+.filter-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+  border-radius: 0 0 16px 16px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-result-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+.filter-result-hint i { font-size: 0.75rem; }
+.filter-footer-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.filter-btn-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.filter-btn-reset:hover {
+  border-color: #ef4444;
+  color: #dc2626;
+  background: #fef2f2;
+}
+.filter-btn-apply {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #16a34a, #2d7a3a);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+.filter-btn-apply:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+}
+
 
 </style>

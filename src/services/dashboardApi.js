@@ -47,10 +47,12 @@ export const dashboardApi = {
    *   total_expired   – đã hết hạn
    *   total_cancelled – đã hủy
    *   expiring_soon   – sắp hết hạn trong 30 ngày
-   *   new_this_month  – hợp đồng mới trong tháng
+   *   new_this_month  – hợp đồng mới trong tháng này
+   *   new_last_month  – hợp đồng mới tháng trước
+   *   monthly_change  – % thay đổi so với tháng trước (vd: +12.5 hoặc -8.0)
    *   revenue_total   – tổng doanh thu
    *
-   * Dùng cho stat card: "HĐ SẮP HẾT HẠN"
+   * Dùng cho stat card: "HỢP ĐỒNG ĐÃ ĐẶT TRONG THÁNG" và "HĐ SẮP HẾT HẠN"
    */
   getContractStats() {
     return axios.get(`${BASE}/contracts/stats`)
@@ -116,8 +118,11 @@ export const dashboardApi = {
 
   // ─── 5. LỊCH LỚP HỌC HÔM NAY ────────────────────────────────
   /**
-   * GET /api/classes
-   * @param {Object} params – { branch_id?, trainer_id? }
+   * GET /api/classes?date=YYYY-MM-DD
+   * BE filter whereDate('schedule_date', date) + orderBy schedule_date
+   *
+   * @param {string} date      – ngày cần lấy lịch (mặc định: hôm nay)
+   * @param {Object} extraParams – { branch_id?, trainer_id? }
    *
    * Response (array):
    *   id, class_name, trainer_id, branch_id, max_members, class_cost,
@@ -126,19 +131,23 @@ export const dashboardApi = {
    *   trainer: { id, user: { full_name, avatar } }
    *   branch: { id, branch_name }
    *
-   * FE lọc những lớp có schedule_date là hôm nay
    * Dùng cho panel "Lịch hôm nay"
    */
-  getTodayClasses(params = {}) {
-    return axios.get(`${BASE}/classes`, { params })
+  getTodayClasses(date = null, extraParams = {}) {
+    const d = date ?? new Date().toISOString().split('T')[0]
+    return axios.get(`${BASE}/classes`, {
+      params: { date: d, ...extraParams },
+    })
   },
 
   // ─── 6. HỢP ĐỒNG SẮP HẾT HẠN (Pending / Expiring) ─────────────
   /**
-   * GET /api/contracts?status=active&per_page=5
-   * Lấy các hợp đồng active sắp hết hạn để hiển thị panel "Hợp đồng chờ ký"
+   * GET /api/contracts?status=active&expiring_within=30&per_page=20
+   * Lấy các hợp đồng active sắp hết hạn trong 30 ngày tới
+   * BE sort theo end_date ASC → hợp đồng gần hết hạn nhất lên đầu
    *
-   * @param {number} limit – số bản ghi (mặc định 5)
+   * @param {number} limit        – số bản ghi tối đa (mặc định 20)
+   * @param {number} withinDays   – lọc hợp đồng hết hạn trong N ngày (mặc định 30)
    *
    * Response (paginated):
    *   data[]:
@@ -151,11 +160,12 @@ export const dashboardApi = {
    *
    * Dùng cho panel "Hợp đồng chờ ký" (những hợp đồng sắp hết hạn)
    */
-  getExpiringContracts(limit = 5) {
+  getExpiringContracts(limit = 20, withinDays = 30) {
     return axios.get(`${BASE}/contracts`, {
       params: {
-        status: 'active',
-        per_page: limit,
+        status:           'active',
+        expiring_within:  withinDays,  // BE filter end_date trong N ngày tới
+        per_page:         limit,
       },
     })
   },
@@ -291,49 +301,50 @@ export function buildTrafficChart(checkins, startHour = 6, endHour = 21) {
 }
 
 /**
- * Lọc danh sách lớp học của hôm nay
+ * Format danh sách lớp học → hiển thị panel "Lịch hôm nay"
+ * BE đã filter theo date và sort theo schedule_date nên không cần filter lại.
  *
- * @param {Array} classes – danh sách từ GET /api/classes
+ * @param {Array} classes – array từ GET /api/classes?date=YYYY-MM-DD
  * @returns {Array} [{ id, name, detail, time, type }]
  */
 export function formatTodayEvents(classes) {
-  const todayStr = new Date().toISOString().split('T')[0]
+  return classes.map((c, i) => {
+    const types = ['green', 'blue', 'gray', 'teal', 'orange']
+    const trainerName = c.trainer?.user?.full_name ?? c.trainer?.user?.name ?? 'Chưa có HLV'
+    const timePart = c.schedule_date
+      ? new Date(c.schedule_date).toLocaleTimeString('vi-VN', {
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        })
+      : '—'
 
-  return classes
-    .filter(c => c.schedule_date && c.schedule_date.startsWith(todayStr))
-    .map((c, i) => {
-      const types = ['green', 'blue', 'gray', 'teal', 'orange']
-      const trainerName = c.trainer?.user?.full_name ?? c.trainer?.user?.name ?? 'Chưa có HLV'
-      const timePart = c.schedule_date
-        ? new Date(c.schedule_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
-        : '—'
-
-      return {
-        id:     c.id,
-        name:   c.class_name,
-        detail: trainerName,
-        time:   timePart,
-        type:   types[i % types.length],
-      }
-    })
+    return {
+      id:     c.id,
+      name:   c.class_name,
+      detail: trainerName,
+      time:   timePart,
+      type:   types[i % types.length],
+    }
+  })
 }
 
 /**
  * Format hợp đồng sắp hết hạn → hiển thị panel "Hợp đồng chờ ký"
  *
- * @param {Array} contracts – data[] từ GET /api/contracts
- * @returns {Array} [{ id, name, package }]
+ * BE đã filter expiring_within=30 và sort end_date ASC nên không cần filter lại.
+ * Chỉ giới hạn tối đa 5 item hiển thị trên panel.
+ *
+ * @param {Array} contracts – data[] từ GET /api/contracts?expiring_within=30
+ * @returns {Array} [{ id, name, package, contractNumber, planId, daysLeft }]
  */
 export function formatPendingContracts(contracts) {
   return contracts
-    .filter(c => c.days_left !== undefined && c.days_left <= 30)
     .slice(0, 5)
     .map(c => ({
-      id:              c.id,
-      name:            c.member_name,
-      package:         c.package_label ?? c.package ?? 'Không rõ gói',
-      contractNumber:  c.contract_number ?? `#CN-${String(c.id).padStart(4, '0')}`,
-      planId:          c.plan_id,
-      daysLeft:        c.days_left,
+      id:             c.id,
+      name:           c.member_name,
+      package:        c.package_label ?? c.package ?? 'Không rõ gói',
+      contractNumber: c.contract_number ?? `#CN-${String(c.id).padStart(4, '0')}`,
+      planId:         c.plan_id,
+      daysLeft:       c.days_left ?? 0,
     }))
 }

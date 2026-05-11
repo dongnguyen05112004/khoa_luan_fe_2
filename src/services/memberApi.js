@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE = 'http://localhost:8000/api'
+const BASE = '/api'
 
 function authHeaders() {
   const token = localStorage.getItem('token')

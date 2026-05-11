@@ -5,12 +5,16 @@
     <div class="reg-title-row">
       <div>
         <h1 class="reg-title">Đăng ký hội viên mới</h1>
-        <p class="reg-sub">Thiết lập hồ sơ hiệu suất cho khách hàng mới của Performance Curator.</p>
+        <p class="reg-sub">Điền thông tin để tạo hồ sơ hội viên mới.</p>
       </div>
-      <button class="btn-ai-badge">
-        <span class="ai-star">✦</span>
-        AI-Powered Registration active
-      </button>
+    </div>
+
+    <!-- ===== ALERT ERROR / SUCCESS ===== -->
+    <div v-if="error" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    <div v-if="successMsg" class="alert alert-success">
+      <i class="fas fa-check-circle"></i> {{ successMsg }}
     </div>
 
     <!-- ===== MAIN LAYOUT ===== -->
@@ -29,7 +33,7 @@
           <div class="form-row two-col">
             <div class="form-group">
               <label class="form-label">HỌ VÀ TÊN <span class="req">*</span></label>
-              <input v-model="form.name" type="text" class="form-input" placeholder="Nguyễn Văn A" />
+              <input v-model="form.full_name" type="text" class="form-input" placeholder="Nguyễn Văn A" />
             </div>
             <div class="form-group">
               <label class="form-label">SỐ ĐIỆN THOẠI <span class="req">*</span></label>
@@ -37,11 +41,15 @@
             </div>
           </div>
 
-          <!-- Row 2: Email (full width) -->
-          <div class="form-row">
-            <div class="form-group full">
+          <!-- Row 2: Email + Mật khẩu -->
+          <div class="form-row two-col">
+            <div class="form-group">
               <label class="form-label">ĐỊA CHỈ EMAIL <span class="req">*</span></label>
               <input v-model="form.email" type="email" class="form-input" placeholder="example@curator.com" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">MẬT KHẨU <span class="req">*</span></label>
+              <input v-model="form.password" type="password" class="form-input" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" />
             </div>
           </div>
 
@@ -58,7 +66,7 @@
             <div class="form-group">
               <label class="form-label">TIỀN SỬ Y TẾ</label>
               <textarea
-                v-model="form.medical"
+                v-model="form.health_notes"
                 class="form-textarea"
                 placeholder="Ví dụ: Chấn thương đầu gối, Hen suyễn..."
               ></textarea>
@@ -68,9 +76,9 @@
           <!-- Actions -->
           <div class="form-actions">
             <button class="btn-cancel" @click="cancel">Hủy bỏ</button>
-            <button class="btn-submit" @click="submit">
-              <i class="fas fa-qrcode"></i>
-              Lưu hồ sơ &amp; Cấp mã QR
+            <button class="btn-submit" @click="submit" :disabled="submitting">
+              <i :class="submitting ? 'fas fa-spinner fa-spin' : 'fas fa-qrcode'"></i>
+              {{ submitting ? 'Đang lưu...' : 'Lưu hồ sơ & Cấp mã QR' }}
             </button>
           </div>
 
@@ -87,7 +95,6 @@
               <i class="fas fa-chart-line health-ico"></i>
               Thông số sức khỏe
             </div>
-            <span class="live-sync-badge">Live Sync</span>
           </div>
 
           <div class="health-field">
@@ -130,33 +137,63 @@
             Lựa chọn dịch vụ
           </div>
 
-          <div class="svc-field">
-            <label class="svc-label">GÓI DỊCH VỤ</label>
-            <div class="svc-select-wrap">
-              <select v-model="form.package" class="svc-select" @change="updateFee">
-                <option value="platinum12">Gói Platinum (12 tháng)</option>
-                <option value="gold6">Gói Gold (6 tháng)</option>
-                <option value="silver3">Gói Silver (3 tháng)</option>
-                <option value="basic1">Gói Basic (1 tháng)</option>
-              </select>
-            </div>
+          <!-- Loading gói tập -->
+          <div v-if="loading" class="svc-loading">
+            <i class="fas fa-spinner fa-spin"></i> Đang tải gói tập...
           </div>
 
-          <div class="svc-field">
-            <label class="svc-label">NGÀY BẮT ĐẦU</label>
-            <input v-model="form.startDate" type="date" class="svc-date" />
-          </div>
+          <template v-else>
+            <div class="svc-field">
+              <label class="svc-label">GÓI DỊCH VỤ</label>
+              <div class="svc-select-wrap">
+                <select v-model="form.plan_id" class="svc-select">
+                  <option :value="null">— Không chọn gói —</option>
+                  <option v-for="p in plans" :key="p.id" :value="p.id">
+                    {{ p.plan_name }} ({{ p.duration_days }} ngày)
+                  </option>
+                </select>
+              </div>
+            </div>
 
-          <div class="fee-rows">
-            <div class="fee-row">
-              <span class="fee-key">Phí đăng ký</span>
-              <span class="fee-val">{{ formatCurrency(fee) }}</span>
+            <!-- Khuyến mãi -->
+            <div class="svc-field" v-if="promotions.length > 0">
+              <label class="svc-label">KHUYẾN MÃI</label>
+              <div class="svc-select-wrap">
+                <select v-model="form.promotion_id" class="svc-select">
+                  <option :value="null">— Không áp dụng —</option>
+                  <option v-for="promo in promotions" :key="promo.id" :value="promo.id">
+                    {{ promo.title }} ({{ promo.code }} -{{ promo.discount }}%)
+                  </option>
+                </select>
+              </div>
             </div>
-            <div class="fee-row fee-total">
-              <span class="fee-key">Tổng cộng</span>
-              <span class="fee-val">{{ formatCurrency(fee) }}</span>
+
+            <div class="svc-field">
+              <label class="svc-label">NGÀY BẮT ĐẦU</label>
+              <input v-model="form.start_date" type="date" class="svc-date" />
             </div>
-          </div>
+
+            <div class="fee-rows" v-if="selectedPlan">
+              <div class="fee-row">
+                <span class="fee-key">Gói tập</span>
+                <span class="fee-val">{{ formatCurrency(selectedPlan.price) }}</span>
+              </div>
+              <div class="fee-row" v-if="form.promotion_id">
+                <span class="fee-key">Khuyến mãi</span>
+                <span class="fee-val" style="color:#16a34a">
+                  -{{ promotions.find(p=>p.id===form.promotion_id)?.discount }}%
+                </span>
+              </div>
+              <div class="fee-row">
+                <span class="fee-key">Ngày kết thúc</span>
+                <span class="fee-val">{{ endDate || '—' }}</span>
+              </div>
+              <div class="fee-row fee-total">
+                <span class="fee-key">Tổng cộng</span>
+                <span class="fee-val">{{ formatCurrency(finalPrice) }}</span>
+              </div>
+            </div>
+          </template>
         </div>
 
       </div>
@@ -179,20 +216,21 @@ export default {
       // ── Form data ──
       form: {
         // Thông tin cá nhân
-        full_name:   '',
-        phone:       '',
-        email:       '',
-        password:    '',          // auto-generate nếu không nhập
-        gender:      '',
+        full_name:    '',
+        phone:        '',
+        email:        '',
+        password:     '',
+        gender:       '',
         date_of_birth: '',
         // Sức khoẻ
-        weight:      70,
-        height:      175,
+        weight:       70,
+        height:       175,
+        goal:         '',         // mục tiêu tập luyện (lưu vào health_notes cùng tiền sử)
         health_notes: '',         // tiền sử y tế
         // Gói dịch vụ
-        plan_id:     null,
+        plan_id:      null,
         promotion_id: null,
-        start_date:  new Date().toISOString().slice(0, 10),
+        start_date:   new Date().toISOString().slice(0, 10),
         payment_method: 'cash',
       },
 
@@ -201,10 +239,10 @@ export default {
       promotions: [],
 
       // ── UI state ──
-      loading:      false,
-      submitting:   false,
-      error:        null,
-      successMsg:   null,
+      loading:    false,
+      submitting: false,
+      error:      null,
+      successMsg: null,
     }
   },
 
@@ -218,7 +256,7 @@ export default {
       const base = parseFloat(this.selectedPlan.price) || 0
       const promo = this.promotions.find(p => p.id === this.form.promotion_id)
       if (promo && promo.discount > 0) {
-        return base * (1 - promo.discount / 100)
+        return Math.round(base * (1 - promo.discount / 100))
       }
       return base
     },
@@ -288,8 +326,13 @@ export default {
     validate() {
       if (!this.form.full_name.trim())  return 'Vui lòng nhập họ tên.'
       if (!this.form.phone.trim())      return 'Vui lòng nhập số điện thoại.'
+      if (!/^(0|\+84)[0-9]{9}$/.test(this.form.phone.replace(/\s/g, '')))
+        return 'Số điện thoại không hợp lệ (VD: 0901234567).'
       if (!this.form.email.trim())      return 'Vui lòng nhập địa chỉ email.'
-      if (!/\S+@\S+\.\S+/.test(this.form.email)) return 'Email không hợp lệ.'
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.form.email.trim())) return 'Email không hợp lệ.'
+      if (!this.form.password.trim())   return 'Vui lòng nhập mật khẩu.'
+      if (this.form.password.length < 8) return 'Mật khẩu phải có ít nhất 8 ký tự.'
+      if (this.form.plan_id && !this.form.start_date) return 'Vui lòng chọn ngày bắt đầu gói tập.'
       return null
     },
 
@@ -303,18 +346,22 @@ export default {
 
       this.submitting = true
       try {
+        // Gộp goal + health_notes thành 1 field health_notes
+        const combinedNotes = [
+          this.form.goal       ? `Mục tiêu: ${this.form.goal}`       : '',
+          this.form.health_notes ? `Tiền sử: ${this.form.health_notes}` : '',
+        ].filter(Boolean).join('\n') || undefined
+
         // Build payload theo MemberController@store
         const payload = {
-          // User fields (name = email prefix nếu không có)
-          name:       this.form.email.split('@')[0],
-          email:      this.form.email,
-          password:   this.form.password || Math.random().toString(36).slice(-8),
+          name:       this.form.email.trim().split('@')[0],
+          email:      this.form.email.trim(),
+          password:   this.form.password,
           full_name:  this.form.full_name,
           phone:      this.form.phone,
-          gender:     this.form.gender   || undefined,
-          // Member profile
+          gender:     this.form.gender     || undefined,
           date_of_birth: this.form.date_of_birth || undefined,
-          health_notes:  this.form.health_notes  || undefined,
+          health_notes:  combinedNotes,
           join_date:     this.form.start_date,
           // Gói tập (nếu có chọn)
           ...(this.form.plan_id ? {
@@ -328,12 +375,11 @@ export default {
 
         await memberApi.create(payload)
 
-        this.successMsg = `Đã tạo hội viên ${this.form.full_name} thành công!`
-        setTimeout(() => this.$router.push('/nhanvien'), 1500)
+        this.successMsg = `Đã tạo hội viên "${this.form.full_name}" thành công!`
+        setTimeout(() => this.$router.push('/nhanvien/quanlyhoivien'), 1800)
       } catch (err) {
         const errors = err.response?.data?.errors
         if (errors) {
-          // Laravel validation errors
           this.error = Object.values(errors).flat().join(' | ')
         } else {
           this.error = err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.'
@@ -359,6 +405,28 @@ export default {
   background: #f2f6f3;
 }
 
+/* ===== ALERTS ===== */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.alert-error   { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.alert-success { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+
+/* Loading gói tập */
+.svc-loading {
+  text-align: center;
+  padding: 20px 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
 /* ===== TITLE ROW ===== */
 .reg-title-row {
   display: flex;
@@ -379,35 +447,6 @@ export default {
   font-size: 0.8rem;
   color: #78909c;
   margin: 0;
-}
-
-/* AI badge button */
-.btn-ai-badge {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  background: #0d9488;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(13,148,136,0.3);
-  transition: all 0.2s;
-  letter-spacing: 0.01em;
-}
-.btn-ai-badge:hover {
-  background: #0f766e;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(13,148,136,0.4);
-}
-.ai-star {
-  font-size: 0.9rem;
-  color: #99f6e4;
 }
 
 /* ===== BODY LAYOUT ===== */
@@ -589,17 +628,6 @@ export default {
 .health-ico {
   color: #4ade80;
   font-size: 0.85rem;
-}
-.live-sync-badge {
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: #4ade80;
-  background: rgba(74,222,128,0.15);
-  border: 1px solid rgba(74,222,128,0.3);
-  border-radius: 20px;
-  padding: 2px 9px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
 }
 
 .health-field { margin-bottom: 14px; }
