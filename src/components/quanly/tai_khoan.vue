@@ -3,7 +3,7 @@
     <!-- Page Header -->
     <div class="tk-page-header">
       <div class="tk-header-left">
-        <div class="tk-breadcrumb">ADMIN › HỆ THỐNG</div>
+        <div class="tk-breadcrumb">ADMIN HỆ THỐNG</div>
         <h1 class="tk-title">Quản lý tài khoản nhân viên và hội viên</h1>
       </div>
       <div class="tk-header-actions">

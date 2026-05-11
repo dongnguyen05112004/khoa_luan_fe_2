@@ -37,6 +37,7 @@
       </nav>
 
 
+
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -192,6 +193,12 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+.brand-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   overflow: hidden;
 }
 .brand-avatar img {

@@ -51,6 +51,7 @@
       </nav>
 
 
+
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -203,6 +204,7 @@ export default {
   width: 42px; height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  object-fit: cover;
   object-fit: cover;
 }
 .brand-title { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 0.5px; }

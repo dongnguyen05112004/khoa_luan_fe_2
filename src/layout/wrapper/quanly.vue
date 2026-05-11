@@ -48,6 +48,7 @@
       </nav>
 
 
+
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -186,6 +187,7 @@ export default {
   height: 42px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.4);
+  object-fit: cover;
   object-fit: cover;
 }
 .brand-title {
