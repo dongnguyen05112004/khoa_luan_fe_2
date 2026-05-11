@@ -380,24 +380,29 @@ export default {
       this.metrics = []
       try {
         const res = await axios.get(`${API}/health-metrics?user_id=${m.id}`, authHeaders())
-        this.metrics = (res.data || []).slice().sort((a,b) => new Date(a.record_date) - new Date(b.record_date))
-        const last6 = this.metrics.slice(-6)
-        m.history       = last6.map(r => parseFloat(r.weight || 0))
-        m.fatHistory    = last6.map(r => parseFloat(r.body_fat_percentage || 0))
-        m.muscleHistory = last6.map(r => parseFloat(r.muscle_mass_kg || 0))
+        // Sort tăng dần theo ngày để biểu đồ hiển thị đúng thứ tự
+        this.metrics = (res.data || []).slice().sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+        this._refreshMemberHistory(m)
 
         if (this.metrics.length) {
           const latest = this.metrics[this.metrics.length - 1]
           this.form = {
-            weight:  latest.weight || '',
-            height:  latest.height || '',
-            bodyFat: latest.body_fat_percentage || '',
-            muscle:  latest.muscle_mass_kg || '',
+            weight:  latest.weight  != null ? latest.weight : '',
+            height:  latest.height  != null ? latest.height : '',
+            bodyFat: latest.body_fat_percentage != null ? latest.body_fat_percentage : '',
+            muscle:  latest.muscle_mass_kg      != null ? latest.muscle_mass_kg      : '',
           }
         }
       } catch (e) {
         console.error('loadMetrics error', e)
+        this.showToast('Không thể tải chỉ số sức khỏe: ' + (e.response?.data?.message || e.message), 'error')
       }
+    },
+    _refreshMemberHistory(m) {
+      const last6 = this.metrics.slice(-6)
+      m.history       = last6.map(r => parseFloat(r.weight || 0))
+      m.fatHistory    = last6.map(r => parseFloat(r.body_fat_percentage || 0))
+      m.muscleHistory = last6.map(r => parseFloat(r.muscle_mass_kg || 0))
     },
     resetForm() {
       if (this.selectedMember) this.selectMember(this.selectedMember)
@@ -409,22 +414,50 @@ export default {
       }
       this.saving = true
       try {
-        await axios.post(`${API}/health-metrics`, {
+        const today = new Date().toISOString().split('T')[0]
+        const payload = {
           user_id:             this.selectedMember.id,
-          record_date:         new Date().toISOString().split('T')[0],
+          record_date:         today,
           weight:              parseFloat(this.form.weight),
           height:              parseFloat(this.form.height),
-          body_fat_percentage: this.form.bodyFat ? parseFloat(this.form.bodyFat) : null,
-          muscle_mass_kg:      this.form.muscle  ? parseFloat(this.form.muscle)  : null,
+          body_fat_percentage: this.form.bodyFat !== '' && this.form.bodyFat != null ? parseFloat(this.form.bodyFat) : null,
+          muscle_mass_kg:      this.form.muscle  !== '' && this.form.muscle  != null ? parseFloat(this.form.muscle)  : null,
           bmi:                 this.bmi ? parseFloat(this.bmi) : null,
-        }, authHeaders())
-        this.showToast('Đã lưu chỉ số sức khỏe thành công!')
-        await this.selectMember(this.selectedMember)
+        }
+
+        // Kiểm tra đã có bản ghi hôm nay chưa → nếu có thì UPDATE, không thì CREATE
+        const existing = this.metrics.find(r => r.record_date && r.record_date.split('T')[0] === today)
+        if (existing) {
+          await axios.put(`${API}/health-metrics/${existing.id}`, payload, authHeaders())
+        } else {
+          await axios.post(`${API}/health-metrics`, payload, authHeaders())
+        }
+
+        this.showToast('Đã lưu chỉ số sức khỏe thành công! 🎉', 'success')
+
+        // Chỉ reload biểu đồ, KHÔNG gọi selectMember (vì sẽ reset form về dữ liệu cũ)
+        await this._reloadMetricsForChart(this.selectedMember)
       } catch (e) {
-        const msg = e.response?.data?.message || 'Lưu thất bại'
+        const errData = e.response?.data
+        let msg = 'Lưu thất bại'
+        if (errData?.message) msg = errData.message
+        else if (errData?.errors) {
+          msg = Object.values(errData.errors).flat().join(', ')
+        }
         this.showToast(msg, 'error')
+        console.error('saveMetrics error', e)
       } finally {
         this.saving = false
+      }
+    },
+    // Chỉ reload metrics + biểu đồ, KHÔNG reset form (gọi sau khi lưu thành công)
+    async _reloadMetricsForChart(m) {
+      try {
+        const res = await axios.get(`${API}/health-metrics?user_id=${m.id}`, authHeaders())
+        this.metrics = (res.data || []).slice().sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+        this._refreshMemberHistory(m)
+      } catch (e) {
+        console.error('_reloadMetricsForChart error', e)
       }
     },
     showToast(text, type = 'success') {
