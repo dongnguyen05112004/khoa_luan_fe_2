@@ -4,26 +4,28 @@
     <!-- KPI row -->
     <div class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-label">TỔNG PHẢN HỒI (30 NGÀY)</div>
-        <div class="kpi-val">1,248</div>
-        <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +12%</div>
+        <div class="kpi-label">TỔNG PHẢN HỒI</div>
+        <div class="kpi-val">{{ totalFeedbacks.toLocaleString() }}</div>
+        <div class="kpi-badge up" v-if="totalFeedbacks > 0"><i class="fas fa-check"></i> Cập nhật mới nhất</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">CHỈ SỐ HÀI LÒNG (CSAT)</div>
-        <div class="kpi-val">4.8/5</div>
-        <div class="stars">★★★★★</div>
+        <div class="kpi-val">{{ csatScore }}/5</div>
+        <div class="stars">
+          <i class="fas fa-star" v-for="i in 5" :key="i" :style="{ color: i <= Math.round(csatScore) ? '#f59e0b' : '#e2e8f0' }"></i>
+        </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">TỶ LỆ TIÊU CỰC</div>
-        <div class="kpi-val">3.2%</div>
-        <div class="kpi-badge down"><i class="fas fa-caret-down"></i> -0.5%</div>
+        <div class="kpi-val">{{ negativePct }}%</div>
+        <div class="kpi-badge down" v-if="negativePct > 10"><i class="fas fa-exclamation-triangle"></i> Cần chú ý</div>
       </div>
       <div class="kpi-card accent-purple">
         <div class="kpi-label-white">Phân tích AI tức thì</div>
         <div class="ai-kpi-tag" v-if="aiReport"><i class="fas fa-robot"></i> {{ aiReport.title }}</div>
         <div class="ai-kpi-tag" v-else><i class="fas fa-robot"></i> Phân tích các phản hồi ưu tiên</div>
         <button class="btn-live" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
-          <i class="fas" :class="isAiLoading ? 'fa-spinner fa-spin' : ''"></i>
+          <i class="fas" :class="isAiLoading ? 'fa-spinner fa-spin' : 'fa-magic'"></i>
           {{ isAiLoading ? 'ĐANG CHẠY...' : 'PHÂN TÍCH TRỰC TIẾP' }}
         </button>
       </div>
@@ -63,7 +65,7 @@
     </div>
 
     <!-- Body -->
-    <div class="body-grid">
+    <div class="body-grid" v-if="!isLoading">
       <!-- Left: Sentiment + Keywords -->
       <div class="left-col">
         <div class="sentiment-card">
@@ -71,17 +73,21 @@
           <div class="donut-wrap">
             <svg viewBox="0 0 160 160" class="donut-svg">
               <circle cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" stroke-width="22"/>
-              <circle cx="80" cy="80" r="58" fill="none" stroke="#16a34a" stroke-width="22" stroke-dasharray="273.3 364.4" stroke-dashoffset="0"/>
-              <circle cx="80" cy="80" r="58" fill="none" stroke="#eab308" stroke-width="22" stroke-dasharray="54.7 364.4" stroke-dashoffset="-273.3"/>
-              <circle cx="80" cy="80" r="58" fill="none" stroke="#dc2626" stroke-width="22" stroke-dasharray="36.4 364.4" stroke-dashoffset="-328"/>
-              <text x="80" y="74" text-anchor="middle" font-size="20" font-weight="800" fill="#1e293b">91%</text>
+              <!-- Positive -->
+              <circle cx="80" cy="80" r="58" fill="none" stroke="#16a34a" stroke-width="22" :stroke-dasharray="donutDashArray" stroke-dashoffset="0"/>
+              <!-- Neutral -->
+              <circle cx="80" cy="80" r="58" fill="none" stroke="#eab308" stroke-width="22" :stroke-dasharray="neutralDashArray" :stroke-dashoffset="neutralDashOffset"/>
+              <!-- Negative -->
+              <circle cx="80" cy="80" r="58" fill="none" stroke="#dc2626" stroke-width="22" :stroke-dasharray="negativeDashArray" :stroke-dashoffset="negativeDashOffset"/>
+              
+              <text x="80" y="74" text-anchor="middle" font-size="20" font-weight="800" fill="#1e293b">{{ positivePct }}%</text>
               <text x="80" y="90" text-anchor="middle" font-size="9" fill="#94a3b8">TÍCH CỰC</text>
             </svg>
           </div>
           <div class="legend-col">
-            <div class="leg-row"><span class="dot green"></span> Tích cực (Khen ngợi) <strong>75%</strong></div>
-            <div class="leg-row"><span class="dot yellow"></span> Trung lập <strong>15%</strong></div>
-            <div class="leg-row"><span class="dot red"></span> Tiêu cực (Phản nàn) <strong>10%</strong></div>
+            <div class="leg-row"><span class="dot green"></span> Tích cực <strong>{{ sentimentStats.positive }}%</strong></div>
+            <div class="leg-row"><span class="dot yellow"></span> Trung lập <strong>{{ sentimentStats.neutral }}%</strong></div>
+            <div class="leg-row"><span class="dot red"></span> Tiêu cực <strong>{{ sentimentStats.negative }}%</strong></div>
           </div>
         </div>
 
@@ -94,28 +100,27 @@
               <span class="kw-count">{{ kw.count }} lượt</span>
             </div>
           </div>
+          <div v-if="keywords.length === 0" class="text-center small text-muted py-3">Chưa có dữ liệu từ khóa</div>
         </div>
       </div>
 
       <!-- Right: Urgent feed -->
       <div class="feed-col">
         <div class="feed-head">
-          <strong>Dòng Thời Gian Phản Hồi Khẩn Cấp</strong>
+          <strong>Dòng Thời Gian Phản Hồi</strong>
           <div class="feed-meta">
-            <span class="ai-live-tag"><i class="fas fa-robot"></i> AI CẬP NHẬT 2 PHÚT TRƯỚC</span>
-            <span class="sort-label">Sắp xếp theo:</span>
-            <span class="sort-val">Ưu tiên nhất</span>
+            <span class="ai-live-tag"><i class="fas fa-robot"></i> AI CẬP NHẬT TỨC THÌ</span>
           </div>
         </div>
         <div class="feedback-list">
-          <div class="fb-item" v-for="fb in feedbacks" :key="fb.name">
+          <div class="fb-item" v-for="fb in feedbacks" :key="fb.id">
             <div class="fb-header">
               <div class="fb-avatar" :style="{background: fb.avatarBg}">{{ fb.initials }}</div>
               <div class="fb-meta">
                 <div class="fb-name">{{ fb.name }}</div>
                 <div class="fb-branch">{{ fb.branch }} • {{ fb.time }}</div>
               </div>
-              <span class="urgency-tag" :class="fb.urgClass">{{ fb.urgency }}</span>
+              <span class="urgency-tag" :class="fb.urgClass" v-if="fb.urgency !== 'THƯỜNG'">{{ fb.urgency }}</span>
             </div>
             <p class="fb-text">"{{ fb.text }}"</p>
             <div class="fb-tags">
@@ -124,57 +129,177 @@
             <div class="ai-reply">
               <i class="fas fa-robot ai-ic"></i>
               <div>
-                <strong>TƯ VẤN AI</strong>
+                <strong>DỰ THẢO HÀNH ĐỘNG AI</strong>
                 <p>{{ fb.aiReply }}</p>
               </div>
             </div>
           </div>
-        </div>
-        <div class="feed-footer">
-          <i class="fas fa-robot"></i> AI đang phân tích 24 phản hồi mới
+          <div v-if="feedbacks.length === 0" class="ai-empty-unified">Chưa có phản hồi nào từ khách hàng</div>
         </div>
       </div>
+    </div>
+    <div v-else class="ai-empty-unified py-5">
+       <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+       <p>Đang tải dữ liệu phản hồi...</p>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'TabPhanHoi',
   props: ['aiReport', 'isAiLoading'],
   data() {
     return {
-      keywords: [
-        { text: 'Vệ sinh phòng tập', count: 420, pct: 100, color: '#2d7a3a' },
-        { text: 'Chất lượng máy móc', count: 312, pct: 74, color: '#6366f1' },
-        { text: 'Thái độ Huấn luyện viên', count: 245, pct: 58, color: '#0ea5e9' },
-        { text: 'Giá cả gói tập', count: 112, pct: 27, color: '#f59e0b' },
-      ],
-      feedbacks: [
-        {
-          name: 'Trần Hoàng', initials: 'TH', avatarBg: '#bfdbfe', branch: 'Phòng tập Q1', time: '15 phút trước',
-          urgency: 'KHẨN CẤP', urgClass: 'urg-red',
-          text: 'Máy chạy bộ số 3 ở tầng 1 phát ra tiếng két két rất lớn khi chạy tốc độ cao. Tôi suýt bị trượt chân và có thể bị ngã. Đề nghị kỹ thuật kiểm tra ngay tránh tai nạn.',
-          tags: ['MayMoc', 'AnToan'],
-          aiReply: 'Cần kiểm tra máy chạy số 3 và báo tì toàn bộ tình trạng máy cardio tại chi nhánh Q1 trong hôm nay.',
-        },
-        {
-          name: 'Lê Mai Anh', initials: 'LA', avatarBg: '#bbf7d0', branch: 'Phòng tập Q7', time: '1 giờ trước',
-          urgency: 'TRUNG BÌNH', urgClass: 'urg-yellow',
-          text: 'Cực kỳ hài lòng với PT Tuấn ở chi nhánh Q7. Hướng dẫn rất tận tâm, theo sát từng buổi tập của mình. Nhờ vậy mà mình đã giảm được 2kg chỉ sau 1 tháng.',
-          tags: ['CoachTuan', 'GiamCan', 'PT_Q7'],
-          aiReply: 'Ghi nhận thành tích của Coach Tuấn vào hệ thống thưởng tháng. Sử dụng lời khen này làm nội dung truyền thông cho Q7.',
-        },
-        {
-          name: 'Nguyễn Quốc', initials: 'NQ', avatarBg: '#fde68a', branch: 'Phòng tập Q3', time: '3 giờ trước',
-          urgency: 'TRUNG BÌNH', urgClass: 'urg-yellow',
-          text: 'Phòng tắm hôm qua hơi có mùi lạ, hình như hệ thống thông gió đang gặp vấn đề. Nhờ phòng tập xem lại giúp.',
-          tags: ['VeSinh', 'CoSoVatChat'],
-          aiReply: 'Nhắc nhở đội ngũ tập vụ kiểm tra khu vực nhà tắm mỗi 2 tiếng thay vì 4 tiếng như hiện tại.',
-        },
-      ],
+      keywords: [],
+      feedbacks: [],
+      isLoading: false,
     }
   },
+  computed: {
+    totalFeedbacks() {
+      return this.feedbacks.length;
+    },
+    csatScore() {
+      if (this.totalFeedbacks === 0) return 0;
+      const sum = this.feedbacks.reduce((acc, f) => acc + (f.rating || 0), 0);
+      return (sum / this.totalFeedbacks).toFixed(1);
+    },
+    negativePct() {
+      if (this.totalFeedbacks === 0) return 0;
+      const negCount = this.feedbacks.filter(f => f.ai_sentiment === 'Negative' || f.rating <= 2).length;
+      return ((negCount / this.totalFeedbacks) * 100).toFixed(1);
+    },
+    sentimentStats() {
+      if (this.totalFeedbacks === 0) return { positive: 0, neutral: 0, negative: 0 };
+      const pos = this.feedbacks.filter(f => f.ai_sentiment === 'Positive' || f.rating >= 4).length;
+      const neg = this.feedbacks.filter(f => f.ai_sentiment === 'Negative' || f.rating <= 2).length;
+      const neu = this.totalFeedbacks - pos - neg;
+      
+      return {
+        positive: Math.round((pos / this.totalFeedbacks) * 100),
+        neutral: Math.round((neu / this.totalFeedbacks) * 100),
+        negative: Math.round((neg / this.totalFeedbacks) * 100)
+      };
+    },
+    positivePct() {
+      return this.sentimentStats.positive;
+    },
+    donutDashArray() {
+      const p = this.positivePct;
+      const total = 364.4; // Circumference
+      return `${(p / 100) * total} ${total}`;
+    },
+    neutralDashOffset() {
+      const pPos = this.positivePct;
+      const total = 364.4;
+      return -((pPos / 100) * total);
+    },
+    neutralDashArray() {
+      const p = this.sentimentStats.neutral;
+      const total = 364.4;
+      return `${(p / 100) * total} ${total}`;
+    },
+    negativeDashOffset() {
+      const pPos = this.sentimentStats.positive;
+      const pNeu = this.sentimentStats.neutral;
+      const total = 364.4;
+      return -(((pPos + pNeu) / 100) * total);
+    },
+    negativeDashArray() {
+      const p = this.sentimentStats.negative;
+      const total = 364.4;
+      return `${(p / 100) * total} ${total}`;
+    }
+  },
+  mounted() {
+    this.fetchFeedbacks();
+  },
+  methods: {
+    async fetchFeedbacks() {
+      this.isLoading = true;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://127.0.0.1:8000/api/member-feedbacks', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const list = res.data.data || res.data;
+        
+        // Map feedbacks
+        this.feedbacks = list.map(item => ({
+          ...item,
+          name: item.user?.full_name || item.user?.name || 'Hội viên ẩn danh',
+          initials: (item.user?.name || 'HV').substring(0, 2).toUpperCase(),
+          avatarBg: this.getAvatarColor(item.id),
+          branch: item.user?.branch?.name || 'Hệ thống SmartGym',
+          time: this.formatDate(item.created_at),
+          urgency: this.mapUrgency(item.ai_severity),
+          urgClass: this.mapUrgencyClass(item.ai_severity),
+          text: item.comment,
+          tags: item.ai_topic ? [item.ai_topic] : ['Chung'],
+          aiReply: item.ai_action_plan || 'AI đang phân tích phản hồi này...',
+        }));
+
+        // Extract keywords from ai_topic
+        this.extractKeywords(list);
+
+      } catch (error) {
+        console.error('Lỗi khi tải phản hồi:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    extractKeywords(list) {
+      const topics = {};
+      list.forEach(item => {
+        if (item.ai_topic) {
+          topics[item.ai_topic] = (topics[item.ai_topic] || 0) + 1;
+        }
+      });
+      
+      const colors = ['#2d7a3a', '#6366f1', '#0ea5e9', '#f59e0b', '#dc2626'];
+      let maxCount = 0;
+      const sortedTopics = Object.keys(topics).sort((a, b) => topics[b] - topics[a]);
+      if (sortedTopics.length > 0) maxCount = topics[sortedTopics[0]];
+
+      this.keywords = sortedTopics.slice(0, 5).map((topic, i) => ({
+        text: topic,
+        count: topics[topic],
+        pct: maxCount > 0 ? Math.round((topics[topic] / maxCount) * 100) : 0,
+        color: colors[i % colors.length]
+      }));
+    },
+    mapUrgency(severity) {
+      const map = {
+        'Critical': 'KHẨN CẤP',
+        'High': 'CAO',
+        'Medium': 'TRUNG BÌNH',
+        'Low': 'THẤP'
+      };
+      return map[severity] || 'THƯỜNG';
+    },
+    mapUrgencyClass(severity) {
+      if (severity === 'Critical' || severity === 'High') return 'urg-red';
+      if (severity === 'Medium') return 'urg-yellow';
+      return '';
+    },
+    getAvatarColor(id) {
+      const colors = ['#bfdbfe', '#bbf7d0', '#fde68a', '#e9d5ff', '#fed7aa'];
+      return colors[id % colors.length];
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('vi-VN', { 
+        day: '2-digit', 
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  }
 }
 </script>
 

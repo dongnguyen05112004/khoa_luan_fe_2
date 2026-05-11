@@ -11,9 +11,7 @@
             alt="Avatar"
             class="profile-avatar"
           />
-          <span class="status-badge" :class="user.status === 'active' ? 'active' : 'inactive'">
-            {{ userStateLabel(user.status) }}
-          </span>
+           
         </div>
 
         <!-- Info -->

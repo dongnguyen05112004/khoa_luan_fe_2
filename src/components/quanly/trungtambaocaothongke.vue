@@ -13,18 +13,18 @@
           {{ tab.label }}
         </button>
       </div>
-      <div class="nav-right">
+      <!-- <div class="nav-right">
         <div class="search-box">
           <i class="fas fa-search"></i>
           <input type="text" placeholder="Tìm kiếm thông tin..." />
         </div>
         <button class="icon-btn"><i class="fas fa-bell"></i></button>
         <button class="icon-btn"><i class="fas fa-cog"></i></button>
-      </div>
+      </div> -->
     </div>
 
     <!-- ===== KPI CARDS ===== -->
-    <div class="kpi-row">
+    <div class="kpi-row" v-if="showInlineDashboard">
       <div class="kpi-card" v-for="kpi in kpis" :key="kpi.label">
         <div class="kpi-card-inner">
           <div class="kpi-left">

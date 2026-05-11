@@ -4,21 +4,21 @@
     <!-- KPI row -->
     <div class="kpi-row">
       <div class="kpi-card accent-green">
-        <div class="kpi-label">TỶ LỆ GIỮ CHÂN TỔNG THỂ</div>
-        <div class="kpi-val">84.2%</div>
-        <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +2.4% ↑</div>
+        <div class="kpi-label">TỶ LỆ AN TOÀN TỔNG THỂ</div>
+        <div class="kpi-val">{{ riskPercentages.green || 0 }}%</div>
+        <div class="kpi-badge up" v-if="riskPercentages.green >= 50"><i class="fas fa-check"></i> Ổn định</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">SỐ LƯỢNG NGUY CƠ RỜI BỎ</div>
-        <div class="kpi-val red">128 <span class="unit">Hội viên</span></div>
+        <div class="kpi-label">SỐ LƯỢNG NGUY CƠ CAO (ĐỎ)</div>
+        <div class="kpi-val red">{{ riskCounts.red || 0 }} <span class="unit">Hội viên</span></div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">HỘI VIÊN ĐÃ NGƯNG (30 NGÀY)</div>
-        <div class="kpi-val">42 <span class="unit-badge down"><i class="fas fa-caret-down"></i> -12%</span></div>
+        <div class="kpi-label">NHÓM CẦN LƯU Ý (VÀNG)</div>
+        <div class="kpi-val">{{ riskCounts.yellow || 0 }} <span class="unit-badge yellow">{{ riskPercentages.yellow || 0 }}%</span></div>
       </div>
       <div class="kpi-card accent-dark">
-        <div class="kpi-label">ĐIỂM SỐ TƯƠNG TÁC</div>
-        <div class="kpi-val white">78/100</div>
+        <div class="kpi-label">TỔNG PHÂN TÍCH</div>
+        <div class="kpi-val white">{{ totalMembers }}</div>
         <div class="kpi-line-mini">
           <svg viewBox="0 0 80 18" preserveAspectRatio="none"><polyline points="0,14 15,10 30,12 45,6 60,8 80,4" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
@@ -53,23 +53,23 @@
             <!-- Background ring -->
             <circle cx="80" cy="80" r="58" fill="none" stroke="#f1f5f9" stroke-width="22"/>
             <!-- Segments (circumference ≈ 364.4) -->
-            <!-- An toàn 60% = 218.6 -->
+            <!-- An toàn -->
             <circle cx="80" cy="80" r="58" fill="none" stroke="#16a34a" stroke-width="22"
-              stroke-dasharray="218.6 364.4" stroke-dashoffset="0" stroke-linecap="butt"/>
-            <!-- Cần lưu ý 28% = 102.0; offset = -218.6 -->
+              :stroke-dasharray="donutDashArrays.green" stroke-dashoffset="0" stroke-linecap="butt"/>
+            <!-- Cần lưu ý -->
             <circle cx="80" cy="80" r="58" fill="none" stroke="#eab308" stroke-width="22"
-              stroke-dasharray="102.0 364.4" stroke-dashoffset="-218.6" stroke-linecap="butt"/>
-            <!-- Nguy cơ cao 12% = 43.7; offset = -320.6 -->
+              :stroke-dasharray="donutDashArrays.yellow" :stroke-dashoffset="donutDashArrays.yellowOffset" stroke-linecap="butt"/>
+            <!-- Nguy cơ cao -->
             <circle cx="80" cy="80" r="58" fill="none" stroke="#dc2626" stroke-width="22"
-              stroke-dasharray="43.7 364.4" stroke-dashoffset="-320.6" stroke-linecap="butt"/>
-            <text x="80" y="74" text-anchor="middle" font-size="22" font-weight="800" fill="#1e293b">2480</text>
-            <text x="80" y="92" text-anchor="middle" font-size="9" fill="#94a3b8">TỔNG HỘI VIÊN</text>
+              :stroke-dasharray="donutDashArrays.red" :stroke-dashoffset="donutDashArrays.redOffset" stroke-linecap="butt"/>
+            <text x="80" y="74" text-anchor="middle" font-size="22" font-weight="800" fill="#1e293b">{{ totalMembers }}</text>
+            <text x="80" y="92" text-anchor="middle" font-size="9" fill="#94a3b8">TỔNG ĐÁNH GIÁ</text>
           </svg>
         </div>
         <div class="donut-legend">
-          <div class="legend-item"><span class="dot red"></span> Nguy cơ cao <strong>12%</strong></div>
-          <div class="legend-item"><span class="dot yellow"></span> Cần lưu ý <strong>28%</strong></div>
-          <div class="legend-item"><span class="dot green"></span> An toàn <strong>60%</strong></div>
+          <div class="legend-item"><span class="dot red"></span> Nguy cơ cao (Đỏ) <strong>{{ riskPercentages.red || 0 }}%</strong></div>
+          <div class="legend-item"><span class="dot yellow"></span> Cần lưu ý (Vàng) <strong>{{ riskPercentages.yellow || 0 }}%</strong></div>
+          <div class="legend-item"><span class="dot green"></span> An toàn (Xanh) <strong>{{ riskPercentages.green || 0 }}%</strong></div>
         </div>
       </div>
 
@@ -116,18 +116,46 @@
                 </div>
               </td>
               <td>
-                <button class="btn-action">Xem tư vấn AI</button>
+                <button class="btn-action" @click="openModal(m)">Xem tư vấn AI</button>
               </td>
+            </tr>
+            <tr v-if="members.length === 0">
+              <td colspan="5" class="text-center py-4 text-muted">Chưa có dữ liệu phân tích. Vui lòng chạy "AI Phân Tích Rủi Ro".</td>
             </tr>
           </tbody>
         </table>
         <div class="table-footer">
-          <span class="table-note">Hiển thị 3 trên 128 hội viên có nguy cơ cao</span>
-          <div class="pagination">
-            <button class="pg-btn"><i class="fas fa-chevron-left"></i></button>
-            <button class="pg-btn active">1</button>
-            <button class="pg-btn">2</button>
-            <button class="pg-btn"><i class="fas fa-chevron-right"></i></button>
+          <span class="table-note">Đang hiển thị {{ members.length }} hội viên</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Consultation Modal -->
+    <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <div class="avatar-lg" :style="{background: selectedMember?.avatarColor}">{{ selectedMember?.initials }}</div>
+            <div>
+              <h4 style="margin:0; font-size:1.1rem;">AI Tư vấn - {{ selectedMember?.name }}</h4>
+              <span class="tag" :class="selectedMember?.riskClass" style="margin-top:4px;">{{ selectedMember?.risk }}</span>
+            </div>
+          </div>
+          <button class="btn-close" @click="closeModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="ai-box">
+            <strong class="text-purple"><i class="fas fa-brain"></i> CHUẨN ĐOÁN RỦI RO</strong>
+            <p>{{ selectedMember?.diagnosis || 'Không có chẩn đoán' }}</p>
+          </div>
+          <div class="ai-box action-box mt-3">
+            <strong class="text-green"><i class="fas fa-bolt"></i> HÀNH ĐỘNG ĐỀ XUẤT TỪ AI</strong>
+            <ul class="suggestion-list">
+              <li v-for="(sug, idx) in selectedMember?.suggestions" :key="idx">
+                <i class="fas fa-check-circle text-green mr-2"></i> {{ sug }}
+              </li>
+              <li v-if="!selectedMember?.suggestions?.length" class="text-muted">Không có đề xuất hành động.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -144,11 +172,46 @@ export default {
   data() {
     return {
       isAiPredicting: false,
-      members: [
-        { id: '#SG-8291', name: 'Lê Minh Khôi', initials: 'LM', avatarColor: '#bfdbfe', risk: 'Nguy cơ cao', riskClass: 'tag-red', metric: '↘ 72%', metricBad: true, health: 'Nguy 18% cấp', healthClass: 'health-red' },
-        { id: '#SG-9102', name: 'Trần Mỹ Linh', initials: 'TL', avatarColor: '#fde68a', risk: 'Cần lưu ý', riskClass: 'tag-yellow', metric: '↘ 45%', metricBad: true, health: 'Thấp 42% trong', healthClass: 'health-yellow' },
-        { id: '#SG-7721', name: 'Nguyễn Gia Huy', initials: 'NG', avatarColor: '#a7f3d0', risk: 'Nguy cơ cao', riskClass: 'tag-red', metric: '↘ 88%', metricBad: true, health: 'Nguy 12% cấp', healthClass: 'health-red' },
-      ],
+      members: [],
+      selectedMember: null,
+      showModal: false,
+    }
+  },
+  computed: {
+    totalMembers() {
+      return this.members.length;
+    },
+    riskCounts() {
+      const counts = { red: 0, yellow: 0, green: 0 };
+      this.members.forEach(m => {
+        if (m.riskClass === 'tag-red') counts.red++;
+        else if (m.riskClass === 'tag-yellow') counts.yellow++;
+        else if (m.riskClass === 'tag-green') counts.green++;
+      });
+      return counts;
+    },
+    riskPercentages() {
+      const total = this.totalMembers || 1;
+      return {
+        red: Math.round((this.riskCounts.red / total) * 100),
+        yellow: Math.round((this.riskCounts.yellow / total) * 100),
+        green: Math.round((this.riskCounts.green / total) * 100),
+      };
+    },
+    donutDashArrays() {
+      const total = 364.4;
+      const greenVal = (this.riskPercentages.green / 100) * total;
+      const yellowVal = (this.riskPercentages.yellow / 100) * total;
+      const redVal = (this.riskPercentages.red / 100) * total;
+      
+      return {
+        green: `${greenVal} ${total}`,
+        yellow: `${yellowVal} ${total}`,
+        red: `${redVal} ${total}`,
+        greenOffset: 0,
+        yellowOffset: -greenVal,
+        redOffset: -(greenVal + yellowVal)
+      };
     }
   },
   mounted() {
@@ -159,7 +222,7 @@ export default {
       try {
         const token = localStorage.getItem('token');
         const res = await axios.get('http://127.0.0.1:8000/api/ai-recommendations', {
-          params: { type: 'Churn Prediction', per_page: 20 },
+          params: { type: 'Churn Prediction', per_page: 500 },
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data && res.data.data && res.data.data.length > 0) {
@@ -182,10 +245,12 @@ export default {
               avatarColor: colors[index % colors.length],
               risk: riskLevel === 'Đỏ' ? 'Nguy cơ cao' : (riskLevel === 'Xanh' ? 'An toàn' : 'Cần lưu ý'),
               riskClass: riskClass,
-              metric: 'Cập nhật AI',
+              metric: 'Phân tích từ AI',
               metricBad: riskLevel === 'Đỏ',
-              health: 'Tư vấn mới',
+              health: 'Cập nhật',
               healthClass: healthClass,
+              diagnosis: rec.ai_diagnosis,
+              suggestions: rec.ai_suggestions ? rec.ai_suggestions.split('\n').map(s => s.replace(/^- /, '').replace(/^\* /, '')).filter(s => s.trim() !== '') : []
             };
           });
         }
@@ -208,6 +273,14 @@ export default {
       } finally {
         this.isAiPredicting = false;
       }
+    },
+    openModal(member) {
+      this.selectedMember = member;
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+      this.selectedMember = null;
     }
   }
 }
@@ -292,4 +365,25 @@ export default {
 .pagination { display:flex; gap:4px; }
 .pg-btn { width:28px; height:28px; border:1px solid #e2e8f0; background:#fff; border-radius:6px; font-size:.75rem; cursor:pointer; color:#64748b; display:flex; align-items:center; justify-content:center; }
 .pg-btn.active { background:#2d7a3a; color:#fff; border-color:#2d7a3a; }
+
+/* Modal AI Styles */
+.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,.6); display:flex; align-items:center; justify-content:center; z-index:1000; backdrop-filter:blur(4px); }
+.modal-content { background:#fff; width:90%; max-width:600px; border-radius:16px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; animation:slideUp .3s ease; }
+@keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.modal-header { padding:20px 24px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; background:#f8fafc; }
+.modal-title-box { display:flex; align-items:center; gap:12px; }
+.avatar-lg { width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:800; color:#1e293b; }
+.btn-close { background:none; border:none; font-size:1.2rem; color:#94a3b8; cursor:pointer; }
+.btn-close:hover { color:#1e293b; }
+.modal-body { padding:24px; max-height:60vh; overflow-y:auto; }
+.ai-box { background:#f8fafc; border-radius:12px; padding:16px; border:1px solid #e2e8f0; }
+.ai-box strong { font-size:.85rem; display:block; margin-bottom:10px; }
+.ai-box p { margin:0; font-size:.85rem; color:#475569; line-height:1.6; }
+.action-box { background:#f0fdf4; border-color:#bbf7d0; }
+.suggestion-list { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+.suggestion-list li { font-size:.85rem; color:#16a34a; display:flex; align-items:flex-start; line-height:1.5; }
+.text-purple { color:#7c3aed; }
+.text-green { color:#16a34a; }
+.mr-2 { margin-right:8px; margin-top:2px; }
+.mt-3 { margin-top:16px; }
 </style>

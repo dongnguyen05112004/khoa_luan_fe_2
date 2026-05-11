@@ -5,10 +5,11 @@
       <!-- Brand -->
       <div class="nv-brand">
         <div class="brand-logo">
-          <img src="@/assets/logo.png" alt="SmartGym AI Logo" class="brand-logo-img" />
+          <img v-if="brandInfo.logo" :src="brandInfo.logo" alt="SmartGym AI Logo" class="brand-logo-img" />
+          <img v-else src="@/assets/logo.png" alt="SmartGym AI Logo" class="brand-logo-img" />
         </div>
         <div class="brand-text" v-show="!sidebarCollapsed">
-          <div class="brand-name">SMARTGYM AI</div>
+          <div class="brand-name">{{ brandInfo.name }}</div>
           <div class="brand-role">Management Panel</div>
         </div>
       </div>
@@ -116,9 +117,29 @@ export default {
       sidebarCollapsed: false,
       searchQuery: '',
       loggingOut: false,
+      brandInfo: {
+        name: 'SMARTGYM AI',
+        logo: ''
+      }
     }
   },
+  mounted() {
+    this.fetchSystemSettings();
+  },
   methods: {
+    async fetchSystemSettings() {
+      try {
+        const response = await axios.get('/api/system-settings');
+        const settings = response.data.reduce((acc, item) => {
+          acc[item.setting_key] = item.setting_value;
+          return acc;
+        }, {});
+        if (settings.gymName) this.brandInfo.name = settings.gymName;
+        if (settings.logo) this.brandInfo.logo = settings.logo;
+      } catch (error) {
+        console.error('Lỗi tải thông tin thương hiệu:', error);
+      }
+    },
     async handleLogout() {
       if (this.loggingOut) return
       this.loggingOut = true

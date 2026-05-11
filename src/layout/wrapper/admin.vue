@@ -5,10 +5,11 @@
       <!-- Brand -->
       <div class="sidebar-brand">
         <div class="brand-avatar">
-          <img src="@/assets/logo.png" alt="SmartGym AI Logo" />
+          <img v-if="brandInfo.logo" :src="brandInfo.logo" alt="SmartGym AI Logo" />
+          <img v-else src="@/assets/logo.png" alt="SmartGym AI Logo" />
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
-          <div class="brand-title">SMARTGYM AI</div>
+          <div class="brand-title">{{ brandInfo.name }}</div>
           <div class="brand-sub">Admin Dashboard</div>
         </div>
       </div>
@@ -95,9 +96,29 @@ export default {
         totalUsers: 128,
         lockedAccounts: 3,
       },
+      brandInfo: {
+        name: 'SMARTGYM AI',
+        logo: ''
+      }
     }
   },
+  mounted() {
+    this.fetchSystemSettings();
+  },
   methods: {
+    async fetchSystemSettings() {
+      try {
+        const response = await axios.get('/api/system-settings');
+        const settings = response.data.reduce((acc, item) => {
+          acc[item.setting_key] = item.setting_value;
+          return acc;
+        }, {});
+        if (settings.gymName) this.brandInfo.name = settings.gymName;
+        if (settings.logo) this.brandInfo.logo = settings.logo;
+      } catch (error) {
+        console.error('Lỗi tải thông tin thương hiệu:', error);
+      }
+    },
     async handleLogout() {
       if (this.loggingOut) return
       this.loggingOut = true

@@ -247,15 +247,7 @@
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group">
-                <label><i class="fas fa-shield-alt form-label-icon"></i> Vai trò <span class="required">*</span></label>
-                <select v-model="editAcc.role_id">
-                  <option :value="2">MANAGER</option>
-                  <option :value="3">STAFF</option>
-                  <option :value="4">PT</option>
-                  <option :value="5">MEMBER</option>
-                </select>
-              </div>
+
               <div class="form-group">
                 <label><i class="fas fa-toggle-on form-label-icon"></i> Trạng thái</label>
                 <div class="status-toggle-wrap">
@@ -680,7 +672,6 @@ export default {
           name: displayName,
           full_name: displayName,
           email: this.editAcc.email,
-          role_id: this.editAcc.role_id,
           state: this.editAcc.state
         };
         if (this.showChangePw && this.editAcc.newPassword) {

@@ -33,11 +33,17 @@
               </div>
               <div class="col-lg-4">
                 <label class="form-label very-small fw-bold text-secondary">LOGO THƯƠNG HIỆU</label>
-                <label class="upload-zone border-dashed rounded d-flex flex-column align-items-center justify-content-center gap-1">
-                  <i class="fas fa-cloud-upload-alt fa-2x text-muted"></i>
-                  <span class="small text-muted">Kéo thả hoặc Click để tải lên</span>
-                  <span class="very-small text-muted">PNG, JPG (MAX 5MB)</span>
-                  <input type="file" accept="image/png,image/jpeg" class="d-none" />
+                <label class="upload-zone border-dashed rounded d-flex flex-column align-items-center justify-content-center gap-1 p-2">
+                  <template v-if="logoPreview">
+                    <img :src="logoPreview" alt="Logo" class="img-fluid rounded" style="max-height: 100px; object-fit: contain;" />
+                    <span class="very-small text-muted mt-2">Click để đổi ảnh (PNG, JPG)</span>
+                  </template>
+                  <template v-else>
+                    <i class="fas fa-cloud-upload-alt fa-2x text-muted"></i>
+                    <span class="small text-muted">Kéo thả hoặc Click để tải lên</span>
+                    <span class="very-small text-muted">PNG, JPG (MAX 5MB)</span>
+                  </template>
+                  <input type="file" accept="image/png,image/jpeg" class="d-none" @change="handleLogoUpload" />
                 </label>
               </div>
             </div>
@@ -53,8 +59,7 @@
               <div class="col-md-6">
                 <label class="form-label very-small fw-bold text-secondary">NGÔN NGỮ MẶC ĐỊNH</label>
                 <select class="form-select border-light-subtle" v-model="config.lang">
-                  <option value="vi">Tiếng Việt (Vietnamese)</option>
-                  <option value="en">English</option>
+                  <option value="vi">Tiếng Việt (Vietnamese)</option> 
                 </select>
               </div>
               <div class="col-md-6">
@@ -70,27 +75,18 @@
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-body p-4">
             <h6 class="fw-bold d-flex align-items-center gap-2 mb-4">
-              <i class="fas fa-microchip text-success"></i> Tham số Vận hành
+              <i class="fas fa-shield-alt text-success"></i> Vận hành & Bảo mật
             </h6>
             <div class="row g-4">
-              <div class="col-md-6">
-                <div class="p-4 rounded bg-light border-0">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small fw-bold">Tự động đóng check-in</span>
-                    <span class="badge bg-success-subtle text-success fw-normal">PHÚT</span>
+              <div class="col-md-12">
+                <div class="p-3 border rounded bg-light d-flex align-items-center justify-content-between gap-3">
+                  <div>
+                    <label class="form-check-label fw-bold small mb-0" for="auditSwitch" style="cursor: pointer;">Ghi nhật ký hệ thống (Audit Log)</label>
+                    <p class="very-small text-muted mb-0 mt-1">Lưu lại mọi thao tác của nhân viên để đối soát khi cần thiết.</p>
                   </div>
-                  <input type="number" class="form-control border-0 bg-white shadow-sm fs-4 fw-bold" v-model="config.checkIn">
-                  <p class="very-small text-muted mt-2 mb-0">THỜI GIAN TỐI ĐA MỖI PHIÊN TẬP</p>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="p-4 rounded bg-light border-0">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small fw-bold">Lượt đăng ký tối đa</span>
-                    <span class="badge bg-success-subtle text-success fw-normal">KHÁCH/NGÀY</span>
+                  <div class="form-check form-switch mb-0 ps-0">
+                    <input class="form-check-input ms-0" type="checkbox" v-model="config.audit" id="auditSwitch" style="width: 2.5rem; height: 1.25rem; cursor: pointer; float: none;">
                   </div>
-                  <input type="number" class="form-control border-0 bg-white shadow-sm fs-4 fw-bold" v-model="config.maxReg">
-                  <p class="very-small text-muted mt-2 mb-0">GIỚI HẠN CÔNG SUẤT PHÒNG MÁY</p>
                 </div>
               </div>
             </div>
@@ -166,52 +162,79 @@
         <div class="card border-0 shadow-sm mb-5">
           <div class="card-body p-4">
             <h6 class="fw-bold d-flex align-items-center gap-2 mb-4">
-              <i class="fas fa-shield-alt text-primary"></i> Kỹ thuật & Bảo mật
+              <i class="fas fa-robot text-primary"></i> Cấu hình AI & Nền tảng trí tuệ nhân tạo
             </h6>
-            <div class="vstack gap-3">
-              <div class="d-flex justify-content-between align-items-center p-3 rounded bg-light">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="icon-sm bg-white rounded shadow-sm d-flex align-items-center justify-content-center p-2">
-                    <i class="fas fa-history text-primary"></i>
-                  </div>
-                  <div>
-                    <div class="small fw-bold">Ghi nhật ký hệ thống (Audit Logs)</div>
-                    <div class="very-small text-muted">Lưu lại mọi thao tác của quản trị viên để đối soát</div>
-                  </div>
+            
+            <div class="mb-4">
+              <label class="form-label very-small fw-bold text-secondary">CHỌN NHÀ CUNG CẤP AI (AI PROVIDER)</label>
+              <div class="d-flex gap-4 mt-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" v-model="config.ai_provider" value="gemini" id="providerGemini">
+                  <label class="form-check-label fw-bold small" for="providerGemini">
+                    <i class="fab fa-google text-primary me-1"></i> Google Gemini
+                  </label>
                 </div>
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" v-model="config.audit" checked>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" v-model="config.ai_provider" value="groq" id="providerGroq">
+                  <label class="form-check-label fw-bold small" for="providerGroq">
+                    <i class="fas fa-bolt text-warning me-1"></i> Groq (Llama 3)
+                  </label>
                 </div>
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center p-3 rounded bg-light">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="icon-sm bg-white rounded shadow-sm d-flex align-items-center justify-content-center p-2">
-                    <i class="fas fa-robot text-primary"></i>
-                  </div>
-                  <div>
-                    <div class="small fw-bold">Thông báo AI thời gian thực</div>
-                    <div class="very-small text-muted">Gửi cảnh báo thông minh dựa trên hành vi người dùng</div>
-                  </div>
-                </div>
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" v-model="config.ai" checked>
-                </div>
-              </div>
-
-              <div class="p-3 rounded bg-light">
-                <div class="small fw-bold mb-2"><i class="fas fa-key text-primary me-2"></i>Gemini API Key</div>
-                <div class="input-group bg-white rounded shadow-sm overflow-hidden border-0">
-                  <input :type="showKey ? 'text' : 'password'" class="form-control border-0" v-model="config.apiKey">
-                  <button class="btn btn-white border-0" @click="showKey = !showKey">
-                    <i :class="showKey ? 'fas fa-eye-slash' : 'fas fa-eye text-muted'"></i>
-                  </button>
-                </div>
-                <p class="very-small text-muted mt-2 mb-0">Khóa bảo mật để kích hoạt các tính năng AI nâng cao</p>
               </div>
             </div>
+
+            <!-- Gemini Config -->
+            <div v-if="config.ai_provider === 'gemini'" class="p-3 rounded bg-light border-start border-primary border-4">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label very-small fw-bold text-secondary">GEMINI API KEY</label>
+                  <div class="input-group bg-white rounded shadow-sm overflow-hidden border">
+                    <input :type="showKey ? 'text' : 'password'" class="form-control border-0" v-model="config.gemini_api_key" placeholder="Nhập Gemini API Key...">
+                    <button class="btn btn-white border-0" @click="showKey = !showKey">
+                      <i :class="showKey ? 'fas fa-eye-slash' : 'fas fa-eye text-muted'"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label very-small fw-bold text-secondary">MODEL</label>
+                  <select class="form-select border shadow-sm" v-model="config.gemini_model">
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Nhanh)</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Mạnh)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Groq Config -->
+            <div v-if="config.ai_provider === 'groq'" class="p-3 rounded bg-light border-start border-warning border-4">
+              <div class="row g-3">
+                <div class="col-md-8">
+                  <label class="form-label very-small fw-bold text-secondary">GROQ API KEY</label>
+                  <div class="input-group bg-white rounded shadow-sm overflow-hidden border">
+                    <input :type="showKey ? 'text' : 'password'" class="form-control border-0" v-model="config.groq_api_key" placeholder="Nhập Groq API Key...">
+                    <button class="btn btn-white border-0" @click="showKey = !showKey">
+                      <i :class="showKey ? 'fas fa-eye-slash' : 'fas fa-eye text-muted'"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label very-small fw-bold text-secondary">MODEL</label>
+                  <select class="form-select border shadow-sm" v-model="config.groq_model">
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+                    <option value="llama3-8b-8192">Llama 3 8B</option>
+                    <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <p class="very-small text-muted mt-3 mb-0">
+              <i class="fas fa-info-circle me-1"></i> Các API Key đều được mã hóa 2 lớp trước khi lưu xuống Database.
+            </p>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -266,7 +289,13 @@ const DEFAULT_CONFIG = {
   maxReg: 500,
   audit: true,
   ai: true,
-  apiKey: 'sk-gemini-8v2k3l9n0x7m1p4q5r6t8u9w0z',
+  
+  // AI Configs
+  ai_provider: 'gemini',
+  gemini_api_key: '',
+  gemini_model: 'gemini-1.5-flash',
+  groq_api_key: '',
+  groq_model: 'llama-3.3-70b-versatile',
   
   // Bank Configs
   bank_name_1: 'BIDV',
@@ -288,7 +317,9 @@ export default {
       showKey: false,
       showPasswordModal: false,
       adminPassword: '',
-      config: { ...DEFAULT_CONFIG }
+      config: { ...DEFAULT_CONFIG },
+      selectedLogoFile: null,
+      logoPreview: null
     }
   },
   mounted() {
@@ -308,6 +339,8 @@ export default {
               } else {
                 this.config[item.setting_key] = item.setting_value;
               }
+            } else if (item.setting_key === 'logo') {
+              this.logoPreview = item.setting_value;
             }
           });
         }
@@ -318,7 +351,20 @@ export default {
     restoreDefaults() {
       if (confirm('Bạn có chắc chắn muốn khôi phục về các cài đặt mặc định ban đầu? Bạn sẽ cần nhập mật khẩu để hệ thống tiến hành lưu lại.')) {
         this.config = { ...DEFAULT_CONFIG };
+        this.selectedLogoFile = null;
+        this.logoPreview = null;
         this.save(); // Tự động bật modal yêu cầu mật khẩu để lưu lên DB
+      }
+    },
+    handleLogoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Kích thước ảnh vượt quá 5MB. Vui lòng chọn ảnh nhỏ hơn.');
+          return;
+        }
+        this.selectedLogoFile = file;
+        this.logoPreview = URL.createObjectURL(file);
       }
     },
     save() { 
@@ -338,14 +384,24 @@ export default {
           };
         });
 
-        const res = await axios.post('/api/system-settings/bulk-update', {
-          settings: settingsPayload,
-          password: this.adminPassword
+        const formData = new FormData();
+        formData.append('password', this.adminPassword);
+        formData.append('settings', JSON.stringify(settingsPayload));
+        
+        if (this.selectedLogoFile) {
+          formData.append('logo_file', this.selectedLogoFile);
+        }
+
+        const res = await axios.post('/api/system-settings/bulk-update', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         });
 
         alert(res.data.message || 'Cập nhật cấu hình thành công!');
         this.showPasswordModal = false;
-        this.fetchConfig();
+        this.selectedLogoFile = null;
+        window.location.reload();
       } catch (error) {
         if (error.response && error.response.data && error.response.data.message) {
           alert('Lỗi: ' + error.response.data.message);

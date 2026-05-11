@@ -2,7 +2,10 @@
   <div class="kinetic-theme">
     <nav class="navbar navbar-expand-lg bg-white sticky-top py-3">
       <div class="container">
-        <a class="navbar-brand fw-bold text-dark fs-4" href="#">The Kinetic Atelier</a>
+        <a class="navbar-brand fw-bold text-dark fs-4 d-flex align-items-center" href="#">
+          <img v-if="brandInfo.logo" :src="brandInfo.logo" alt="Logo" height="40" class="me-2 rounded" />
+          {{ brandInfo.name }}
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -31,16 +34,12 @@
             <span class="badge badge-purple rounded-pill px-3 py-2 mb-3 fw-semibold text-uppercase tracking-wide">
               Ưu Đãi Đặc Quyền
             </span>
-            <h1 class="display-3 fw-bold text-dark lh-sm mb-4">
-              Nâng Tầm <br> Thể Chất <span class="text-kinetic-green">Cùng Chúng Tôi</span>
-            </h1>
+            <h1 class="display-3 fw-bold text-dark lh-sm mb-2">
+              <span v-html="brandInfo.slogan"></span>
+            </h1> 
             <p class="text-muted fs-5 mb-5 pe-lg-5 lh-base">
               Trải nghiệm môi trường tập luyện hiện đại. Giảm ngay 30% cho tháng đầu tiên tham gia cùng hệ thống thiết bị thông minh.
             </p>
-            <div class="d-flex gap-3">
-              <button class="btn btn-kinetic-green rounded-pill px-4 py-3 fw-semibold">Tham Gia Ngay</button>
-              <button class="btn btn-light rounded-pill px-4 py-3 fw-semibold shadow-sm text-dark bg-white">Xem Chi Tiết</button>
-            </div>
           </div>
         </div>
       </div>
@@ -69,7 +68,7 @@
           <div class="col-lg-6 offset-lg-1">
             <h2 class="display-5 fw-bold text-dark lh-sm mb-4">Không Gian<br>Tập Luyện<br>Đẳng Cấp.</h2>
             <p class="text-muted mb-5 lh-lg">
-              Kinetic Gym không chỉ là nơi tập luyện; đó là một hệ sinh thái sống động. Chúng tôi thay thế tiếng ồn công nghiệp của các phòng tập thông thường bằng một môi trường hiện đại, thấu hiểu cơ thể bạn.
+              {{ brandInfo.name }} không chỉ là nơi tập luyện; đó là một hệ sinh thái sống động. Chúng tôi thay thế tiếng ồn công nghiệp của các phòng tập thông thường bằng một môi trường hiện đại, thấu hiểu cơ thể bạn.
             </p>
             <div class="row g-4">
               <div class="col-md-6">
@@ -96,14 +95,14 @@
 
     <footer class="bg-light-gray py-4 border-top">
       <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
-        <div class="fw-bold text-kinetic-green mb-3 mb-md-0">Phòng Tập Kinetic</div>
+        <div class="fw-bold text-kinetic-green mb-3 mb-md-0">{{ brandInfo.name }}</div>
         <ul class="list-inline mb-3 mb-md-0 fs-xs text-muted text-uppercase tracking-wide">
           <li class="list-inline-item mx-3"><a href="#" class="text-decoration-none text-muted">Bảo Mật</a></li>
           <li class="list-inline-item mx-3"><a href="#" class="text-decoration-none text-muted">Điều Khoản</a></li>
           <li class="list-inline-item mx-3"><a href="#" class="text-decoration-none text-muted">Tuyển Dụng</a></li>
-          <li class="list-inline-item mx-3"><a href="#" class="text-decoration-none text-muted">Liên Hệ</a></li>
+          <li class="list-inline-item mx-3"><a href="#" class="text-decoration-none text-muted">Liên Hệ: {{ brandInfo.hotline }}</a></li>
         </ul>
-        <div class="text-muted fs-xs">© 2024 PHÒNG TẬP KINETIC. BẢO LƯU MỌI QUYỀN.</div>
+        <div class="text-muted fs-xs">© 2024 {{ brandInfo.name.toUpperCase() }}. BẢO LƯU MỌI QUYỀN.</div>
       </div>
     </footer>
   </div>
@@ -112,6 +111,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+const brandInfo = ref({
+  name: 'The Kinetic Atelier',
+  slogan: 'Nâng Tầm <br> Thể Chất <span class="text-kinetic-green">Cùng Chúng Tôi</span>',
+  hotline: '1900 8888',
+  logo: ''
+})
 
 const router = useRouter()
 const goToLogin = () => router.push('/dangnhap')
@@ -150,7 +157,24 @@ const handleScroll = () => {
   rafId = requestAnimationFrame(updateActiveSection)
 }
 
-onMounted(() => window.addEventListener('scroll', handleScroll))
+onMounted(async () => {
+  window.addEventListener('scroll', handleScroll)
+  
+  try {
+    const response = await axios.get('/api/system-settings')
+    const settings = response.data.reduce((acc, item) => {
+      acc[item.setting_key] = item.setting_value
+      return acc
+    }, {})
+    
+    if (settings.gymName) brandInfo.value.name = settings.gymName
+    if (settings.slogan) brandInfo.value.slogan = settings.slogan
+    if (settings.hotline) brandInfo.value.hotline = settings.hotline
+    if (settings.logo) brandInfo.value.logo = settings.logo
+  } catch (error) {
+    console.error('Lỗi tải thông tin thương hiệu:', error)
+  }
+})
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 </script>
 

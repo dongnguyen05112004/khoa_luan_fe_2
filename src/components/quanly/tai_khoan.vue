@@ -24,9 +24,8 @@
           <div class="tk-filter-group">
             <label class="tk-filter-label">TRẠNG THÁI</label>
             <select v-model="filterStatus" class="tk-filter-select">
-              <option value="">Đang hoạt động</option>
+              <option value="">Tất cả</option>
               <option value="active">Đang hoạt động</option>
-              <option value="inactive">Tạm ngưng</option>
               <option value="banned">Bị khóa</option>
             </select>
           </div>
@@ -206,7 +205,7 @@
                 <label class="add-lbl">CHỨC VỤ / VAI TRÒ <span class="req">*</span></label>
                 <select v-model="addForm.role_id" class="add-fi">
                   <option value="" disabled>-- Chọn chức vụ --</option>
-                  <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
+                  <option v-for="r in filteredRoles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
                 </select>
               </div>
               <div class="add-fg">
@@ -218,16 +217,7 @@
                 </select>
               </div>
             </div>
-            <div class="add-row">
-              <div class="add-fg">
-                <label class="add-lbl">TRẠNG THÁI</label>
-                <select v-model="addForm.state" class="add-fi">
-                  <option value="active">Hoạt động</option>
-                  <option value="inactive">Tạm ngưng</option>
-                  <option value="banned">Bị khóa</option>
-                </select>
-              </div>
-            </div>
+
           </div>
           <div class="add-footer">
             <button class="tkm-btn-close" style="background:#f3f4f6;color:#374151"
@@ -427,6 +417,7 @@ export default {
       addForm: { name: '', email: '', password: '', role_id: '', phone: '', gender: 'male', state: 'active' },
       addLoading: false,
       addError: '',
+      currentUser: null,
 
       stats: {
         totalStaff: 0,
@@ -475,6 +466,21 @@ export default {
       }
       return pages
     },
+    filteredRoles() {
+      if (!this.currentUser) return this.roles
+      const roleId = Number(this.currentUser.role_id)
+      const roleName = (this.currentUser.role_name || this.currentUser.role?.name || '').toLowerCase()
+      
+      // Nếu là Manager (ID=2 hoặc tên='manager'), ẩn quyền Admin (ID=1 hoặc tên='admin')
+      if (roleId === 2 || roleName === 'manager') {
+        return this.roles.filter(r => {
+          const rName = (r.role_name || r.name || '').toLowerCase()
+          const rId = Number(r.id)
+          return rName !== 'admin' && rId !== 1
+        })
+      }
+      return this.roles
+    },
   },
 
   watch: {
@@ -490,6 +496,14 @@ export default {
   mounted() {
     this.fetchUsers(1)
     this.fetchRoles()
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      try {
+        this.currentUser = JSON.parse(userStr)
+      } catch (e) {
+        console.error('Failed to parse user from localStorage', e)
+      }
+    }
   },
 
   methods: {

@@ -5,10 +5,11 @@
       <!-- Brand -->
       <div class="sidebar-brand">
         <div class="brand-avatar">
-          <img src="@/assets/logo.png" alt="SmartGym AI Logo" />
+          <img v-if="brandInfo.logo" :src="brandInfo.logo" alt="SmartGym AI Logo" />
+          <img v-else src="@/assets/logo.png" alt="SmartGym AI Logo" />
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
-          <div class="brand-title">SMARTGYM AI</div>
+          <div class="brand-title">{{ brandInfo.name }}</div>
           <div class="brand-sub">Hội viên Dashboard</div>
         </div>
       </div>
@@ -20,11 +21,7 @@
 
       <!-- Nav -->
       <nav class="sidebar-nav">
-
-        <router-link to="/khachhang/chi_so_suc_khoe" class="nav-item" active-class="active">
-          <i class="fas fa-chart-line nav-icon"></i>
-          <span v-show="!sidebarCollapsed">Chỉ số sức khỏe</span>
-        </router-link>
+ 
 
         <router-link to="/khachhang/qr_checkin" class="nav-item" active-class="active">
           <i class="fas fa-qrcode nav-icon"></i>
@@ -123,9 +120,29 @@ export default {
         workoutsThisMonth: 12,
         daysLeft: 24,
       },
+      brandInfo: {
+        name: 'SMARTGYM AI',
+        logo: ''
+      }
     }
   },
+  mounted() {
+    this.fetchSystemSettings();
+  },
   methods: {
+    async fetchSystemSettings() {
+      try {
+        const response = await axios.get('/api/system-settings');
+        const settings = response.data.reduce((acc, item) => {
+          acc[item.setting_key] = item.setting_value;
+          return acc;
+        }, {});
+        if (settings.gymName) this.brandInfo.name = settings.gymName;
+        if (settings.logo) this.brandInfo.logo = settings.logo;
+      } catch (error) {
+        console.error('Lỗi tải thông tin thương hiệu:', error);
+      }
+    },
     async handleLogout() {
       if (this.loggingOut) return
       this.loggingOut = true

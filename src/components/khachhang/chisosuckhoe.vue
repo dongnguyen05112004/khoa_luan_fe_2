@@ -46,8 +46,7 @@
           <div class="mc-top">
             <div class="mc-icon-wrap blue">
               <i class="fas fa-arrows-alt-v"></i>
-            </div>
-            <span class="mc-badge stable">ỔN ĐỊNH</span>
+            </div> 
           </div>
           <div class="mc-label">Chiều cao</div>
           <div class="mc-value">{{ latestMetric.height }} <span class="mc-unit">cm</span></div>

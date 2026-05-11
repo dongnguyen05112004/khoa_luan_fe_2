@@ -74,7 +74,7 @@
         <input
           type="text"
           v-model="search"
-          placeholder="Tìm tên quản trị viên..."
+          placeholder=" "
           class="filter-text-input"
         />
       </div>
@@ -602,8 +602,28 @@ export default {
         return `Chiến dịch: ${this.truncate(campaign, 28)}`
       }
 
+      // ── Mua gói tập (MemberSubscription) ────────────
+      if (action.includes('MEMBERSUBSCRIPTION')) {
+        return `Đăng ký gói tập`
+      }
+
+      // ── Hóa đơn thanh toán (Payment) ────────────────
+      if (action.includes('PAYMENT')) {
+        const inv = pick(data, 'invoice_number')
+        const amt = data?.amount ? ` (${Number(data.amount).toLocaleString('vi-VN')}đ)` : ''
+        return inv ? `Thanh toán hóa đơn: ${inv}${amt}` : `Tạo hóa đơn thanh toán${amt}`
+      }
+
+      // ── Hợp đồng PT (PtContract) ────────────────────
+      if (action.includes('PTCONTRACT')) {
+        const sessions = data?.total_sessions ? ` - ${data.total_sessions} buổi` : ''
+        return `Hợp đồng PT${sessions}`
+      }
+
       // ── Cấu hình hệ thống ────────────────────────────
-      if (action.includes('CONFIG') || action.includes('SETTING')) {
+      if (action.includes('CONFIG') || action.includes('SETTING') || action.includes('SYSTEMSETTING')) {
+        const key = pick(data, 'setting_key', 'key')
+        if (key) return `Cấu hình: ${key}`
         const keys = data ? Object.keys(data).slice(0, 2).map(k => fieldVN[k] || k).join(', ') : ''
         return keys ? `Cấu hình: ${keys}` : 'Thay đổi cấu hình hệ thống'
       }
