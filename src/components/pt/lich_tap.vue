@@ -5,14 +5,8 @@
       <h1 class="ps-title">Quản Lý Lịch Tập</h1>
       <div class="ps-actions">
         <button class="btn-outline" @click="openAddModal"><i class="far fa-calendar-check"></i> Đặt lịch</button>
-        <button class="btn-icon"><i class="far fa-bell"></i><span class="dot"></span></button>
-        <div class="ps-profile" v-if="myProfile">
-          <img :src="myProfile.avatar" alt="Avatar" class="ps-avatar" />
-          <div class="ps-profile-info">
-            <div class="ps-name">{{ myProfile.name }}</div>
-            <div class="ps-role">Huấn luyện viên</div>
-          </div>
-        </div>
+        
+        
       </div>
     </header>
 
