@@ -130,9 +130,13 @@
             </div>
           </div>
 
-          <!-- ===== CHUYỂN KHOẢN – Techcombank QR ===== -->
+          <!-- ===== CHUYỂN KHOẢN – VietQR động theo cấu hình admin ===== -->
           <transition name="slide-down">
             <div v-if="selectedMethod === 'bank_transfer'" class="bank-transfer-section">
+              <div v-if="false" class="bank-loading">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải thông tin ngân hàng...
+              </div>
+              <template v-else>
               <div class="bank-header">
                 <div class="bank-header-text">
                   <div class="bank-section-title">Thông tin chuyển khoản</div>
@@ -144,13 +148,16 @@
                   <img
                     :src="qrUrl"
                     class="qr-img"
-                    alt="QR Code Techcombank"
+                    alt="QR Code"
                     @error="onQrError"
+                    @click="showQrModal = true"
+                    title="Nhấn để phóng to"
                   />
-                  <div class="qr-label">Scan QR</div>
+                  <div class="qr-label">
+                    <i class="fas fa-expand-alt" style="font-size:0.6rem;margin-right:3px"></i>Scan QR
+                  </div>
                   <div class="qr-bank-badge">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Techcombank.svg/200px-Techcombank.svg.png"
-                         class="qr-bank-logo" alt="Techcombank" />
+                    <span class="qr-bank-name-text">{{ bankConfig.bankName }}</span>
                   </div>
                 </div>
               </div>
@@ -158,7 +165,7 @@
               <div class="bank-info-grid">
                 <div class="bank-info-item">
                   <div class="bi-label">NGÂN HÀNG</div>
-                  <div class="bi-val">Techcombank (TCB)</div>
+                  <div class="bi-val">{{ bankConfig.bankName }}</div>
                 </div>
                 <div class="bank-info-item">
                   <div class="bi-label">SỐ TIỀN THANH TOÁN</div>
@@ -166,7 +173,7 @@
                 </div>
                 <div class="bank-info-item">
                   <div class="bi-label">CHỦ TÀI KHOẢN</div>
-                  <div class="bi-val">KP FITNESS GYM</div>
+                  <div class="bi-val">{{ bankConfig.bankOwner }}</div>
                 </div>
                 <div class="bank-info-item">
                   <div class="bi-label">ĐỊA ĐIỂM</div>
@@ -175,8 +182,8 @@
                 <div class="bank-info-item bank-info-full">
                   <div class="bi-label">SỐ TÀI KHOẢN</div>
                   <div class="bi-val bi-copy-row">
-                    <span class="bi-account-num">1903 9637 3280 12</span>
-                    <button class="btn-copy" :class="{ copied: copiedKey === 'account' }" @click="copyText('19039637328012', 'account')">
+                    <span class="bi-account-num">{{ bankConfig.bankAcc }}</span>
+                    <button class="btn-copy" :class="{ copied: copiedKey === 'account' }" @click="copyText(bankConfig.bankAcc, 'account')">
                       <i :class="copiedKey === 'account' ? 'fas fa-check' : 'fas fa-copy'"></i>
                     </button>
                   </div>
@@ -201,6 +208,7 @@
                 <span v-if="actionLoading"><i class="fas fa-spinner fa-spin"></i> Đang xử lý...</span>
                 <span v-else><i class="fas fa-check-circle"></i> Xác nhận đã thanh toán</span>
               </button>
+              </template>
             </div>
           </transition>
 
@@ -333,6 +341,55 @@
 
     </div>
 
+    <!-- ===== QR Zoom Modal ===== -->
+    <transition name="qr-modal-fade">
+      <div v-if="showQrModal" class="qr-modal-overlay" @click.self="showQrModal = false">
+        <div class="qr-modal-box">
+          <button class="qr-modal-close" @click="showQrModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+
+          <div class="qr-modal-header">
+            <div class="qr-modal-bank-name-badge">{{ bankConfig.bankName }}</div>
+            <div>
+              <div class="qr-modal-title">Quét mã để thanh toán</div>
+              <div class="qr-modal-sub">{{ bankConfig.bankName }} · {{ bankConfig.bankOwner }}</div>
+            </div>
+          </div>
+
+          <div class="qr-modal-img-wrap">
+            <img
+              :src="qrUrlLarge"
+              class="qr-modal-img"
+              alt="QR Code Techcombank"
+              @error="onQrModalError"
+            />
+            <div class="qr-modal-scan-ring"></div>
+          </div>
+
+          <div class="qr-modal-amount">
+            <span class="qr-modal-amount-label">Số tiền</span>
+            <span class="qr-modal-amount-val">{{ formatVND(total) }} <span class="qr-modal-amount-unit">đ</span></span>
+          </div>
+
+          <div class="qr-modal-info">
+            <div class="qr-modal-info-row">
+              <span class="qr-mi-label">Số tài khoản</span>
+              <span class="qr-mi-val">{{ bankConfig.bankAcc }}</span>
+            </div>
+            <div class="qr-modal-info-row">
+              <span class="qr-mi-label">Nội dung CK</span>
+              <span class="qr-mi-val mono">{{ transferContent }}</span>
+            </div>
+          </div>
+
+          <button class="qr-modal-close-btn" @click="showQrModal = false">
+            <i class="fas fa-compress-alt"></i> Đóng
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- Success overlay -->
     <div class="success-overlay" v-if="showSuccess" @click.self="showSuccess = false">
       <div class="success-modal">
@@ -357,7 +414,8 @@
 </template>
 
 <script>
-import { paymentApi, getTechcombankQR, generateTransferContent, formatVND } from '@/services/paymentApi.js'
+import { paymentApi, getTechcombankQR, getVietQR, generateTransferContent, formatVND } from '@/services/paymentApi.js'
+import axios from 'axios'
 
 export default {
   name: 'XuLyThanhToan',
@@ -415,11 +473,22 @@ export default {
       showSuccess: false,
       createdInvoiceNumber: '',
 
+      // QR Modal
+      showQrModal: false,
+
       paymentMethodOptions: [
         { key: 'cash',          label: 'Tiền mặt',    icon: 'fas fa-money-bill-wave' },
         { key: 'bank_transfer', label: 'Chuyển khoản', icon: 'fas fa-university' },
         { key: 'card',          label: 'Thẻ tín dụng', icon: 'fas fa-credit-card' },
       ],
+
+      // Cấu hình ngân hàng cố định
+      bankConfig: {
+        bankName:  'Techcombank (TCB)',
+        bankAcc:   '19039637328012',
+        bankOwner: 'KP FITNESS GYM',
+        bankId:    '970407',
+      },
     }
   },
 
@@ -434,7 +503,12 @@ export default {
 
     // QR Techcombank cho số tiền hiện tại
     qrUrl() {
-      return getTechcombankQR(this.total, this.transferContent, 150)
+      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 150)
+    },
+
+    // QR phóng to cho modal (300px)
+    qrUrlLarge() {
+      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 300)
     },
 
     // Nội dung chuyển khoản
@@ -458,10 +532,12 @@ export default {
 
     // Đóng suggestions khi click ra ngoài
     document.addEventListener('click', this.closeOnOutside)
+    document.addEventListener('keydown', this.onEscKey)
   },
 
   beforeUnmount() {
     document.removeEventListener('click', this.closeOnOutside)
+    document.removeEventListener('keydown', this.onEscKey)
   },
 
   methods: {
@@ -476,7 +552,6 @@ export default {
       }
     },
 
-    // ── Load data ───────────────────────────────────────────────
     async loadPlans() {
       try {
         const { data } = await paymentApi.getActivePlans()
@@ -572,19 +647,27 @@ export default {
         setTimeout(() => { this.errorMsg = '' }, 4000)
         return
       }
+      if (this.total <= 0) {
+        this.errorMsg = 'Số tiền thanh toán phải lớn hơn 0!'
+        setTimeout(() => { this.errorMsg = '' }, 4000)
+        return
+      }
 
       this.actionLoading = true
       this.errorMsg = ''
 
       try {
+        // Lay subscription_id tu member dang chon (goi tap active hien tai)
+        const subscriptionId = this.selectedMember?.subscription_id ?? null
+
         const payload = {
-          user_id:        this.selectedMember?.id ?? null,
-          subscription_id: null, // có thể truyền nếu có contractId
-          amount:          this.total,
-          payment_method:  this.selectedMethod,
-          status:          'paid',
+          user_id:           this.selectedMember?.id ?? null,
+          subscription_id:   subscriptionId,
+          amount:            this.total,
+          payment_method:    this.selectedMethod,
+          status:            'paid',
           payment_confirmed: true,
-          note:            this.note || null,
+          note:              this.note || null,
         }
 
         if (this.promoId) payload.promotion_id = this.promoId
@@ -631,7 +714,15 @@ export default {
 
     onQrError(e) {
       // Fallback nếu VietQR không load được
-      e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TECHCOMBANK-19039637328012-${this.transferContent}`
+      e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${this.bankConfig.bankName}-${this.bankConfig.bankAcc}-${this.transferContent}`
+    },
+
+    onQrModalError(e) {
+      e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${this.bankConfig.bankName}-${this.bankConfig.bankAcc}-${this.transferContent}`
+    },
+
+    onEscKey(e) {
+      if (e.key === 'Escape') this.showQrModal = false
     },
   },
 }
@@ -922,6 +1013,29 @@ export default {
   border-top: 1.5px solid #e2e8f0;
   padding-top: 18px;
 }
+.bank-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 0;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+.qr-placeholder {
+  width: 90px;
+  height: 90px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  background: #f8fafc;
+}
+.qr-placeholder i { font-size: 1.4rem; }
 .bank-header {
   display: flex;
   align-items: flex-start;
@@ -956,6 +1070,13 @@ export default {
   padding: 4px;
   background: #fff;
   object-fit: contain;
+  cursor: zoom-in;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.qr-img:hover {
+  transform: scale(1.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border-color: #2d7a3a;
 }
 .qr-label {
   font-size: 0.65rem;
@@ -1399,6 +1520,202 @@ export default {
   .xl-layout   { flex-direction: column; }
   .xl-right    { width: 100%; }
   .qr-img      { width: 90px; height: 90px; }
+  .qr-modal-img { width: 220px; height: 220px; }
+  .qr-modal-box { padding: 22px 18px 18px; }
 }
+
+/* ===== QR ZOOM MODAL ===== */
+.qr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 30, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.qr-modal-box {
+  background: #fff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 28px 24px;
+}
+.qr-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 50%;
+  color: #64748b;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  z-index: 1;
+}
+.qr-modal-close:hover { background: #fee2e2; color: #dc2626; }
+
+.qr-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-self: flex-start;
+}
+.qr-modal-bank-logo {
+  height: 28px;
+  object-fit: contain;
+}
+.qr-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.qr-modal-sub {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.qr-modal-img-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.qr-modal-img {
+  width: 260px;
+  height: 260px;
+  border-radius: 16px;
+  border: 3px solid #e2e8f0;
+  padding: 8px;
+  background: #fff;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+.qr-modal-scan-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 20px;
+  border: 2.5px solid #16a34a;
+  opacity: 0;
+  animation: qr-ring-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes qr-ring-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.02); }
+}
+
+.qr-modal-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px 20px;
+  margin-bottom: 16px;
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.qr-modal-amount-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.qr-modal-amount-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.qr-modal-amount-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.qr-modal-info {
+  width: 100%;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+.qr-modal-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.qr-mi-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+.qr-mi-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: right;
+}
+.qr-mi-val.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: #2d7a3a;
+}
+
+.qr-modal-close-btn {
+  width: 100%;
+  padding: 11px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.18s;
+}
+.qr-modal-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+.qr-modal-fade-enter-active,
+.qr-modal-fade-leave-active { transition: all 0.25s ease; }
+.qr-modal-fade-enter-from,
+.qr-modal-fade-leave-to { opacity: 0; }
+.qr-modal-fade-enter-from .qr-modal-box,
+.qr-modal-fade-leave-to .qr-modal-box { transform: scale(0.88); }
+
 
 </style>

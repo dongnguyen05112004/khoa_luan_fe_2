@@ -17,15 +17,21 @@
         <router-link to="/nhanvien/quanlyhoivien" class="stat-card stat-card-link">
           <div class="stat-icon stat-icon-green"><i class="fas fa-users"></i></div>
           <div class="stat-body">
-            <div class="stat-num">{{ stats.totalMembers }}<span class="stat-badge badge-up">+8%</span></div>
+            <div class="stat-num">
+              {{ stats.totalMembers }}
+              <span class="stat-badge" :class="membersBadge.cls">{{ membersBadge.text }}</span>
+            </div>
             <div class="stat-label">TỔNG HỘI VIÊN</div>
           </div>
         </router-link>
         <div class="stat-card">
           <div class="stat-icon stat-icon-teal"><i class="fas fa-calendar-check"></i></div>
           <div class="stat-body">
-            <div class="stat-num">{{ stats.bookingsToday }}<span class="stat-badge badge-up">+2</span></div>
-            <div class="stat-label">ĐÃ ĐẶT HÔM NAY</div>
+            <div class="stat-num">
+              {{ stats.bookingsToday }}
+              <span class="stat-badge" :class="contractBadge.cls">{{ contractBadge.text }}</span>
+            </div>
+            <div class="stat-label"> HỢP ĐỒNG ĐÃ ĐẶT TRONG THÁNG </div>
           </div>
         </div>
         <div class="stat-card">
@@ -78,7 +84,9 @@
               <td><span class="status-badge" :class="'status-' + item.statusType">{{ item.status }}</span></td>
               <td class="type-cell">{{ item.type }}</td>
               <td>
-                <button class="action-btn"><i class="fas fa-ellipsis-h"></i></button>
+                <button class="action-btn" @click="$router.push('/nhanvien/checkin')" title="Xem chi tiết">
+                  <i class="fas fa-ellipsis-h"></i>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -90,9 +98,22 @@
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Lưu lượng truy cập</h2>
-            <p class="panel-sub">Thống kê theo giờ trong ngày</p>
+            <p class="panel-sub">Thống kê check-in theo giờ trong ngày</p>
           </div>
-          <button class="chart-period-btn">Hôm nay</button>
+          <div class="chart-controls">
+            <input
+              type="date"
+              class="chart-date-input"
+              v-model="selectedDate"
+              :max="new Date().toISOString().split('T')[0]"
+              @change="fetchTrafficChart"
+            />
+            <button
+              class="chart-period-btn"
+              @click="resetToToday"
+              :class="{ 'btn-active': selectedDate === new Date().toISOString().split('T')[0] }"
+            >Hôm nay</button>
+          </div>
         </div>
         <div class="chart-area">
           <div class="chart-bars">
@@ -127,13 +148,17 @@
       <div class="right-card">
         <div class="right-card-header">
           <h3>Lịch hôm nay</h3>
-          <label class="toggle-switch">
+          <label class="toggle-switch" title="Bật/tắt hiển thị lịch">
             <input type="checkbox" v-model="calendarEnabled" />
             <span class="slider"></span>
           </label>
         </div>
-        <div class="calendar-list">
-          <div v-for="event in todayEvents" :key="event.id" class="calendar-item">
+        <div class="calendar-list" v-if="calendarEnabled">
+          <div v-if="todayEvents.length === 0" class="contract-empty">
+            <i class="fas fa-calendar-times"></i>
+            <span>Không có lớp học hôm nay</span>
+          </div>
+          <div v-for="event in todayEvents.slice(0, 5)" :key="event.id" class="calendar-item">
             <div class="cal-color-dot" :class="'dot-' + event.type"></div>
             <div class="cal-info">
               <div class="cal-name">{{ event.name }}</div>
@@ -141,8 +166,13 @@
             </div>
             <div class="cal-time">{{ event.time }}</div>
           </div>
+          <div v-if="todayEvents.length > 5" class="cal-more-hint">
+            +{{ todayEvents.length - 5 }} lịch khác
+          </div>
         </div>
-        <a href="#" class="view-calendar-link">Xem tất cả lịch <i class="fas fa-chevron-right"></i></a>
+        <router-link to="/nhanvien/checkin" class="view-calendar-link">
+          Xem tất cả lịch <i class="fas fa-chevron-right"></i>
+        </router-link>
       </div>
 
       <!-- Hợp đồng chờ ký -->
@@ -199,10 +229,12 @@ export default {
 
       // ── Stat cards ────────────────────────────────────────────
       stats: {
-        totalMembers:  0,
-        bookingsToday: 0,
-        expiringSoon:  0,
-        checkinToday:  0,
+        totalMembers:          0,
+        membersRetentionChange: 0,   // % thay đổi hội viên so với tuần trước
+        bookingsToday:         0,
+        contractMonthlyChange: 0,    // % thay đổi hợp đồng so với tháng trước
+        expiringSoon:          0,
+        checkinToday:          0,
       },
 
       // ── Check-in gần đây ──────────────────────────────────────
@@ -213,6 +245,7 @@ export default {
 
       // ── Lịch hôm nay (lớp học) ───────────────────────────────
       todayEvents: [],
+      selectedDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD, mặc định hôm nay
 
       // ── Hợp đồng sắp hết hạn ─────────────────────────────────
       pendingContracts: [],
@@ -248,6 +281,24 @@ export default {
         month:   'long',
         day:     'numeric',
       })
+    },
+
+    /** Format badge % thay đổi hội viên so với tuần trước */
+    membersBadge() {
+      const v = this.stats.membersRetentionChange
+      if (v === 0) return { text: '0%', cls: 'badge-neutral' }
+      return v > 0
+        ? { text: `+${v}%`, cls: 'badge-up' }
+        : { text: `${v}%`,  cls: 'badge-down' }
+    },
+
+    /** Format badge % thay đổi hợp đồng so với tháng trước */
+    contractBadge() {
+      const v = this.stats.contractMonthlyChange
+      if (v === 0) return { text: '0%', cls: 'badge-neutral' }
+      return v > 0
+        ? { text: `+${v}%`, cls: 'badge-up' }
+        : { text: `${v}%`,  cls: 'badge-down' }
     },
   },
 
@@ -295,8 +346,9 @@ export default {
         // totalMembers & expiringSoon (7 ngày) từ /members/stats
         if (memberStatsRes.status === 'fulfilled') {
           const d = memberStatsRes.value.data
-          this.stats.totalMembers = d.total_members ?? 0
-          this.stats.expiringSoon = d.expiring_soon ?? 0
+          this.stats.totalMembers           = d.total_members    ?? 0
+          this.stats.expiringSoon           = d.expiring_soon    ?? 0
+          this.stats.membersRetentionChange = d.retention_change ?? 0  // % so với tuần trước
         }
 
         // checkinToday từ paginated meta
@@ -304,12 +356,11 @@ export default {
           this.stats.checkinToday = checkinRes.value.data?.total ?? 0
         }
 
-        // bookingsToday: dùng expiring_soon của contracts (30 ngày) làm proxy
-        // hoặc lấy từ pt-bookings nếu BE có filter session_date
+        // bookingsToday + monthly_change từ /contracts/stats
         if (contractStatsRes.status === 'fulfilled') {
           const d = contractStatsRes.value.data
-          // bookingsToday không có endpoint riêng → hiển thị new_this_month/30 ≈ trung bình ngày
-          this.stats.bookingsToday = d.new_this_month ?? 0
+          this.stats.bookingsToday         = d.new_this_month  ?? 0
+          this.stats.contractMonthlyChange = d.monthly_change  ?? 0  // % so với tháng trước
         }
       } catch (e) {
         console.error('[dashboard] fetchStats:', e)
@@ -334,29 +385,29 @@ export default {
 
     // ── Biểu đồ lưu lượng theo giờ ─────────────────────────────
     /**
-     * GET /api/checkins?date=today&per_page=500
+     * GET /api/checkins?date=selectedDate&per_page=500
      * FE nhóm checkin theo giờ → tính chiều cao cột
+     * Dùng selectedDate để hỗ trợ xem lịch sử ngày khác
      */
     async fetchTrafficChart() {
       try {
-        const res = await dashboardApi.getCheckinTraffic()
+        const res = await dashboardApi.getCheckinTraffic(this.selectedDate)
         const items = res.data?.data ?? res.data ?? []
         this.trafficData = buildTrafficChart(items, 6, 21)
       } catch (e) {
         console.error('[dashboard] fetchTrafficChart:', e)
-        // Fallback: chart rỗng (value = 0)
         this.trafficData = buildTrafficChart([], 6, 21)
       }
     },
 
     // ── Lịch lớp học hôm nay ────────────────────────────────────
     /**
-     * GET /api/classes
-     * FE filter schedule_date == today
+     * GET /api/classes?date=selectedDate
+     * BE filter whereDate('schedule_date', date) + sort schedule_date ASC
      */
     async fetchTodayClasses() {
       try {
-        const res = await dashboardApi.getTodayClasses()
+        const res = await dashboardApi.getTodayClasses(this.selectedDate)
         const items = Array.isArray(res.data) ? res.data : (res.data?.data ?? [])
         this.todayEvents = formatTodayEvents(items)
       } catch (e) {
@@ -364,14 +415,21 @@ export default {
       }
     },
 
+    // ── Reset chart + lịch về hôm nay ───────────────────────────
+    resetToToday() {
+      this.selectedDate = new Date().toISOString().split('T')[0]
+      this.fetchTrafficChart()
+      this.fetchTodayClasses()
+    },
+
     // ── Hợp đồng sắp hết hạn ────────────────────────────────────
     /**
-     * GET /api/contracts?status=active&per_page=20
-     * FE lọc days_left <= 30, lấy tối đa 5
+     * GET /api/contracts?status=active&expiring_within=30&per_page=20
+     * BE đã filter + sort end_date ASC → FE chỉ cần slice 5 item đầu
      */
     async fetchPendingContracts() {
       try {
-        const res = await dashboardApi.getExpiringContracts(20)
+        const res = await dashboardApi.getExpiringContracts(20, 30)
         const items = res.data?.data ?? res.data ?? []
         this.pendingContracts = formatPendingContracts(items)
       } catch (e) {
@@ -400,6 +458,8 @@ export default {
 
     rejectContract(contract) {
       if (!confirm(`Xác nhận bỏ qua hợp đồng của ${contract.name}?`)) return
+      // Chỉ ẩn khỏi panel dashboard (không cancel hợp đồng thật)
+      // Nếu muốn cancel thật → dùng trang /nhanvien/hop_dong
       this.pendingContracts = this.pendingContracts.filter(c => c.id !== contract.id)
     },
   },
@@ -514,8 +574,10 @@ export default {
   padding: 2px 7px;
   border-radius: 10px;
 }
-.badge-up   { background: #e8f5e9; color: #2d7a3a; }
-.badge-warn { background: #fff3e0; color: #f57c00; }
+.badge-up      { background: #e8f5e9; color: #2d7a3a; }
+.badge-warn    { background: #fff3e0; color: #f57c00; }
+.badge-down    { background: #fce4ec; color: #c62828; }
+.badge-neutral { background: #f1f5f9; color: #64748b; }
 
 /* Clickable stat card */
 .stat-card-link {
@@ -637,6 +699,25 @@ export default {
 .action-btn:hover { background: #f0f4f0; color: #2d7a3a; }
 
 /* Chart */
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-date-input {
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 5px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.chart-date-input:focus {
+  border-color: #2d7a3a;
+}
 .chart-period-btn {
   font-size: 0.78rem;
   font-weight: 600;
@@ -647,6 +728,11 @@ export default {
   padding: 6px 14px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.chart-period-btn.btn-active {
+  background: #2d7a3a;
+  color: #fff;
 }
 .chart-area {
   overflow: hidden;
@@ -824,6 +910,14 @@ export default {
   gap: 4px;
 }
 .view-calendar-link i { font-size: 0.65rem; }
+
+.cal-more-hint {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 4px 0 2px;
+  font-style: italic;
+}
 
 /* Contract list */
 .contract-list {

@@ -15,15 +15,15 @@
       <!-- Revenue card (dark green) -->
       <div class="revenue-card">
         <div class="live-badge">
-          <span class="live-dot"></span> SỐ LIỆU THEO GIỞ
+          <span class="live-dot"></span> SỐ LIỆU THEO GIỜ
         </div>
         <div class="revenue-label">Doanh Thu Hôm Nay</div>
         <div class="revenue-amount">
           <span v-if="statsLoading" class="skeleton-text">--</span>
           <template v-else>
-            {{ formatVND(todayRevenue) }}
+            {{ todayRevenue !== null ? formatVND(todayRevenue) : '--' }}
             <span class="revenue-unit">VND</span>
-            <span class="revenue-change" :class="revenueChange >= 0 ? 'positive' : 'negative'">
+            <span v-if="todayRevenue !== null" class="revenue-change" :class="revenueChange >= 0 ? 'positive' : 'negative'">
               {{ revenueChange >= 0 ? '↑' : '↓' }} {{ Math.abs(revenueChange) }}%
             </span>
           </template>
@@ -33,7 +33,7 @@
             <div class="rev-stat-label">HOÀN THÀNH</div>
             <div class="rev-stat-val">
               <span v-if="statsLoading" class="skeleton-text">-</span>
-              <template v-else>{{ completedCount }} <span class="rev-stat-sub">gd</span></template>
+              <template v-else>{{ completedCount !== null ? completedCount : '--' }} <span class="rev-stat-sub">gd</span></template>
             </div>
           </div>
           <div class="rev-divider"></div>
@@ -41,7 +41,7 @@
             <div class="rev-stat-label">TB/GIAO DỊCH</div>
             <div class="rev-stat-val">
               <span v-if="statsLoading" class="skeleton-text">-</span>
-              <template v-else>{{ formatVNDShort(avgTicket) }} <span class="rev-stat-sub">đ</span></template>
+              <template v-else>{{ avgTicket !== null ? formatVNDShort(avgTicket) : '--' }} <span class="rev-stat-sub">đ</span></template>
             </div>
           </div>
           <div class="rev-divider"></div>
@@ -49,7 +49,7 @@
             <div class="rev-stat-label">HOÀN TIỀN</div>
             <div class="rev-stat-val">
               <span v-if="statsLoading" class="skeleton-text">-</span>
-              <template v-else>{{ refundedCount }} <span class="rev-stat-sub">gd</span></template>
+              <template v-else>{{ refundedCount !== null ? refundedCount : '--' }} <span class="rev-stat-sub">gd</span></template>
             </div>
           </div>
         </div>
@@ -188,9 +188,6 @@
                     @click="openRefundModal(tx)"
                   >
                     <i class="fas fa-undo"></i>
-                  </button>
-                  <button class="action-btn danger" title="Xoá" @click="deletePayment(tx)">
-                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
               </td>
@@ -388,19 +385,23 @@ export default {
       this.statsLoading = true
       try {
         const { data } = await paymentApi.getStats()
-        this.todayRevenue     = data.today_revenue    ?? 0
-        this.revenueChange    = data.today_revenue_change ?? 0
-        this.completedCount   = data.completed_count  ?? 0
-        this.avgTicket        = data.avg_ticket       ?? 0
-        this.refundedCount    = data.refunded_count   ?? 0
-        this.paymentMethods   = data.payment_methods  ?? []
+        this.todayRevenue     = data.today_revenue         ?? 0
+        this.revenueChange    = data.today_revenue_change  ?? 0
+        this.completedCount   = data.completed_count       ?? 0
+        this.avgTicket        = data.avg_ticket            ?? 0
+        this.refundedCount    = data.refunded_count        ?? 0
+        this.paymentMethods   = data.payment_methods       ?? []
       } catch (err) {
         console.error('Stats error:', err)
-        // Fallback với dữ liệu mặc định để không break giao diện
+        // Khi lỗi: set null để template hiển thị '--' thay vì '0 VND' gây hiểu nhầm
+        this.todayRevenue   = null
+        this.completedCount = null
+        this.avgTicket      = null
+        this.refundedCount  = null
         this.paymentMethods = [
-          { key: 'card',          label: 'Thẻ TD',        pct: 65, color: '#22c55e' },
-          { key: 'bank_transfer', label: 'Chuyển khoản',  pct: 25, color: '#16a34a' },
-          { key: 'cash',          label: 'Tiền mặt',      pct: 10, color: '#86efac' },
+          { key: 'card',          label: 'Thẻ TD',       pct: 0, color: '#22c55e' },
+          { key: 'bank_transfer', label: 'Chuyển khoản', pct: 0, color: '#16a34a' },
+          { key: 'cash',          label: 'Tiền mặt',     pct: 0, color: '#86efac' },
         ]
       } finally {
         this.statsLoading = false

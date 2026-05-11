@@ -122,11 +122,11 @@
                 {{ formatDate(m.end_date) }}
               </div>
               <div class="expiry-sub" :class="expirySubClass(m)">
-                {{ m.expiry_label || (isExpired(m) ? 'Đã hết hạn' : '—') }}
+                {{ translateExpiryLabel(m.expiry_label) || (isExpired(m) ? 'Đã hết hạn' : '—') }}
               </div>
             </td>
             <td>
-              <div class="checkin-time">{{ m.last_check_in_label || 'Chưa check-in' }}</div>
+              <div class="checkin-time">{{ translateCheckinLabel(m.last_check_in_label) }}</div>
             </td>
             <td>
               <span class="status-badge" :class="statusClass(m.status)">
@@ -220,7 +220,7 @@
             <div class="view-item"><span class="vl">Ngày tham gia</span><span class="vv">{{ formatDate(viewModal.data.join_date) }}</span></div>
             <div class="view-item"><span class="vl">Gói tập</span><span class="vv">{{ viewModal.data.package || 'Chưa có' }}</span></div>
             <div class="view-item"><span class="vl">Hết hạn</span><span class="vv">{{ formatDate(viewModal.data.end_date) }}</span></div>
-            <div class="view-item"><span class="vl">Check-in cuối</span><span class="vv">{{ viewModal.data.last_check_in_label || 'Chưa check-in' }}</span></div>
+            <div class="view-item"><span class="vl">Check-in cuối</span><span class="vv">{{ translateCheckinLabel(viewModal.data.last_check_in_label) }}</span></div>
             <div class="view-item"><span class="vl">Liên hệ khẩn cấp</span><span class="vv">{{ viewModal.data.emergency_contact || '—' }}</span></div>
             <div class="view-item"><span class="vl">Loại hội viên</span><span class="vv">{{ viewModal.data.membership_type || '—' }}</span></div>
           </div>
@@ -279,6 +279,10 @@
             <div class="form-group">
               <label>Ngày sinh</label>
               <input v-model="editForm.date_of_birth" type="date" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Ngày tham gia</label>
+              <input v-model="editForm.join_date" type="date" class="form-input" />
             </div>
             <div class="form-group">
               <label>Mã thẻ</label>
@@ -348,7 +352,7 @@ export default {
       editModal: { show: false, saving: false, error: null, memberId: null },
       editForm: {
         full_name: '', email: '', phone: '', gender: '',
-        date_of_birth: '', card_number: '',
+        date_of_birth: '', join_date: '', card_number: '',
         emergency_contact: '', membership_type: '', health_notes: '',
       },
 
@@ -473,6 +477,7 @@ export default {
         phone:             m.phone || '',
         gender:            m.gender || '',
         date_of_birth:     m.date_of_birth || '',
+        join_date:         m.join_date || '',
         card_number:       m.card_number || '',
         emergency_contact: m.emergency_contact || '',
         membership_type:   m.membership_type || '',
@@ -484,6 +489,19 @@ export default {
       this.editModal = { show: false, saving: false, error: null, memberId: null }
     },
     async saveEdit() {
+      // Validate cơ bản trước khi gửi
+      if (!this.editForm.full_name.trim()) {
+        this.editModal.error = 'Họ tên không được để trống.'
+        return
+      }
+      if (this.editForm.email && !/\S+@\S+\.\S+/.test(this.editForm.email)) {
+        this.editModal.error = 'Email không hợp lệ.'
+        return
+      }
+      if (this.editForm.phone && !/^(0|\+84)[0-9]{9}$/.test(this.editForm.phone.replace(/\s/g, ''))) {
+        this.editModal.error = 'Số điện thoại không hợp lệ (VD: 0901234567).'
+        return
+      }
       this.editModal.saving = true
       this.editModal.error = null
       try {
@@ -526,6 +544,50 @@ export default {
       return `https://ui-avatars.com/api/?name=${name}&background=${bg}&color=fff&bold=true&size=80`
     },
 
+    // Dịch expiry_label từ tiếng Anh → tiếng Việt
+    translateExpiryLabel(label) {
+      if (!label) return null
+      const l = label.toLowerCase()
+      // "X days left" / "X day left"
+      let m = l.match(/^(\d+)\s+days?\s+left$/)
+      if (m) return `Còn ${m[1]} ngày`
+      // "X months left" / "X month left"
+      m = l.match(/^(\d+)\s+months?\s+left$/)
+      if (m) return `Còn ${m[1]} tháng`
+      // "X years left" / "X year left"
+      m = l.match(/^(\d+)\s+years?\s+left$/)
+      if (m) return `Còn ${m[1]} năm`
+      // "X days ago"
+      m = l.match(/^(\d+)\s+days?\s+ago$/)
+      if (m) return `Đã hết hạn ${m[1]} ngày trước`
+      // "X months ago"
+      m = l.match(/^(\d+)\s+months?\s+ago$/)
+      if (m) return `Đã hết hạn ${m[1]} tháng trước`
+      return label
+    },
+
+    // Dịch last_check_in_label từ tiếng Anh → tiếng Việt
+    translateCheckinLabel(label) {
+      if (!label) return 'Chưa check-in'
+      const l = label.toLowerCase()
+      // "X min ago"
+      let m = l.match(/^(\d+)\s+min\s+ago$/)
+      if (m) return `${m[1]} phút trước`
+      // "Today, HH:MM AM/PM"
+      m = label.match(/^Today,\s+(.+)$/)
+      if (m) return `Hôm nay, ${m[1]}`
+      // "Yesterday, HH:MM AM/PM"
+      m = label.match(/^Yesterday,\s+(.+)$/)
+      if (m) return `Hôm qua, ${m[1]}`
+      // "X days ago"
+      m = l.match(/^(\d+)\s+days?\s+ago$/)
+      if (m) return `${m[1]} ngày trước`
+      // "X weeks ago"
+      m = l.match(/^(\d+)\s+weeks?\s+ago$/)
+      if (m) return `${m[1]} tuần trước`
+      return label
+    },
+
     pkgClass(pkg) {
       if (!pkg) return 'pkg-standard'
       const lower = pkg.toLowerCase()
@@ -540,9 +602,13 @@ export default {
 
     expirySubClass(m) {
       const label = (m.expiry_label || '').toLowerCase()
-      if (m.status === 'expired' || label.includes('ago')) return 'sub-expired'
-      if (label.includes('day'))    return 'sub-warn'
-      if (m.status === 'on_hold')   return 'sub-frozen'
+      if (m.status === 'expired') return 'sub-expired'
+      // BE trả về tiếng Anh: 'X days ago', 'X months ago' → đã hết hạn
+      if (label.includes('ago')) return 'sub-expired'
+      // Sắp hết hạn: '1 day left', '2 days left', '3 days left'... (≤ 7 ngày)
+      const daysMatch = label.match(/^(\d+)\s+day/)
+      if (daysMatch && parseInt(daysMatch[1]) <= 7) return 'sub-warn'
+      if (m.status === 'on_hold') return 'sub-frozen'
       return 'sub-ok'
     },
 

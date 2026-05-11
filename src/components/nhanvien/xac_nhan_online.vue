@@ -131,13 +131,14 @@ export default {
       loading: true,
       pendingCount: 0,
       searchQuery: '',
+      searchTimer: null,
       activeMethod: 'all',
       confirmingId: null,
       selectedPayment: null,
       methods: [
-        { key: 'all',    label: 'Tất cả', icon: 'fas fa-list' },
-        { key: 'vietqr', label: 'VietQR', icon: 'fas fa-qrcode' },
-        { key: 'vnpay',  label: 'VNPay',  icon: 'fas fa-mobile-alt' },
+        { key: 'all',           label: 'Tất cả',    icon: 'fas fa-list' },
+        { key: 'bank_transfer', label: 'VietQR/CK', icon: 'fas fa-qrcode' },
+        { key: 'vnpay',         label: 'VNPay',     icon: 'fas fa-mobile-alt' },
       ]
     }
   },
@@ -158,7 +159,7 @@ export default {
         }
         
         const res = await paymentApi.getAll(params)
-        this.payments = res.data.data.filter(p => ['vietqr', 'vnpay', 'bank_transfer'].includes(p.payment_method))
+        this.payments = res.data.data.filter(p => ['bank_transfer', 'vnpay'].includes(p.payment_method))
         this.pendingCount = this.payments.length
       } catch (e) {
         console.error('Lỗi tải dữ liệu xác nhận:', e)

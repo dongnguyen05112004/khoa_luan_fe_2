@@ -276,3 +276,24 @@ export function getTechcombankQR(amount = 0, content = '', size = 150) {
   })
   return `${base}/${bankId}-${account}-${template}.png?${params}`
 }
+
+/**
+ * Tạo URL QR VietQR động theo cấu hình ngân hàng từ system-settings
+ * @param {number} amount     – Số tiền (VND)
+ * @param {string} content    – Nội dung chuyển khoản
+ * @param {string} bankId     – Mã ngân hàng VietQR (vd: 970418)
+ * @param {string} account    – Số tài khoản
+ * @param {string} ownerName  – Tên chủ tài khoản
+ * @param {number} [size=150] – Kích thước ảnh QR (px)
+ * @returns {string} URL ảnh QR
+ */
+export function getVietQR(amount = 0, content = '', bankId = '970407', account = '19039637328012', ownerName = 'KP FITNESS GYM', size = 150) {
+  const base = 'https://img.vietqr.io/image'
+  const template = 'compact'
+  const params = new URLSearchParams({
+    amount:      amount > 0 ? amount : '',
+    addInfo:     content,
+    accountName: ownerName,
+  })
+  return `${base}/${bankId}-${account}-${template}.png?${params}`
+}
