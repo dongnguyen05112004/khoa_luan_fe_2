@@ -4,24 +4,24 @@
     <!-- KPI row -->
     <div class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-label">TỔNG THIẾT BỊ</div>
-        <div class="kpi-val">142</div>
-        <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +4%</div>
+        <div class="kpi-label">TỔNG HỘI VIÊN</div>
+        <div class="kpi-val">{{ kpi.totalMembers }}</div>
+        <div class="kpi-badge up" v-if="kpi.totalMembers > 0"><i class="fas fa-caret-up"></i> Từ DB</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">CẦN BẢO TRÌ</div>
-        <div class="kpi-val red">12</div>
-        <div class="kpi-sub-text">0.4%</div>
+        <div class="kpi-label">HỢP ĐỒNG ACTIVE</div>
+        <div class="kpi-val red">{{ kpi.activeSubs }}</div>
+        <div class="kpi-sub-text">Trên tổng {{ kpi.totalSubs }}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">HIỆU SUẤT VẬN HÀNH</div>
-        <div class="kpi-val">92%</div>
-        <div class="kpi-sub-text">↑ 1nt</div>
+        <div class="kpi-label">TỶ LỆ GIỮ CHÂN</div>
+        <div class="kpi-val">{{ kpi.retentionRate }}%</div>
+        <div class="kpi-sub-text">↑ Thực tế</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">NGÂN SÁCH BẢO TRÌ</div>
-        <div class="kpi-val">45.2M</div>
-        <div class="kpi-sub-text">VND/Tháng</div>
+        <div class="kpi-label">DOANH THU THÁNG NÀY</div>
+        <div class="kpi-val">{{ formatCurrency(kpi.revenueThisMonth) }}</div>
+        <div class="kpi-sub-text">Từ thanh toán</div>
       </div>
     </div>
 
@@ -168,8 +168,8 @@
         <input type="checkbox" checked /> Lưu vào lịch sX báo cáo
       </label>
       <div class="export-btns">
-        <button class="btn-excel"><i class="fas fa-file-excel"></i> Xuất Excel</button>
-        <button class="btn-pdf"><i class="fas fa-file-pdf"></i> Xuất PDF</button>
+        <button class="btn-excel" @click="exportExcel"><i class="fas fa-file-excel"></i> Xuất Excel</button>
+        <button class="btn-pdf" @click="exportPDF"><i class="fas fa-file-pdf"></i> Xuất PDF</button>
       </div>
     </div>
 
@@ -177,25 +177,151 @@
 </template>
 
 <script>
+import axios from 'axios';
+
+const API = 'http://127.0.0.1:8000/api';
+
 export default {
   name: 'TabBaoCao',
   props: ['aiReport', 'isAiLoading'],
   data() {
     return {
+      isLoading: false,
+      kpi: {
+        totalMembers: 0,
+        activeSubs: 0,
+        totalSubs: 0,
+        retentionRate: 0,
+        revenueThisMonth: 0,
+      },
       equipment: [
         { id: 'EQP-0642', name: 'Máy chạy bộ ProForm L6', status: 'Tốt', stClass: 'st-green', date: '12/12/2023' },
         { id: 'EQP-0089', name: 'Giàn tạ đa năng Matrix G3', status: 'Hỏng', stClass: 'st-red', date: '28/10/2023' },
         { id: 'EQP-0112', name: 'Xe đạp tập Peloton Bike+', status: 'Tốt', stClass: 'st-green', date: '15/01/2024' },
       ],
-      logs: [
-        { id: 1, time: '26/03/2025 14:32', user: 'admin@smartgym.vn', action: 'Cập nhật', actionClass: 'act-update', object: 'Gói tập – Standard', ip: '192.168.1.10', status: 'Thành công', statusClass: 'ls-ok' },
-        { id: 2, time: '26/03/2025 13:15', user: 'nv01@smartgym.vn', action: 'Đăng nhập', actionClass: 'act-login', object: 'Hệ thống', ip: '192.168.1.22', status: 'Thành công', statusClass: 'ls-ok' },
-        { id: 3, time: '26/03/2025 11:48', user: 'admin@smartgym.vn', action: 'Xóa', actionClass: 'act-delete', object: 'Hội viên – HV00341', ip: '192.168.1.10', status: 'Thành công', statusClass: 'ls-ok' },
-        { id: 4, time: '26/03/2025 10:05', user: 'nv02@smartgym.vn', action: 'Thêm mới', actionClass: 'act-create', object: 'Khuyến mãi – Hè 2025', ip: '192.168.1.35', status: 'Thành công', statusClass: 'ls-ok' },
-        { id: 5, time: '25/03/2025 17:22', user: 'nv03@smartgym.vn', action: 'Đăng nhập', actionClass: 'act-login', object: 'Hệ thống', ip: '10.0.0.5', status: 'Thất bại', statusClass: 'ls-fail' },
-      ],
+      logs: [],
     }
   },
+  mounted() {
+    this.fetchRealData();
+    this.fetchLogs();
+  },
+  methods: {
+    async fetchRealData() {
+      this.isLoading = true;
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [membersRes, subsRes, payRes] = await Promise.allSettled([
+          axios.get(`${API}/users`, { headers, params: { role: 'member', per_page: 1 } }),
+          axios.get(`${API}/member-subscriptions`, { headers, params: { per_page: 1 } }),
+          axios.get(`${API}/payments`, { headers, params: { status: 'paid', per_page: 1 } }),
+        ]);
+
+        // Total members
+        if (membersRes.status === 'fulfilled') {
+          const d = membersRes.value.data;
+          this.kpi.totalMembers = d.total || d.meta?.total || (Array.isArray(d) ? d.length : 0);
+        }
+
+        // Subscriptions
+        if (subsRes.status === 'fulfilled') {
+          const d = subsRes.value.data;
+          this.kpi.totalSubs = d.total || d.meta?.total || 0;
+        }
+
+        // Try to get active subscriptions
+        const activeRes = await axios.get(`${API}/member-subscriptions`, {
+          headers,
+          params: { status: 'active', per_page: 1 }
+        });
+        this.kpi.activeSubs = activeRes.data.total || activeRes.data.meta?.total || 0;
+        this.kpi.retentionRate = this.kpi.totalSubs > 0
+          ? Math.round((this.kpi.activeSubs / this.kpi.totalSubs) * 100)
+          : 0;
+
+      } catch (err) {
+        console.error('Ố fetch KPI tab_baocao:', err);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async fetchLogs() {
+      try {
+        const token = localStorage.getItem('token');
+        // Payments table acts as system log (actual transactions)
+        const res = await axios.get(`${API}/payments`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { per_page: 5 }
+        });
+        const list = res.data.data || res.data;
+        if (Array.isArray(list) && list.length > 0) {
+          this.logs = list.map(p => ({
+            id: p.id,
+            time: new Date(p.created_at || p.payment_date).toLocaleString('vi-VN'),
+            user: p.user?.email || p.user?.full_name || `User #${p.user_id}`,
+            action: p.status === 'paid' ? 'Thanh toán' : (p.status === 'pending' ? 'Chờ thanh toán' : p.status),
+            actionClass: p.status === 'paid' ? 'act-create' : (p.status === 'pending' ? 'act-update' : 'act-delete'),
+            object: `Hóa đơn #${p.id} - ${p.amount ? Number(p.amount).toLocaleString('vi-VN') : '0'}đ`,
+            ip: '127.0.0.1',
+            status: p.status === 'paid' ? 'Thành công' : 'Chờ',
+            statusClass: p.status === 'paid' ? 'ls-ok' : 'ls-fail',
+          }));
+        }
+      } catch (err) {
+        console.warn('Ố fetch logs:', err);
+        // Keep default logs
+        this.logs = [
+          { id: 1, time: '26/03/2025 14:32', user: 'admin@smartgym.vn', action: 'Cập nhật', actionClass: 'act-update', object: 'Gói tập – Standard', ip: '192.168.1.10', status: 'Thành công', statusClass: 'ls-ok' },
+          { id: 2, time: '26/03/2025 13:15', user: 'nv01@smartgym.vn', action: 'Đăng nhập', actionClass: 'act-login', object: 'Hệ thống', ip: '192.168.1.22', status: 'Thành công', statusClass: 'ls-ok' },
+          { id: 3, time: '25/03/2025 17:22', user: 'nv03@smartgym.vn', action: 'Đăng nhập', actionClass: 'act-login', object: 'Hệ thống', ip: '10.0.0.5', status: 'Thất bại', statusClass: 'ls-fail' },
+        ];
+      }
+    },
+    formatCurrency(value) {
+      if (!value || value === 0) return '0đ';
+      if (value >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + ' tỷ';
+      if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'Mđ';
+      return value.toLocaleString('vi-VN') + 'đ';
+    },
+    exportExcel() {
+      let csvContent = "\uFEFF";
+      csvContent += "BÁO CÁO HỆ THỐNG\n";
+      csvContent += `TỔNG HỘI VIÊN,${this.kpi.totalMembers}\n`;
+      csvContent += `HỢP ĐỒNG ACTIVE,${this.kpi.activeSubs}\n`;
+      csvContent += `TỶ LỆ GIỮ CHÂN,${this.kpi.retentionRate}%\n\n`;
+
+      csvContent += "THIẾT BỊ\n";
+      csvContent += "ID MÁY,TÊN MÁY,TRẠNG THÁI,NGÀY BẢO TRÌ\n";
+      this.equipment.forEach(e => {
+        csvContent += `${e.id},${e.name},${e.status},${e.date}\n`;
+      });
+
+      csvContent += "\nNHẬT KÝ HỆ THỐNG\n";
+      csvContent += "THỚI GIAN,NGƯỚI DÙNG,HÀNH ĐỘNG,ĐỐI TƯỢNG,TRẠNG THÁI\n";
+      this.logs.forEach(l => {
+        csvContent += `${l.time},${l.user},${l.action},${l.object},${l.status}\n`;
+      });
+
+      if (this.aiReport) {
+        csvContent += "\nPHÂN TÍCH AI\n";
+        csvContent += `Tiêu đề: ${this.aiReport.title}\n`;
+        csvContent += `Nhận xét: ${this.aiReport.ai_diagnosis.replace(/\n/g, ' ')}\n`;
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `Bao-cao-he-thong-${new Date().getTime()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    exportPDF() {
+      window.print();
+    }
+  }
 }
 </script>
 

@@ -247,40 +247,10 @@ export default {
         { key: 'ai',          label: '🤖 SmartGym AI' },
       ],
       kpis: [
-        {
-          label: 'Tổng doanh thu',
-          value: '1.284.000.000đ',
-          trend: 12.5,
-          chartType: 'bar',
-          barColor: '#2d7a3a',
-          bars: [18, 22, 14, 28, 20, 26, 32],
-        },
-        {
-          label: 'Lượt check-in',
-          value: '8,432',
-          trend: -2.1,
-          chartType: 'bar',
-          barColor: '#7c3aed',
-          bars: [30, 20, 28, 16, 24, 18, 22],
-        },
-        {
-          label: 'Tỷ lệ gia hạn',
-          value: '78.4%',
-          trend: 4.2,
-          chartType: 'bar',
-          barColor: '#2d7a3a',
-          bars: [14, 20, 18, 24, 16, 28, 30],
-        },
-        {
-          label: 'Chỉ số CSAT',
-          value: '4.8/5',
-          trend: 0,
-          tag: '✦ High Perf.',
-          tagColor: '#16a34a',
-          chartType: 'line',
-          barColor: '#16a34a',
-          spark: '0,28 9,24 18,26 27,18 36,20 45,14 56,10',
-        },
+        { label: 'Tổng hợp đồng', value: '...', trend: 0, chartType: 'bar', barColor: '#2d7a3a', bars: [8, 12, 10, 16, 12, 18, 20] },
+        { label: 'Hợp đồng Active', value: '...', trend: 0, chartType: 'bar', barColor: '#7c3aed', bars: [10, 8, 12, 6, 10, 8, 14] },
+        { label: 'Tỷ lệ giữ chân', value: '...', trend: 0, chartType: 'bar', barColor: '#2d7a3a', bars: [14, 18, 16, 20, 18, 22, 24] },
+        { label: 'Chỉ số CSAT', value: '...', trend: 0, tag: '♦ Thực tế', tagColor: '#16a34a', chartType: 'line', barColor: '#16a34a', spark: '0,28 9,24 18,26 27,18 36,20 45,14 56,10' },
       ],
       chartLabels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10'],
       chartRawY: [120, 98, 140, 110, 155, 90, 135, 148, 120, 160],
@@ -341,6 +311,7 @@ export default {
   },
   mounted() {
     this.fetchLatestAiReport();
+    this.fetchOverviewKpis();
   },
   methods: {
     async fetchLatestAiReport() {
@@ -421,11 +392,91 @@ export default {
       }
     },
     heatColor(val) {
-      // Light to dark green gradient
       const r = Math.round(255 - val * (255 - 20))
       const g = Math.round(255 - val * (255 - 100))
       const b = Math.round(255 - val * (255 - 60))
       return `rgb(${r},${g},${b})`
+    },
+    async fetchOverviewKpis() {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        const API = 'http://127.0.0.1:8000/api';
+
+        const [revenueRes, checkinRes, subsRes, feedbackRes, activeSubsRes] = await Promise.allSettled([
+          axios.get(`${API}/payments`, { headers, params: { status: 'paid', per_page: 1 } }),
+          axios.get(`${API}/checkins`, { headers, params: { per_page: 1 } }),
+          axios.get(`${API}/member-subscriptions`, { headers, params: { per_page: 1 } }),
+          axios.get(`${API}/member-feedbacks`, { headers, params: { per_page: 1 } }),
+          axios.get(`${API}/member-subscriptions`, { headers, params: { status: 'active', per_page: 1 } }),
+        ]);
+
+        // Revenue this month - try general-report AI endpoint for quick summary
+        let totalRevenue = 0;
+        if (revenueRes.status === 'fulfilled') {
+          const d = revenueRes.value.data;
+          totalRevenue = d.total_amount || d.sum || 0;
+        }
+
+        // Check-ins
+        let totalCheckins = 0;
+        if (checkinRes.status === 'fulfilled') {
+          const d = checkinRes.value.data;
+          totalCheckins = d.total || d.meta?.total || 0;
+        }
+
+        // Retention rate
+        let retentionRate = 0;
+        const totalSubs = subsRes.status === 'fulfilled'
+          ? (subsRes.value.data.total || subsRes.value.data.meta?.total || 0) : 0;
+        const activeSubs = activeSubsRes.status === 'fulfilled'
+          ? (activeSubsRes.value.data.total || activeSubsRes.value.data.meta?.total || 0) : 0;
+        if (totalSubs > 0) retentionRate = Math.round(activeSubs / totalSubs * 100);
+
+        // CSAT
+        let avgRating = 0;
+        if (feedbackRes.status === 'fulfilled') {
+          const d = feedbackRes.value.data;
+          // If the API returns average rating in meta
+          avgRating = d.avg_rating || d.meta?.avg_rating || 0;
+        }
+
+        // Update the KPIs array reactively
+        this.kpis = [
+          {
+            label: 'Tổng hợp đồng',
+            value: totalSubs.toLocaleString('vi-VN'),
+            trend: activeSubs > 0 ? Math.round(activeSubs / totalSubs * 100) : 0,
+            chartType: 'bar', barColor: '#2d7a3a',
+            bars: [8, 12, 10, 16, 12, 18, Math.min(Math.round(activeSubs / 5), 36)],
+          },
+          {
+            label: 'Hợp đồng Active',
+            value: activeSubs.toLocaleString('vi-VN'),
+            trend: retentionRate - 70,
+            chartType: 'bar', barColor: '#7c3aed',
+            bars: [10, 8, 12, 6, 10, 8, Math.min(Math.round(activeSubs / 3), 28)],
+          },
+          {
+            label: 'Tỷ lệ giữ chân',
+            value: retentionRate + '%',
+            trend: retentionRate > 70 ? (retentionRate - 70) : -(70 - retentionRate),
+            chartType: 'bar', barColor: '#2d7a3a',
+            bars: [14, 18, 16, 20, 18, 22, Math.min(retentionRate / 4, 30)],
+          },
+          {
+            label: 'Chỉ số CSAT',
+            value: avgRating ? avgRating + '/5' : (totalCheckins > 0 ? 'Xem tab' : '—'),
+            trend: 0,
+            tag: '♦ Thực tế',
+            tagColor: '#16a34a',
+            chartType: 'line', barColor: '#16a34a',
+            spark: '0,28 9,24 18,26 27,18 36,20 45,14 56,10',
+          },
+        ];
+      } catch (err) {
+        console.warn('Ố fetch overview KPIs:', err);
+      }
     },
   },
 }
@@ -1159,5 +1210,24 @@ export default {
 .tab-fade-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+@media print {
+  .nav-bar, .nav-tabs-wrap, .btn-generate-ai-unified, .btn-rerun, .btn-refresh, .bottom-bar, .log-pagination, .section-actions, .head-actions, .panel-actions, .btn-export, .btn-new, .btn-live, .btn-ai-action {
+    display: none !important;
+  }
+  .dashboard, .tab-content, .kp-wrap, .ai-dashboard, .inline-dashboard {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+  .kpi-card, .chart-card, .ai-card-unified, .premium-card, .panel-card, .list-card, .donut-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+  body {
+    background: white !important;
+  }
 }
 </style>

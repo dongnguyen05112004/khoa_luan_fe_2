@@ -1,6 +1,12 @@
 <template>
   <div class="tab-content">
 
+    <!-- Section Header -->
+    <div class="section-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3 style="margin:0; font-size:1.1rem; font-weight:800;">Phân tích phản hồi khách hàng</h3>
+      <button class="btn-ai-report" @click="exportReport"><i class="fas fa-file-export"></i> Xuất báo cáo</button>
+    </div>
+
     <!-- KPI row -->
     <div class="kpi-row">
       <div class="kpi-card">
@@ -298,6 +304,9 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       });
+    },
+    exportReport() {
+      window.print();
     }
   }
 }

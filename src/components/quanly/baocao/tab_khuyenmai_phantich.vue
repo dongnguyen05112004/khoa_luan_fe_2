@@ -23,7 +23,7 @@
         <p class="kp-sub">Phân tích và tối ưu hóa chi phí tiếp thị phòng tập. Theo dõi phễu chuyển đổi và hiệu quả từng chiến dịch theo thời gian thực.</p>
       </div>
       <div class="kp-header-actions">
-        <button class="btn-export"><i class="fas fa-file-export"></i> Xuất báo cáo</button>
+        <button class="btn-export" @click="exportReport"><i class="fas fa-file-export"></i> Xuất báo cáo</button>
         <button class="btn-new"><i class="fas fa-plus"></i> Chiến dịch mới</button>
       </div>
     </div>
@@ -301,6 +301,9 @@ export default {
     getCampaignById(id) {
       return this.campaigns.find(c => c.id === id) || null
     },
+    exportReport() {
+      window.print();
+    }
   },
 }
 </script>

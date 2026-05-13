@@ -35,7 +35,7 @@
         <div class="filter-select">
           <span>30 ngày qua</span><i class="fas fa-chevron-down"></i>
         </div>
-        <button class="btn-export"><i class="fas fa-download"></i> Xuất báo cáo</button>
+        <button class="btn-export" @click="exportReport"><i class="fas fa-download"></i> Xuất báo cáo</button>
       </div>
     </div>
 
@@ -281,6 +281,20 @@ export default {
     closeModal() {
       this.showModal = false;
       this.selectedMember = null;
+    },
+    exportReport() {
+      let csvContent = "\uFEFF";
+      csvContent += "BÁO CÁO PHÂN TÍCH RỦI RO HỘI VIÊN\n";
+      csvContent += "ID HỘI VIÊN,TÊN HỘI VIÊN,MỨC ĐỘ RỦI RO,CHẨN ĐOÁN AI\n";
+      this.members.forEach(m => {
+        csvContent += `${m.id},${m.name},${m.risk},"${m.diagnosis.replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `Phan-tich-giu-chan-${new Date().getTime()}.csv`;
+      link.click();
     }
   }
 }

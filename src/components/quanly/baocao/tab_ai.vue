@@ -45,9 +45,14 @@
             <i :class="getTabIcon(currentTab)"></i>
             <h3>{{ currentResult.title || 'Kết quả phân tích' }}</h3>
           </div>
-          <button class="btn-rerun" @click="runAnalysis(currentTab)">
-            <i class="fas fa-sync-alt"></i> Phân tích lại
-          </button>
+          <div class="panel-actions" style="display:flex; gap:8px;">
+            <button class="btn-rerun" @click="exportPDF" style="background: #2d7a3a; border-color: #2d7a3a;">
+              <i class="fas fa-file-export"></i> Xuất PDF
+            </button>
+            <button class="btn-rerun" @click="runAnalysis(currentTab)">
+              <i class="fas fa-sync-alt"></i> Phân tích lại
+            </button>
+          </div>
         </div>
 
         <div class="panel-grid">
@@ -296,6 +301,9 @@ export default {
       if (sentiment.includes('Tích cực')) return 'green';
       if (sentiment.includes('Tiêu cực')) return 'red';
       return 'orange';
+    },
+    exportPDF() {
+      window.print();
     }
   }
 };

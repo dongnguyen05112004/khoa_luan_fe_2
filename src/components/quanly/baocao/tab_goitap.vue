@@ -4,677 +4,364 @@
     <!-- Section heading -->
     <div class="section-head">
       <div class="head-left">
-        <h2 class="section-title">Phân Tích Gói Tập <span class="badge-premium">PREMIUM AI</span></h2>
-        <p class="section-sub">Hiệu quả khai thác và phân bổ các gói sản phẩm tập luyện</p>
+        <h2 class="section-title">HIỆU QUẢ GÓI TẬP (PHÂN TÍCH CHUYÊN SÂU)</h2>
+        <p class="section-sub">Hiệu quả khai thác các gói sản phẩm tập luyện</p>
       </div>
       <div class="head-actions">
-        <button class="btn-outline-glow"><i class="fas fa-file-pdf"></i> Xuất PDF</button>
-        <button class="btn-primary-glow"><i class="fas fa-chart-line"></i> Phân tích sâu</button>
+        <button class="btn-pdf" @click="exportPDF">Xuất PDF</button>
+        <button class="btn-deep-analyze" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+          <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
+          {{ isAiLoading ? 'Đang phân tích...' : 'Phân tích AI' }}
+        </button>
       </div>
     </div>
 
-    <!-- KPI row -->
-    <div class="kpi-row">
-      <div class="kpi-card premium-card">
-        <div class="kpi-icon-wrap bg-gradient-green"><i class="fas fa-dollar-sign"></i></div>
-        <div class="kpi-info">
-          <div class="kpi-label">DOANH THU GÓI</div>
-          <div class="kpi-val">142.800.000 VNĐ</div>
-          <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +12.5% vs tháng trước</div>
-        </div>
-      </div>
-      <div class="kpi-card premium-card">
-        <div class="kpi-icon-wrap bg-gradient-purple"><i class="fas fa-crown"></i></div>
-        <div class="kpi-info">
-          <div class="kpi-label">TỶ LỆ CHUYỂN ĐỔI VIP</div>
-          <div class="kpi-val">24.8%</div>
-          <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +3.2% vs tháng trước</div>
-        </div>
-      </div>
-      <div class="kpi-card premium-card">
-        <div class="kpi-icon-wrap bg-gradient-blue"><i class="fas fa-tags"></i></div>
-        <div class="kpi-info">
-          <div class="kpi-label">GIÁ TRỊ TB/GÓI (ARPU)</div>
-          <div class="kpi-val">84.500 VNĐ</div>
-          <div class="kpi-badge down"><i class="fas fa-caret-down"></i> -2.10 vs tháng trước</div>
-        </div>
-      </div>
-      <div class="kpi-card premium-card">
-        <div class="kpi-icon-wrap bg-gradient-orange"><i class="fas fa-user-check"></i></div>
-        <div class="kpi-info">
-          <div class="kpi-label">GÓI ĐANG HOẠT ĐỘNG</div>
-          <div class="kpi-val">582 <span class="kpi-sub-val">(+43 Mới)</span></div>
-          <div class="kpi-badge up"><i class="fas fa-caret-up"></i> +18% vs quý trước</div>
-        </div>
-      </div>
+    <!-- Loading state -->
+    <div v-if="isLoading" style="text-align:center; padding:40px; color:#94a3b8;">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p style="margin-top:10px;">Đang tải dữ liệu gói tập...</p>
     </div>
 
-    <!-- Chart + AI panel -->
-    <div class="body-grid">
-      <div class="chart-area">
-        <!-- Main Chart -->
-        <div class="chart-card premium-card main-chart-wrapper">
-          <div class="chart-top">
-            <strong class="chart-title"><i class="fas fa-chart-bar"></i> Doanh thu theo loại gói tập</strong>
-            <div class="legend-inline">
-              <span class="leg-item"><span class="leg-dot bg-green"></span> Cơ bản</span>
-              <span class="leg-item"><span class="leg-dot bg-purple"></span> VIP</span>
-              <span class="leg-item"><span class="leg-dot bg-indigo"></span> PT 1-kèm-1</span>
+    <template v-else>
+      <!-- KPI row: 5 Cards, from real data -->
+      <div class="kpi-row-v2">
+        <div class="kpi-card-v2">
+          <div class="kpi-label">TỔNG DOANH THU GÓI</div>
+          <div class="kpi-val-wrap">
+            <span class="kpi-val">{{ formatCurrency(totalRevenue) }}</span>
+            <span class="kpi-badge up">Ước tính</span>
+          </div>
+          <div class="kpi-bar bg-green"></div>
+        </div>
+
+        <div class="kpi-card-v2">
+          <div class="kpi-label">TỔNG GÓI ĐANG ACTIVE</div>
+          <div class="kpi-val-wrap">
+            <span class="kpi-val">{{ totalActiveSubs }}</span>
+            <span class="kpi-badge up">Đang chạy</span>
+          </div>
+          <div class="kpi-bar bg-green-light"></div>
+        </div>
+
+        <div class="kpi-card-v2">
+          <div class="kpi-label">GIÁ TB MỖI GÓI (ARPU)</div>
+          <div class="kpi-val-wrap">
+            <span class="kpi-val">{{ formatCurrency(avgPrice) }}</span>
+          </div>
+          <div class="kpi-bar bg-purple-light"></div>
+        </div>
+
+        <div class="kpi-card-v2">
+          <div class="kpi-label">LOẠI GÓI BÁN CHẠY NHẤT</div>
+          <div class="kpi-val-wrap">
+            <span class="kpi-val" style="font-size:1rem;">{{ bestPlanName }}</span>
+          </div>
+          <div class="kpi-bar bg-green"></div>
+        </div>
+
+        <div class="kpi-card-v2">
+          <div class="kpi-label">TỔNG GÓI TRONG HỆ THỐNG</div>
+          <div class="kpi-val-wrap">
+            <span class="kpi-val">{{ plans.length }}</span>
+            <span class="kpi-badge neutral">Gói</span>
+          </div>
+          <div class="kpi-bar bg-grey"></div>
+        </div>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="body-grid-v2">
+        <div class="chart-area-v2">
+          <!-- Plans Table -->
+          <div class="chart-card-v2">
+            <div class="chart-header">
+              <h5 class="chart-title-v2">Doanh thu ước tính theo từng gói tập</h5>
             </div>
-          </div>
-          <div class="chart-container">
-            <svg viewBox="0 0 440 160" class="bar-svg" preserveAspectRatio="none">
-              <!-- Grid lines -->
-              <line v-for="y in [20,60,100,140]" :key="'grid'+y" x1="0" :y1="y" x2="440" :y2="y" stroke="#f1f5f9" stroke-width="1"/>
-              
-              <!-- Data groups -->
-              <g v-for="(d,i) in barData" :key="'bar'+i" class="bar-group">
-                <!-- Hover bg -->
-                <rect class="bar-hover-bg" :x="i*88" y="0" width="80" height="140" fill="rgba(0,0,0,0.0)" rx="8"/>
-                <!-- Bars -->
-                <rect class="bar-rect" :x="i*88 + 12" :y="140-d.a" width="16" :height="d.a" fill="url(#grad-green)" rx="3"/>
-                <rect class="bar-rect" :x="i*88 + 32" :y="140-d.b" width="16" :height="d.b" fill="url(#grad-purple)" rx="3"/>
-                <rect class="bar-rect" :x="i*88 + 52" :y="140-d.c" width="16" :height="d.c" fill="url(#grad-indigo)" rx="3"/>
-                <text :x="i*88 + 40" y="156" text-anchor="middle" font-size="10" font-weight="600" fill="#64748b">T{{ i+1 }}</text>
-              </g>
-
-              <!-- Defs for gradients -->
-              <defs>
-                <linearGradient id="grad-green" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#34d399" />
-                  <stop offset="100%" stop-color="#059669" />
-                </linearGradient>
-                <linearGradient id="grad-purple" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#a78bfa" />
-                  <stop offset="100%" stop-color="#7c3aed" />
-                </linearGradient>
-                <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#818cf8" />
-                  <stop offset="100%" stop-color="#4f46e5" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-
-        <!-- Bottom 2 cards -->
-        <div class="bottom2">
-          <!-- Donut Chart -->
-          <div class="donut2-card premium-card">
-            <div class="d2-title"><i class="fas fa-chart-pie"></i> Cơ cấu đăng ký gói</div>
-            <div class="d2-body">
-              <div class="donut-wrapper">
-                <svg viewBox="0 0 100 100" class="donut2-svg">
-                  <circle cx="50" cy="50" r="36" fill="none" stroke="#f1f5f9" stroke-width="12"/>
-                  <circle cx="50" cy="50" r="36" fill="none" stroke="#10b981" stroke-width="12" stroke-dasharray="135.7 226.2" stroke-dashoffset="0" class="donut-segment"/>
-                  <circle cx="50" cy="50" r="36" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-dasharray="70.1 226.2" stroke-dashoffset="-135.7" class="donut-segment"/>
-                  <circle cx="50" cy="50" r="36" fill="none" stroke="#6366f1" stroke-width="12" stroke-dasharray="38.5 226.2" stroke-dashoffset="-205.8" class="donut-segment"/>
-                </svg>
-                <div class="donut-center-text">
-                  <span class="donut-val">100%</span>
-                  <span class="donut-lbl">QUY MÔ</span>
+            <div v-if="plans.length > 0">
+              <div v-for="plan in plans" :key="plan.name" style="margin-bottom: 14px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                  <span style="font-weight:600; color:#1e293b;">{{ plan.name }}</span>
+                  <span style="color:#2d7a3a; font-weight:700;">{{ formatCurrency(plan.revenue_est) }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="flex:1; background:#f1f5f9; border-radius:8px; height:8px; overflow:hidden;">
+                    <div :style="{
+                      width: totalRevenue > 0 ? (plan.revenue_est / totalRevenue * 100) + '%' : '0%',
+                      background: 'linear-gradient(90deg, #2d7a3a, #4ade80)',
+                      height: '100%',
+                      borderRadius: '8px',
+                      transition: 'width 0.6s ease'
+                    }"></div>
+                  </div>
+                  <span style="font-size:0.72rem; color:#64748b; min-width:36px; text-align:right;">
+                    {{ plan.total_subs }} đăng ký
+                  </span>
+                </div>
+                <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">
+                  Active: {{ plan.active_subs }} | Giá: {{ formatCurrency(plan.price) }}
                 </div>
               </div>
-              <div class="d2-legend">
-                <div class="leg-row"><span class="leg-dot bg-green"></span> <span>Cơ bản</span> <strong class="ms-auto">52%</strong></div>
-                <div class="leg-row"><span class="leg-dot bg-purple"></span> <span>VIP</span> <strong class="ms-auto">31%</strong></div>
-                <div class="leg-row"><span class="leg-dot bg-indigo"></span> <span>PT</span> <strong class="ms-auto">17%</strong></div>
-              </div>
+            </div>
+            <div v-else style="text-align:center; padding:30px; color:#94a3b8;">
+              <i class="fas fa-box-open fa-2x" style="margin-bottom:8px;"></i>
+              <p>Chưa có dữ liệu gói tập</p>
             </div>
           </div>
 
-          <!-- Impact Card -->
-          <div class="impact-card premium-card glow-green">
-            <div class="impact-icon"><i class="fas fa-bolt"></i></div>
-            <div class="impact-content">
-              <div class="impact-title">Tác động duy trì</div>
-              <p class="impact-body">Người dùng gói <strong class="text-purple">VIP</strong> có tỷ lệ gia hạn cao hơn <strong class="text-green-light">42%</strong> so với gói Cơ bản trong quý này.</p>
-              <a href="#" class="impact-link">Xem chi tiết hành vi <i class="fas fa-arrow-right"></i></a>
+          <div class="bottom-row-v2">
+            <div class="donut-card-v2">
+              <h6 class="card-subtitle">Tỷ lệ đăng ký theo gói</h6>
+              <div class="donut-flex">
+                <div class="donut-stats">
+                  <div class="stat-line" v-for="(plan, i) in plans.slice(0,3)" :key="plan.name">
+                    <span class="dot" :style="{background: planColors[i % planColors.length]}"></span>
+                    {{ plan.name }}: {{ totalActiveSubs > 0 ? Math.round(plan.active_subs / totalActiveSubs * 100) : 0 }}%
+                  </div>
+                  <div class="stat-line" v-if="plans.length > 3">
+                    <span class="dot bg-grey"></span>
+                    Gói khác: {{ totalActiveSubs > 0 ? Math.round(otherSubs / totalActiveSubs * 100) : 0 }}%
+                  </div>
+                </div>
+                <div class="donut-viz">
+                  <div class="donut-center">
+                    <div class="val">{{ totalActiveSubs }}</div>
+                    <div class="lbl">ACTIVE</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="impact-card-v2">
+              <h5 class="impact-title-v2">Tác động duy trì</h5>
+              <p class="impact-text-v2" v-if="aiReport && aiReport.ai_diagnosis">
+                {{ aiReport.ai_diagnosis.substring(0, 150) }}...
+              </p>
+              <p class="impact-text-v2" v-else>
+                Gói {{ bestPlanName }} có lượng đăng ký cao nhất. Nhấn "Phân tích AI" để nhận chiến lược tối ưu chi tiết.
+              </p>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- AI Unified Card -->
-      <div class="ai-side-panel">
-        <div class="ai-card-unified premium-card ai-glow">
-          <div class="ai-card-header-unified">
-            <div class="ai-avatar-unified">
-              <i class="fas fa-brain"></i>
+        <!-- AI Sidebar -->
+        <div class="ai-sidebar-v2">
+          <div class="ai-panel-inner">
+            <div class="ai-header-v2">
+              <span class="ai-dot"></span> BẢNG PHÂN TÍCH SÂU TỪ AI
             </div>
-            <div class="ai-title-unified">
-              <strong v-if="aiReport">{{ aiReport.title || 'Phân tích từ SmartGym AI' }}</strong>
-              <strong v-else>Phân tích từ SmartGym AI</strong>
-            </div>
-          </div>
-          
-          <button class="btn-generate-ai-unified" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
-            <i class="fas fa-magic" :class="{'fa-spin': isAiLoading}"></i>
-            <span>{{ isAiLoading ? 'AI Đang phân tích...' : 'Cập nhật phân tích AI' }}</span>
-          </button>
 
-          <div class="ai-content-scroll" v-if="aiReport">
-            <div class="ai-rec-diagnosis-unified">
-              <i class="fas fa-quote-left quote-icon"></i>
-              {{ aiReport.ai_diagnosis }}
-            </div>
-            <div class="ai-suggestions-unified" v-if="aiReport.ai_suggestions">
-              <div class="suggestion-hd"><i class="fas fa-bullseye"></i> CHIẾN LƯỢC ĐỀ XUẤT</div>
-              <div class="suggestion-item-unified" v-for="(tip, i) in parsedTips" :key="i">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ tip }}</span>
+            <div v-if="aiReport">
+              <div class="ai-insight-card" style="margin-bottom:12px;">
+                <div class="insight-icon"><i class="fas fa-robot"></i></div>
+                <div class="insight-body">
+                  <strong>{{ aiReport.title }}</strong>
+                  <p>Phân tích thực từ dữ liệu hệ thống</p>
+                </div>
+              </div>
+
+              <div class="ai-narrative">{{ aiReport.ai_diagnosis }}</div>
+
+              <div class="ai-strategy-section" v-if="aiReport.ai_suggestions" style="margin-top:14px;">
+                <div class="strategy-label"><i class="fas fa-crosshairs"></i> CHIẾN LƯỢC ĐỀ XUẤT</div>
+                <div class="strategy-item" v-for="(tip, i) in parsedTips" :key="i">
+                  <div class="item-main">
+                    <p>{{ tip }}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div v-else class="ai-empty-unified">
-            <div class="empty-icon"><i class="fas fa-robot"></i></div>
-            <p>Chưa có dữ liệu phân tích. Nhấn <strong>"Cập nhật phân tích AI"</strong> để kích hoạt AI Engine đánh giá hiệu quả gói tập.</p>
-          </div>
 
-          <div class="coso-card">
-            <div class="coso-icon"><i class="fas fa-building"></i></div>
-            <div class="coso-info">
-              <div class="coso-label">Cơ sở tiêu biểu</div>
-              <div class="coso-val">Chi nhánh Quận 1</div>
+            <div v-else>
+              <div class="ai-insight-card">
+                <div class="insight-icon"><i class="fas fa-sparkles"></i></div>
+                <div class="insight-body">
+                  <strong>Gói {{ bestPlanName }}: Bán chạy nhất</strong>
+                  <p>{{ totalActiveSubs }} hội viên đang active</p>
+                </div>
+              </div>
+
+              <div class="ai-narrative">
+                Hệ thống có {{ plans.length }} gói tập với tổng doanh thu ước tính {{ formatCurrency(totalRevenue) }}. 
+                Nhấn nút "Phân tích AI" để nhận chiến lược tối ưu hóa danh mục gói tập.
+              </div>
+
+              <div class="ai-prediction">
+                "Nhấn 'Phân tích AI' để AI phân tích sâu hiệu quả từng gói và đề xuất chiến lược tối ưu doanh thu."
+              </div>
             </div>
-            <span class="coso-badge"><i class="fas fa-arrow-up"></i> 24%</span>
+
+            <button class="btn-ai-action" @click="$emit('generate-ai-report')" :disabled="isAiLoading">
+              {{ isAiLoading ? 'Đang phân tích...' : 'Khởi tạo chiến lược AI chi tiết' }}
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
+const API = 'http://127.0.0.1:8000/api';
+
 export default {
   name: 'TabGoiTap',
   props: ['aiReport', 'isAiLoading'],
   data() {
     return {
-      barData: [
-        { a: 70, b: 50, c: 30 },
-        { a: 85, b: 65, c: 40 },
-        { a: 60, b: 70, c: 50 },
-        { a: 90, b: 75, c: 55 },
-        { a: 80, b: 90, c: 60 },
-      ],
+      isLoading: false,
+      plans: [],
+      planColors: ['#22c55e', '#065f46', '#8b5cf6', '#f59e0b', '#0ea5e9'],
     }
   },
   computed: {
+    totalRevenue() {
+      return this.plans.reduce((sum, p) => sum + (p.revenue_est || 0), 0);
+    },
+    totalActiveSubs() {
+      return this.plans.reduce((sum, p) => sum + (p.active_subs || 0), 0);
+    },
+    avgPrice() {
+      if (this.plans.length === 0) return 0;
+      return this.plans.reduce((sum, p) => sum + (p.price || 0), 0) / this.plans.length;
+    },
+    bestPlanName() {
+      if (this.plans.length === 0) return '—';
+      const best = [...this.plans].sort((a, b) => b.total_subs - a.total_subs)[0];
+      return best ? best.name : '—';
+    },
+    otherSubs() {
+      return this.plans.slice(3).reduce((sum, p) => sum + (p.active_subs || 0), 0);
+    },
     parsedTips() {
-      if (!this.aiReport || !this.aiReport.ai_suggestions) return [];
+      if (!this.aiReport?.ai_suggestions) return [];
       return this.aiReport.ai_suggestions
         .split('\n')
         .map(t => t.replace(/^[-*]\s*/, '').trim())
         .filter(Boolean);
+    }
+  },
+  mounted() {
+    this.fetchPlanData();
+  },
+  methods: {
+    async fetchPlanData() {
+      this.isLoading = true;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API}/membership-plans`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        this.plans = list.map(p => ({
+          name: p.plan_name || p.name || 'Gói không tên',
+          price: parseFloat(p.price) || 0,
+          duration_days: p.duration_days || 30,
+          total_subs: p.subscriptions_count || 0,
+          active_subs: p.active_subscriptions_count || p.active_count || 0,
+          revenue_est: (p.subscriptions_count || 0) * (parseFloat(p.price) || 0),
+        }));
+      } catch (err) {
+        console.error('Lỗi tải dữ liệu gói tập:', err);
+        // Fallback: try to get from plan-effectiveness AI endpoint
+        try {
+          const token = localStorage.getItem('token');
+          const res = await axios.post(`${API}/manager/plan-effectiveness`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          // Just show whatever data we got
+        } catch (_) {}
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    formatCurrency(value) {
+      if (!value || value === 0) return '0đ';
+      if (value >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + ' tỷ';
+      if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M đ';
+      if (value >= 1_000) return (value / 1_000).toFixed(0) + 'K đ';
+      return value.toLocaleString('vi-VN') + 'đ';
+    },
+    exportPDF() {
+      window.print();
     }
   }
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+.tab-content { padding: 20px; background: #f8fafc; font-family: 'Inter', sans-serif; }
 
-.tab-content.kinetic-light {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  font-family: 'Inter', sans-serif;
-  background-color: transparent;
-  color: #1e293b;
-  min-height: calc(100vh - 100px);
-}
+/* Header */
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.section-title { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin: 0; }
+.section-sub { color: #64748b; margin: 5px 0 0; font-size: 0.95rem; }
+.head-actions { display: flex; gap: 10px; align-items: center; }
+.btn-pdf { background: #e2e8f0; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; color: #475569; }
+.btn-deep-analyze { background: #418953; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-deep-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Premium Light Card Base */
-.premium-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-}
-.premium-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
+/* KPI Row v2 */
+.kpi-row-v2 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 30px; }
+.kpi-card-v2 { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); position: relative; }
+.kpi-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+.kpi-val-wrap { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.kpi-val { font-size: 1.5rem; font-weight: 900; color: #1e293b; }
+.kpi-badge { font-size: 0.75rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.kpi-badge.up { color: #22c55e; background: #dcfce7; }
+.kpi-badge.down { color: #ef4444; background: #fee2e2; }
+.kpi-badge.neutral { color: #64748b; background: #f1f5f9; }
+.kpi-bar { position: absolute; bottom: 15px; left: 20px; width: 60%; height: 3px; border-radius: 2px; }
+.bg-green { background: #22c55e; }
+.bg-green-light { background: #4ade80; }
+.bg-purple-light { background: #a78bfa; }
+.bg-grey { background: #cbd5e1; }
+.bg-dark-green { background: #065f46; }
 
-/* Headers & Actions */
-.section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
-}
-.head-left { display: flex; flex-direction: column; gap: 4px; }
-.section-title {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.badge-premium {
-  font-size: 0.65rem;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
-}
-.section-sub {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-.head-actions {
-  display: flex;
-  gap: 12px;
-}
-.btn-outline-glow {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  border-radius: 10px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-.btn-outline-glow:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #1e293b;
-}
-.btn-primary-glow {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-  transition: all 0.2s ease;
-}
-.btn-primary-glow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
+/* Grid Body v2 */
+.body-grid-v2 { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+.chart-area-v2 { display: flex; flex-direction: column; gap: 20px; }
+.chart-card-v2 { background: white; padding: 25px; border-radius: 16px; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.chart-title-v2 { font-size: 1.1rem; font-weight: 800; margin: 0; }
 
-/* KPIs */
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-@media (max-width: 1024px) {
-  .kpi-row { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  .kpi-row { grid-template-columns: 1fr; }
-}
-.kpi-card {
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.kpi-icon-wrap {
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
-  color: #fff;
-  flex-shrink: 0;
-}
-.bg-gradient-green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); }
-.bg-gradient-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25); }
-.bg-gradient-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25); }
-.bg-gradient-orange { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25); }
+/* Donut & Impact */
+.bottom-row-v2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.donut-card-v2, .impact-card-v2 { background: white; padding: 20px; border-radius: 16px; }
+.card-subtitle { font-size: 0.95rem; font-weight: 800; margin-bottom: 20px; }
+.donut-flex { display: flex; justify-content: space-between; align-items: center; }
+.donut-stats { font-size: 0.85rem; font-weight: 600; color: #475569; }
+.stat-line { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.donut-viz { width: 90px; height: 90px; border: 15px solid #8b5cf6; border-radius: 50%; border-left-color: #22c55e; transform: rotate(45deg); position: relative; }
+.donut-center { transform: rotate(-45deg); position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut-center .val { font-size: 1rem; font-weight: 900; }
+.donut-center .lbl { font-size: 0.5rem; color: #94a3b8; font-weight: 800; }
 
-.kpi-info { display: flex; flex-direction: column; gap: 4px; }
-.kpi-label { font-size: 0.7rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
-.kpi-val { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
-.kpi-sub-val { font-size: 0.8rem; font-weight: 600; color: #64748b; }
-.kpi-badge { font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-.kpi-badge.up { color: #10b981; }
-.kpi-badge.down { color: #ef4444; }
+.impact-card-v2 { background: #418953; color: white; }
+.impact-title-v2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 10px; }
+.impact-text-v2 { font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px; line-height: 1.6; }
 
-/* Main Content Grid */
-.body-grid {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
-}
-@media (max-width: 1100px) {
-  .body-grid { grid-template-columns: 1fr; }
-}
+/* AI Sidebar v2 */
+.ai-sidebar-v2 { border: 2px solid transparent; border-image: linear-gradient(to bottom, #6366f1, #3b82f6) 1; border-radius: 20px; background: white; padding: 2px; }
+.ai-panel-inner { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.ai-header-v2 { font-size: 0.75rem; font-weight: 800; color: #6366f1; display: flex; align-items: center; gap: 8px; }
+.ai-dot { width: 6px; height: 6px; background: #6366f1; border-radius: 50%; display: inline-block; }
 
-.chart-area {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+.ai-insight-card { background: #f0fdf4; padding: 15px; border-radius: 12px; display: flex; gap: 12px; align-items: center; }
+.insight-icon { width: 35px; height: 35px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #22c55e; }
+.insight-body strong { font-size: 0.85rem; display: block; }
+.insight-body p { font-size: 0.75rem; color: #64748b; margin: 2px 0 0; }
 
-/* Bar Chart Card */
-.main-chart-wrapper {
-  padding: 24px;
-}
-.chart-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.chart-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #0f172a;
-  display: flex; align-items: center; gap: 8px;
-}
-.chart-title i { color: #6366f1; }
-.legend-inline {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 0.8rem;
-  color: #475569;
-  font-weight: 600;
-}
-.leg-item { display: flex; align-items: center; gap: 6px; }
-.leg-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.bg-green { background: #10b981; box-shadow: 0 2px 6px rgba(16,185,129,0.3); }
-.bg-purple { background: #8b5cf6; box-shadow: 0 2px 6px rgba(139,92,246,0.3); }
-.bg-indigo { background: #6366f1; box-shadow: 0 2px 6px rgba(99,102,241,0.3); }
+.ai-narrative { font-size: 0.85rem; line-height: 1.6; color: #334155; }
+.ai-prediction { background: #f1f5f9; padding: 15px; border-radius: 10px; font-style: italic; font-size: 0.8rem; border-left: 3px solid #8b5cf6; }
 
-.chart-container {
-  width: 100%;
-  height: 200px;
-}
-.bar-svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.bar-group { cursor: pointer; }
-.bar-group:hover .bar-hover-bg { fill: rgba(0,0,0,0.02); }
-.bar-rect { transition: height 0.3s ease, y 0.3s ease; }
-.bar-group:hover .bar-rect { filter: brightness(1.1); }
+.ai-strategy-section { display: flex; flex-direction: column; gap: 10px; }
+.strategy-label { font-size: 0.7rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+.strategy-item { background: #f8fafc; padding: 10px 12px; border-radius: 10px; }
+.strategy-item p { font-size: 0.78rem; color: #475569; margin: 0; line-height: 1.5; }
 
-/* Bottom 2 Cards (Donut + Impact) */
-.bottom2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-@media (max-width: 768px) {
-  .bottom2 { grid-template-columns: 1fr; }
-}
-
-/* Donut Card */
-.donut2-card { padding: 20px; }
-.d2-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 16px;
-  display: flex; align-items: center; gap: 8px;
-}
-.d2-title i { color: #10b981; }
-.d2-body {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-.donut-wrapper {
-  position: relative;
-  width: 100px; height: 100px;
-  flex-shrink: 0;
-}
-.donut2-svg {
-  width: 100%; height: 100%;
-  transform: rotate(-90deg);
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
-}
-.donut-segment { transition: stroke-dasharray 0.5s ease; cursor: pointer; }
-.donut-segment:hover { stroke-width: 14; filter: brightness(1.1); }
-.donut-center-text {
-  position: absolute;
-  inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.donut-val { font-size: 1rem; font-weight: 800; color: #0f172a; }
-.donut-lbl { font-size: 0.55rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
-
-.d2-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-}
-.leg-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #334155;
-  font-weight: 500;
-}
-.ms-auto { margin-left: auto; color: #0f172a; font-weight: 700; }
-
-/* Impact Card */
-.impact-card {
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-color: #bbf7d0;
-}
-.impact-card::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
-  pointer-events: none;
-}
-.impact-icon {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #059669;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.2rem;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
-}
-.impact-title { font-size: 1rem; font-weight: 800; color: #065f46; margin-bottom: 8px; }
-.impact-body { font-size: 0.85rem; line-height: 1.6; color: #064e3b; margin: 0 0 16px; font-weight: 500; }
-.text-purple { color: #7c3aed; font-weight: 800; }
-.text-green-light { color: #059669; font-weight: 800; }
-.impact-link {
-  font-size: 0.8rem; font-weight: 700; color: #059669;
-  text-decoration: none; display: flex; align-items: center; gap: 6px;
-  transition: gap 0.2s;
-}
-.impact-link:hover { gap: 10px; color: #047857; }
-
-/* AI Unified Card */
-.ai-side-panel {
-  display: flex;
-  flex-direction: column;
-}
-.ai-card-unified {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: 100%;
-  background: #ffffff;
-}
-.ai-glow {
-  position: relative;
-  overflow: hidden;
-}
-.ai-glow::before {
-  content: ''; position: absolute; top: -50px; left: -50px; width: 150px; height: 150px;
-  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.ai-card-header-unified {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.ai-avatar-unified {
-  width: 48px; height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 1.4rem;
-  flex-shrink: 0;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
-  position: relative;
-}
-.ai-avatar-unified::after {
-  content: ''; position: absolute; inset: -4px; border-radius: 16px;
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.ai-title-unified {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.3;
-}
-
-.btn-generate-ai-unified {
-  background: #f1f5f9 !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #4f46e5 !important;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-.btn-generate-ai-unified:hover:not(:disabled) {
-  background: #4f46e5 !important;
-  color: #fff !important;
-  border-color: #4f46e5 !important;
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-}
-.btn-generate-ai-unified:disabled {
-  opacity: 0.7; cursor: not-allowed;
-}
-
-.ai-content-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
-}
-
-.ai-rec-diagnosis-unified {
-  font-size: 0.9rem;
-  color: #334155;
-  line-height: 1.6;
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 12px;
-  border-left: 4px solid #6366f1;
-  position: relative;
-  font-weight: 500;
-}
-.quote-icon {
-  position: absolute; top: -10px; left: 10px;
-  background: #ffffff;
-  color: #6366f1;
-  padding: 0 4px;
-  font-size: 0.8rem;
-}
-
-.ai-suggestions-unified {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.suggestion-hd {
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #6366f1;
-  letter-spacing: 0.5px;
-  display: flex; align-items: center; gap: 6px;
-}
-.suggestion-item-unified {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: #475569;
-  line-height: 1.5;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #f1f5f9;
-  font-weight: 500;
-}
-.suggestion-item-unified i { color: #10b981; margin-top: 2px; font-size: 1rem; }
-
-.ai-empty-unified {
-  text-align: center;
-  padding: 40px 20px;
-  color: #64748b;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.empty-icon { font-size: 2rem; color: #94a3b8; }
-.ai-empty-unified p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
-
-.coso-card {
-  margin-top: auto;
-  background: #f0fdf4;
-  border: 1px solid #dcfce7;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.coso-icon {
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #10b981;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.1);
-}
-.coso-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.coso-label { font-size: 0.7rem; color: #64748b; font-weight: 600; }
-.coso-val { font-size: 0.95rem; font-weight: 800; color: #065f46; }
-.coso-badge {
-  font-size: 0.75rem; font-weight: 800; color: #059669;
-  background: #dcfce7; padding: 4px 8px; border-radius: 6px;
-  display: flex; align-items: center; gap: 4px;
-}
+.btn-ai-action { background: #111827; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; width: 100%; }
+.btn-ai-action:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>
-
