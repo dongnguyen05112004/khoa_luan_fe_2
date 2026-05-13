@@ -117,7 +117,7 @@
               </div>
               <p class="mk-pt-desc">{{ pt.description }}</p>
               <div class="mk-pt-meta">TRỌN GÓI {{ pt.durationLabel }}</div>
-              <div class="mk-pt-price">{{ formatPrice(pt.price) }} VND</div>
+              <div class="mk-pt-price">{{ formatPrice(pt.price) }} VND <span style="font-size:0.7rem; opacity:0.8;">/ buổi</span></div>
             </div>
             <button 
               class="mk-btn-detail" 
@@ -255,7 +255,17 @@
               <div style="font-size:.8rem;color:#64748b;margin-bottom:8px;" v-if="purchaseTarget.durationLabel">
                 <i class="fas fa-clock me-1"></i>{{ purchaseTarget.durationLabel }}
               </div>
-              <div style="font-size:1.5rem;font-weight:800;color:#0f4c2a;">{{ formatPrice(purchaseTarget.price) }} <span style="font-size:.8rem;color:#64748b;">VND</span></div>
+              <div style="font-size:1.5rem;font-weight:800;color:#0f4c2a;">
+                {{ formatPrice(purchaseTarget.price) }} 
+                <span style="font-size:.8rem;color:#64748b;">VND {{ purchaseTarget.isPt ? '/ buổi' : '' }}</span>
+              </div>
+            </div>
+
+            <div class="pt-sessions-select mt-3" v-if="purchaseTarget.isPt">
+              <label class="form-label-sm">Số buổi đăng ký: <strong>12 buổi</strong> (Gói mặc định)</label>
+              <div class="alert alert-info py-2 px-3 mb-0" style="font-size:0.75rem;">
+                <i class="fas fa-info-circle me-1"></i> Hệ thống mặc định đăng ký gói 12 buổi để đảm bảo lộ trình tập luyện hiệu quả.
+              </div>
             </div>
 
             <div class="mt-3" v-if="!purchaseTarget.isPt">
@@ -339,7 +349,8 @@
             </div>
           </div>
           <div class="md-modal-footer">
-            <button class="btn-book-confirm w-100 justify-content-center" @click="vietqr.show = false">
+            <button class="btn-book-confirm w-100 justify-content-center" @click="confirmPaymentNotification" :disabled="notifying">
+              <i class="fas fa-spinner fa-spin me-1" v-if="notifying"></i>
               Tôi đã chuyển khoản
             </button>
           </div>
@@ -455,13 +466,18 @@ export default {
         active_bank: '1',
         bank_id_1: '970418', bank_acc_1: '5602059675', bank_owner_1: 'NGUYEN HUU DONG',
         bank_id_2: '970436', bank_acc_2: '1032067073', bank_owner_2: 'TRAN MINH QUANG',
-      }
+      },
+      notifying: false,
+      currentPaymentItem: null,
     }
   },
 
   computed: {
     finalPrice() {
       if (!this.purchaseTarget) return 0
+      if (this.purchaseTarget.isPt) {
+        return (this.purchaseTarget.price || 0) * 12
+      }
       if (this.promoResult?.valid && this.promoResult.finalPrice != null) {
         return this.promoResult.finalPrice
       }
@@ -584,7 +600,7 @@ export default {
         badge, badgeCls,
         name:         `PT – ${t.name}`,
         description:  t.description || `Huấn luyện cá nhân với ${t.name}. Chuyên môn: ${t.specialization || 'Đa dạng'}.`,
-        durationLabel:'TÙY CHỌN',
+        durationLabel: 'GÓI 12 BUỔI',
         price:        t.pt_rate || 0,
         _raw:         t,
         isPt:         true,
@@ -731,7 +747,31 @@ export default {
       
       this.vietqr.bankName = this.getBankName(bankId);
       this.vietqr.accountOwner = accountName;
+      this.currentPaymentItem = item;
       this.vietqr.show = true;
+    },
+
+    async confirmPaymentNotification() {
+      if (!this.currentPaymentItem || !this.currentPaymentItem.payment_id) {
+        this.vietqr.show = false;
+        return;
+      }
+
+      this.notifying = true;
+      try {
+        await axios.patch(`/api/payments/${this.currentPaymentItem.payment_id}`, {
+          payment_confirmed: true,
+          note: (this.currentPaymentItem.note || '') + ' | [Hội viên xác nhận đã CK]'
+        });
+        alert('Cảm ơn bạn! Thông tin đã được gửi đến bộ phận kế toán để đối soát.');
+        this.vietqr.show = false;
+        await this.fetchMyActive();
+      } catch (error) {
+        console.error('Lỗi thông báo thanh toán:', error);
+        alert('Có lỗi xảy ra khi gửi thông báo. Vui lòng thử lại sau.');
+      } finally {
+        this.notifying = false;
+      }
     },
 
     getBankName(bin) {

@@ -415,7 +415,12 @@ export default {
           page:     this.currentPage,
           per_page: this.perPage,
         }
-        if (this.activeTab !== 'all') params.status = this.activeTab
+        if (this.activeTab === 'pending') {
+          params.payment_confirmed = 1
+        }
+        if (this.activeTab !== 'all' && this.activeTab !== 'pending') {
+          params.status = this.activeTab
+        }
         if (this.searchQuery.trim())  params.search = this.searchQuery.trim()
 
         const { data } = await paymentApi.getAll(params)
