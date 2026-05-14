@@ -149,7 +149,7 @@ const routes = [
             // Redirect mặc định: /khachhang → /khachhang/chi_so_suc_khoe
             {
                 path: '',
-                redirect: '/khachhang/chi_so_suc_khoe',
+                redirect: '/khachhang/ho_so_ca_nhan',
             },
             // ── NHÓM 2: Tài khoản & Hồ sơ ──
             {
@@ -196,7 +196,7 @@ const routes = [
             }
         ]
     },
-    
+
     {
         path: '/pt',
         component: () => import('../layout/wrapper/pt.vue'),

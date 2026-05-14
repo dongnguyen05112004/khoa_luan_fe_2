@@ -34,75 +34,32 @@
               <div class="col-lg-6 d-flex flex-column p-4 p-md-5 bg-white">
                 <div class="flex-grow-1 d-flex flex-column justify-content-center px-lg-3">
 
-                  <!-- Trạng thái: Đã gửi thành công → nhập token -->
+                  <!-- Trạng thái: Đã gửi thành công -->
                   <template v-if="sent">
-                    <div class="text-center mb-3">
-                      <div class="success-icon mx-auto mb-3">
-                        <i class="bi bi-envelope-check-fill fs-1 text-success-custom"></i>
-                      </div>
-                      <h2 class="fw-bold text-dark mb-1">Yêu cầu đã được nhận</h2>
-                      <p class="text-muted fs-sm mb-4">
-                        Nếu email <strong>{{ email }}</strong> tồn tại trong hệ thống, bạn sẽ nhận được một thư chứa mã xác nhận.<br>
-                        Vui lòng kiểm tra hòm thư và dán mã vào ô bên dưới.
-                      </p>
-                    </div>
-
-                    <!-- Ô dán token -->
-                    <div class="token-card p-4 rounded-4 mb-4">
-                      <label class="form-label fs-xs fw-bold text-uppercase tracking-wide mb-2" style="color: var(--c-purple);">
-                        <i class="bi bi-key-fill me-1"></i> Mã xác nhận (Token)
-                      </label>
-
-                      <div class="d-flex gap-2 align-items-center">
-                        <input
-                          id="paste-token"
-                          v-model="pastedToken"
-                          type="text"
-                          class="form-control token-input fw-bold text-dark shadow-none"
-                          placeholder="Dán mã từ email vào đây..."
-                          autocomplete="off"
-                          spellcheck="false"
-                        >
-                        <button
-                          type="button"
-                          class="btn btn-paste rounded-3 flex-shrink-0"
-                          title="Dán từ clipboard"
-                          @click="pasteFromClipboard"
-                        >
-                          <i class="bi bi-clipboard-check fs-5"></i>
-                        </button>
-                      </div>
-
-                      <!-- Auto-fill hint khi có debug token -->
-                      <div v-if="debugToken" class="debug-hint mt-3 px-3 py-2 rounded-3 d-flex align-items-center justify-content-between gap-2">
-                        <div class="fs-xs" style="color:#f59e0b;">
-                          <i class="bi bi-bug-fill me-1"></i>
-                          <strong>Debug:</strong> Token đã được điền tự động
+                    <div class="text-center py-4">
+                      <div class="success-icon mx-auto mb-4">
+                        <div class="pulse-container mx-auto mb-4">
+                          <i class="bi bi-envelope-check-fill display-4 text-success-custom"></i>
                         </div>
-                        <button class="btn btn-sm btn-outline-warning rounded-pill py-0 px-2 fs-xs" @click="copyToken">
-                          <i class="bi bi-clipboard me-1"></i>Copy
-                        </button>
+                      </div>
+                      <h2 class="fw-bold text-dark mb-3">Yêu cầu đã được nhận</h2>
+                      <p class="text-muted fs-sm mb-5 px-3">
+                        Hệ thống đã gửi một liên kết xác thực đến địa chỉ <strong>{{ email }}</strong>.<br>
+                        <span class="text-primary-custom fw-bold">Vui lòng kiểm tra Gmail</span> của bạn để tiếp tục quá trình đặt lại mật khẩu.
+                      </p>
+
+                      <div class="p-4 rounded-4 mb-5" style="background: rgba(96, 53, 208, 0.05); border: 1px dashed #ddd6fe;">
+                        <p class="fs-xs text-muted mb-0">
+                          <i class="bi bi-info-circle me-1"></i>
+                          Nếu không tìm thấy email, vui lòng kiểm tra trong hòm thư rác (Spam).
+                        </p>
                       </div>
 
-                      <!-- Thông báo lỗi token rỗng -->
-                      <div v-if="tokenError" class="mt-2 fs-xs" style="color:#dc2626;">
-                        <i class="bi bi-exclamation-circle me-1"></i>{{ tokenError }}
+                      <div class="text-center">
+                        <router-link to="/dangnhap" class="text-decoration-none fw-medium fs-sm back-link d-inline-flex align-items-center">
+                          <i class="bi bi-arrow-left me-2"></i> Quay lại đăng nhập
+                        </router-link>
                       </div>
-                    </div>
-
-                    <!-- Nút chuyển đến trang đặt lại mật khẩu -->
-                    <button
-                      id="go-reset-btn"
-                      class="btn w-100 py-3 rounded-pill fw-bold custom-gradient-btn border-0 text-white mb-3 shadow-sm"
-                      @click="goToReset"
-                    >
-                      <i class="bi bi-shield-lock me-2"></i> Đặt lại mật khẩu ngay
-                    </button>
-
-                    <div class="text-center">
-                      <router-link to="/dangnhap" class="text-decoration-none fw-medium fs-sm back-link d-inline-flex align-items-center">
-                        <i class="bi bi-arrow-left me-2"></i> Quay lại đăng nhập
-                      </router-link>
                     </div>
                   </template>
 
@@ -350,6 +307,24 @@ watch(pastedToken, () => { tokenError.value = '' })
 
 .success-icon { color: var(--c-green); }
 .text-success-custom { color: var(--c-green); }
+.text-primary-custom { color: var(--c-purple); }
+
+.pulse-container {
+  width: 100px;
+  height: 100px;
+  background: rgba(42, 77, 62, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(42, 77, 62, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(42, 77, 62, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(42, 77, 62, 0); }
+}
 
 .back-link { color: var(--c-green); transition: opacity 0.2s; }
 .back-link:hover { opacity: 0.75; }
