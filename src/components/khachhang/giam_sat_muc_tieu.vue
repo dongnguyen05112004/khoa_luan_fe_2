@@ -228,11 +228,12 @@ export default {
         this.stats        = d.stats           || {}
         this.aiRec        = d.ai_recommendation || null
         this.checkinByWeek= d.checkin_by_week || {}
-        this.$nextTick(() => this.renderChart())
       } catch (e) {
         console.error('Lỗi lấy dữ liệu tiến trình:', e)
       } finally {
         this.loading = false
+        // Phải đợi loading = false trước để Vue render <template v-else> (chứa canvas) vào DOM
+        this.$nextTick(() => this.renderChart())
       }
     },
     renderChart() {

@@ -68,11 +68,6 @@
 
         <!-- Header Right -->
         <div class="nv-header-right">
-          <!-- Check-in Nhanh Button -->
-          <button class="btn-checkin-nhanh">
-            <i class="fas fa-bolt"></i>
-            Check-in Nhanh
-          </button>
 
           <!-- Notification -->
           <button class="nv-icon-btn" title="Thông báo">
