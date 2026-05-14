@@ -18,7 +18,7 @@
             <label class="tk-filter-label">CHỨC VỤ / VAI TRÒ</label>
             <select v-model="filterRole" class="tk-filter-select">
               <option value="">Tất cả</option>
-              <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
+              <option v-for="r in staffOnlyRoles" :key="r.id" :value="r.id">{{ roleLabel(r.role_name || r.name) }}</option>
             </select>
           </div>
           <div class="tk-filter-group">
@@ -111,8 +111,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="person in people" :key="person.id" class="tk-tr">
-            <td class="tk-td-id">#{{ person.id }}</td>
+          <tr v-for="(person, idx) in people" :key="person.id" class="tk-tr">
+            <td class="tk-td-id">#{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td class="tk-td-name">
               <div class="tk-name-cell">
                 <img :src="person.avatar" :alt="person.name" class="tk-avatar" />
@@ -240,7 +240,7 @@
         <div class="tk-modal member-modal">
           <!-- Header -->
           <div class="tkm-header">
-            <h2 class="tkm-title">Hồ sơ Chi tiết Hội viên - {{ selectedPerson?.name }}</h2>
+            <h2 class="tkm-title">Hồ sơ Chi tiết Hội viên — {{ selectedPerson?.name }}</h2>
             <button class="tkm-close" @click="showMemberModal = false"><i class="fas fa-times"></i></button>
           </div>
 
@@ -264,17 +264,23 @@
                 </div>
                 <div class="tkm-info-group">
                   <div class="tkm-info-label">SỐ ĐIỆN THOẠI</div>
-                  <div class="tkm-info-value">{{ selectedPerson?.detail?.phone || selectedPerson?.phone || '—' }}</div>
+                  <div class="tkm-info-value">{{ selectedPerson?.detail?.phone || '—' }}</div>
                 </div>
                 <div class="tkm-info-group">
                   <div class="tkm-info-label">ĐỊA CHỈ EMAIL</div>
-                  <div class="tkm-info-value">{{ selectedPerson?.detail?.email || selectedPerson?.email || '—' }}</div>
+                  <div class="tkm-info-value">{{ selectedPerson?.detail?.email || '—' }}</div>
                 </div>
                 <div class="tkm-info-group">
-                  <div class="tkm-info-label">SỐ BUỔI TẬP</div>
-                  <div class="tkm-info-value">
-                    {{ selectedPerson?.detail?.sobuoiTap || 0 }} buổi
-                  </div>
+                  <div class="tkm-info-label">NGÀY SINH</div>
+                  <div class="tkm-info-value">{{ selectedPerson?.detail?.ngaySinh || '—' }}</div>
+                </div>
+                <div class="tkm-info-group">
+                  <div class="tkm-info-label">GIỚI TÍNH</div>
+                  <div class="tkm-info-value">{{ selectedPerson?.detail?.gioiTinh || '—' }}</div>
+                </div>
+                <div class="tkm-info-group">
+                  <div class="tkm-info-label">MÃ THẺ HỘI VIÊN</div>
+                  <div class="tkm-info-value">{{ selectedPerson?.detail?.maThe || '—' }}</div>
                 </div>
               </div>
 
@@ -282,24 +288,21 @@
                 <div class="tkm-info-label">GHI CHÚ SỨC KHỎE</div>
                 <div class="tkm-goal-text">"{{ selectedPerson?.detail?.mucTieu || 'Chưa có thông tin' }}"</div>
               </div>
- 
             </div>
 
             <!-- Right: Dịch vụ đang dùng -->
             <div class="tkm-right" v-if="!loadingDetail">
-              <div class="tkm-section-title" style="margin-bottom: 14px;">Dịch vụ đang dùng</div>
+              <div class="tkm-section-title" style="margin-bottom: 14px;">Gói tập đang sử dụng</div>
 
               <div v-if="selectedPerson?.detail?.dichVu?.length">
                 <div class="tkm-service-card membership" v-for="sv in selectedPerson.detail.dichVu" :key="sv.id">
                   <div class="tkm-service-name">{{ sv.name }}</div>
-                  <div class="tkm-service-expire" v-if="sv.expire">Hết hạn {{ sv.expire }}</div>
-                  <div class="tkm-service-remain" v-if="sv.remain">Còn lại: {{ sv.remain }} buổi</div>
+                  <div class="tkm-service-expire" v-if="sv.expire">Hết hạn: {{ sv.expire }}</div>
+                  <div class="tkm-service-remain" v-if="sv.remain !== null">Còn lại: {{ sv.remain }}</div>
                   <span class="tkm-service-badge" :class="sv.badgeClass">{{ sv.badgeLabel }}</span>
                 </div>
               </div>
-              <div v-else class="tkm-no-service">Chưa có dịch vụ nào đang hoạt động.</div>
-
-              
+              <div v-else class="tkm-no-service">Chưa có gói tập nào đang hoạt động.</div>
             </div>
           </div>
 
@@ -324,54 +327,62 @@
             <div class="tkm-staff-avatar-wrap">
               <img :src="selectedPerson?.avatar" :alt="selectedPerson?.name" class="tkm-staff-avatar" />
               <span class="tkm-staff-status-dot"
-                :class="selectedPerson?.trangThai === 'ĐANG LÀM VIỆC' ? 'dot-green' : 'dot-yellow'"></span>
+                :class="selectedPerson?.state === 'active' ? 'dot-green' : 'dot-yellow'"></span>
             </div>
             <div class="tkm-staff-info">
               <div class="tkm-staff-name-row">
                 <span class="tkm-staff-name">{{ selectedPerson?.name }}</span>
-                <span class="tkm-staff-code">{{ selectedPerson?.id }}</span>
+                <span class="tkm-staff-code">{{ selectedPerson?.email }}</span>
               </div>
-              <div class="tkm-staff-title">{{ selectedPerson?.detail?.chucDanh }}</div>
+              <div class="tkm-staff-title">{{ selectedPerson?.chucVu }}</div>
               <div class="tkm-staff-meta">
-                <span><i class="fas fa-map-marker-alt"></i> {{ selectedPerson?.detail?.chiNhanh }}</span>
-                <span><i class="fas fa-calendar-alt"></i> Địa nhập {{ selectedPerson?.detail?.namsanXuat }}</span>
+                <span><i class="fas fa-map-marker-alt"></i> {{ selectedPerson?.detail?.chiNhanh || 'Chưa có chi nhánh' }}</span>
+                <span><i class="fas fa-calendar-alt"></i> Gia nhập {{ selectedPerson?.ngayGiaNhap }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Section: Nhân sự -->
-          <div class="tkm-section-label">THÔNG TIN NHÂN SỰ</div>
-          <div class="tkm-staff-info-grid">
-            <div class="tkm-staff-info-card">
-              <div class="tkm-info-label">Lương cơ bản</div>
-              <div class="tkm-staff-salary">{{ selectedPerson?.detail?.luongCoBan }}</div>
-            </div>
-            <div class="tkm-staff-info-card">
-              <div class="tkm-info-label">Loại hợp đồng</div>
-              <div class="tkm-staff-contract">{{ selectedPerson?.detail?.loaiHopDong }}</div>
-            </div>
+          <!-- Loading inside staff modal -->
+          <div v-if="loadingDetail" class="tkm-loading-detail">
+            <i class="fas fa-spinner fa-spin"></i> Đang tải thông tin...
           </div>
 
-          <!-- Section: Chứng chỉ -->
-          <div class="tkm-section-label">CHỨNG CHỈ CHUYÊN MÔN</div>
-          <div class="tkm-certs">
-            <span class="tkm-cert-tag" v-for="cert in selectedPerson?.detail?.chungChi" :key="cert">{{ cert }}</span>
-          </div>
-
-          <!-- Section: Hiệu suất -->
-          <div class="tkm-section-label">
-            HIỆU SUẤT CÔNG VIỆC
-            <span class="tkm-perf-sub">Số buổi tập / tháng</span>
-          </div>
-          <div class="tkm-chart">
-            <div class="tkm-chart-bars">
-              <div v-for="(bar, idx) in selectedPerson?.detail?.hieuSuat" :key="idx" class="tkm-bar-col">
-                <div class="tkm-bar" :style="{ height: bar.value + 'px' }"
-                  :class="{ 'tkm-bar-highlight': bar.highlight }"></div>
-                <div class="tkm-bar-label">{{ bar.month }}</div>
+          <template v-if="!loadingDetail">
+            <!-- Section: Nhân sự -->
+            <div class="tkm-section-label">THÔNG TIN NHÂN SỰ</div>
+            <div class="tkm-staff-info-grid">
+              <div class="tkm-staff-info-card">
+                <div class="tkm-info-label">SỐ ĐIỆN THOẠI</div>
+                <div class="tkm-staff-salary">{{ selectedPerson?.detail?.phone || '—' }}</div>
+              </div>
+              <div class="tkm-staff-info-card">
+                <div class="tkm-info-label">PHÒNG BAN / BỘ PHẬN</div>
+                <div class="tkm-staff-contract">{{ selectedPerson?.detail?.loaiHopDong || '—' }}</div>
+              </div>
+              <div class="tkm-staff-info-card">
+                <div class="tkm-info-label">LƯƠNG CƠ BẢN</div>
+                <div class="tkm-staff-salary">{{ selectedPerson?.detail?.luongCoBan || '—' }}</div>
+              </div>
+              <div class="tkm-staff-info-card">
+                <div class="tkm-info-label">NGÀY VÀO LÀM</div>
+                <div class="tkm-staff-contract">{{ selectedPerson?.detail?.namsanXuat || '—' }}</div>
               </div>
             </div>
-          </div>
+
+            <!-- Section: Chuyên môn (Trainer) -->
+            <template v-if="selectedPerson?.detail?.chuyenMon">
+              <div class="tkm-section-label">CHUYÊN MÔN (HUẤN LUYỆN VIÊN)</div>
+              <div class="tkm-certs">
+                <span class="tkm-cert-tag">{{ selectedPerson.detail.chuyenMon }}</span>
+              </div>
+            </template>
+            <template v-else-if="selectedPerson?.detail?.chungChi?.length">
+              <div class="tkm-section-label">CHỨNG CHỈ CHUYÊN MÔN</div>
+              <div class="tkm-certs">
+                <span class="tkm-cert-tag" v-for="cert in selectedPerson.detail.chungChi" :key="cert">{{ cert }}</span>
+              </div>
+            </template>
+          </template>
 
           <!-- Footer -->
           <div class="tkm-staff-footer">
@@ -464,20 +475,19 @@ export default {
       }
       return pages
     },
+    // Chỉ hiển thị STAFF, TRAINER trong form tạo tài khoản
     filteredRoles() {
-      if (!this.currentUser) return this.roles
-      const roleId = Number(this.currentUser.role_id)
-      const roleName = (this.currentUser.role_name || this.currentUser.role?.name || '').toLowerCase()
-      
-      // Nếu là Manager (ID=2 hoặc tên='manager'), ẩn quyền Admin (ID=1 hoặc tên='admin')
-      if (roleId === 2 || roleName === 'manager') {
-        return this.roles.filter(r => {
-          const rName = (r.role_name || r.name || '').toLowerCase()
-          const rId = Number(r.id)
-          return rName !== 'admin' && rId !== 1
-        })
-      }
-      return this.roles
+      return this.roles.filter(r => {
+        const rName = (r.role_name || r.name || '').toLowerCase()
+        return !['admin', 'manager'].includes(rName)
+      })
+    },
+    // Chỉ hiển thị STAFF, TRAINER trong bộ lọc
+    staffOnlyRoles() {
+      return this.roles.filter(r => {
+        const rName = (r.role_name || r.name || '').toLowerCase()
+        return !['admin', 'manager'].includes(rName)
+      })
     },
   },
 
@@ -494,6 +504,7 @@ export default {
   mounted() {
     this.fetchUsers(1)
     this.fetchRoles()
+    this.fetchStats()
     const userStr = localStorage.getItem('user')
     if (userStr) {
       try {
@@ -603,20 +614,60 @@ export default {
           this.serverTotalPages = Math.max(1, Math.ceil(list.length / this.perPage))
         }
 
-        this.people = list.map(u => this.mapUser(u))
+        // Lọc bỏ tài khoản ADMIN và MANAGER — giao diện này chỉ quản lý NV, HLV
+        const filtered = list.filter(u => {
+          const rName = (u.role?.role_name || u.role?.name || u.role_name || '').toLowerCase()
+          const rId = Number(u.role_id)
+          return !['admin', 'manager'].includes(rName) && ![1, 2].includes(rId)
+        })
 
-        // Tính stats
-        const staffCount = this.people.filter(p => p.role === 'staff').length
-        const memberCount = this.people.filter(p => p.role === 'member' && p.state === 'active').length
-        this.stats.totalStaff = staffCount
-        this.stats.activeMembers = this.totalItems - staffCount
-        this.stats.operationalHealth = '98%'
+        this.people = filtered.map(u => this.mapUser(u))
+
+        // Cập nhật tổng items (cho pagination) sau khi lọc admin/manager
+        this.totalItems = filtered.length || this.totalItems
 
       } catch (err) {
         console.error('fetchUsers error:', err)
         this.errorMsg = err?.response?.data?.message || err.message || 'Lỗi tải dữ liệu'
       } finally {
         this.loading = false
+      }
+    },
+
+    // ─── Fetch tổng số liệu cho stats cards (toàn bộ DB) ─────
+    async fetchStats() {
+      try {
+        const res = await userApi.getAll({ per_page: 9999, page: 1 })
+        const data = res.data
+        const list = (data?.data && Array.isArray(data.data)) ? data.data
+                   : Array.isArray(data) ? data : []
+
+        // Lọc bỏ admin/manager
+        const relevant = list.filter(u => {
+          const rName = (u.role?.role_name || u.role?.name || u.role_name || '').toLowerCase()
+          const rId   = Number(u.role_id)
+          return !['admin', 'manager'].includes(rName) && ![1, 2].includes(rId)
+        })
+
+        const STAFF_ROLES = ['staff', 'trainer', 'receptionist']
+        this.stats.totalStaff = relevant.filter(u => {
+          const r = (u.role?.role_name || u.role?.name || u.role_name || '').toLowerCase()
+          return STAFF_ROLES.includes(r)
+        }).length
+
+        this.stats.activeMembers = relevant.filter(u => {
+          const r = (u.role?.role_name || u.role?.name || u.role_name || '').toLowerCase()
+          return r === 'member' && u.state === 'active'
+        }).length
+
+        // Tỉ lệ tài khoản đang hoạt động (active / tổng)
+        const activeCount = relevant.filter(u => u.state === 'active').length
+        this.stats.operationalHealth = relevant.length
+          ? Math.round((activeCount / relevant.length) * 100) + '%'
+          : '0%'
+      } catch (e) {
+        console.warn('fetchStats error:', e.message)
+        this.stats.operationalHealth = '—'
       }
     },
 
@@ -641,45 +692,50 @@ export default {
         const mem = u.member_profile
         const sub = u.active_subscription
 
+        const genderMap = { male: 'Nam', female: 'Nữ', other: 'Khác' }
+
         if (person.role === 'member') {
-          // Build member detail
+          // Build member detail từ dữ liệu thực DB
+          const subscriptions = u.subscriptions || (sub ? [sub] : [])
           this.selectedPerson.detail = {
-            phone: u.phone || '—',
-            email: u.email || '—',
-            sobuoiTap: 0,
-            mucTieu: mem?.health_notes || 'Chưa có thông tin',
-            tienSuYTe: mem?.health_notes || 'Chưa có thông tin',
-            dichVu: sub ? [{
-              id: sub.id,
-              name: sub.plan?.name || 'Gói tập',
-              expire: sub.end_date ? new Date(sub.end_date).toLocaleDateString('vi-VN') : null,
-              remain: null,
-              badgeClass: sub.status === 'active' ? 'badge-active-green' : 'badge-yellow',
-              badgeLabel: sub.status === 'active' ? 'ĐANG HOẠT ĐỘNG' : 'TẠM NGƯNG',
-            }] : [],
+            phone:    u.phone || mem?.phone || '—',
+            email:    u.email || '—',
+            ngaySinh: mem?.date_of_birth
+              ? new Date(mem.date_of_birth).toLocaleDateString('vi-VN')
+              : '—',
+            gioiTinh: genderMap[u.gender || mem?.gender] || '—',
+            maThe:    u.card_number || mem?.card_number || '—',
+            mucTieu:  mem?.health_notes || mem?.goal || 'Chưa có thông tin',
+            dichVu: subscriptions.map(s => ({
+              id:         s.id,
+              name:       s.plan?.plan_name || s.plan?.name || s.plan_name || 'Gói tập',
+              expire:     s.end_date ? new Date(s.end_date).toLocaleDateString('vi-VN') : null,
+              remain:     s.remaining_sessions ?? null,
+              badgeClass: s.state === 'active' ? 'badge-active-green' : 'badge-yellow',
+              badgeLabel: s.state === 'active' ? 'ĐANG HOẠT ĐỘNG'
+                        : s.state === 'pending' ? 'CHỜ THANH TOÁN' : 'TẠM NGƯNG',
+            })),
           }
         } else {
-          // Build staff detail
+          // Build staff/trainer detail từ dữ liệu thực DB
           const salary = emp?.salary
             ? Number(emp.salary).toLocaleString('vi-VN') + ' VND'
             : '—'
 
+          // Trainer có thêm trường chuyên môn
+          const trainer = u.trainer_profile || u.trainer
+
           this.selectedPerson.detail = {
-            chucDanh: emp?.position || u.role?.role_name || u.role?.name || '—',
-            chiNhanh: u.branch?.name || '—',
-            namsanXuat: emp?.hire_date
-              ? new Date(emp.hire_date).toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })
-              : '—',
-            luongCoBan: salary,
-            loaiHopDong: emp?.department || 'Toàn thời gian',
-            chungChi: [],
-            hieuSuat: [
-              { month: 'T1', value: 50, highlight: false },
-              { month: 'T2', value: 65, highlight: false },
-              { month: 'T3', value: 80, highlight: false },
-              { month: 'T4', value: 72, highlight: true },
-              { month: 'T5', value: 58, highlight: false },
-            ],
+            phone:       u.phone || emp?.phone || '—',
+            chucDanh:    emp?.position || u.role?.role_name || u.role?.name || '—',
+            chiNhanh:    u.branch?.name || '—',
+            namsanXuat:  emp?.hire_date
+              ? new Date(emp.hire_date).toLocaleDateString('vi-VN')
+              : (u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : '—'),
+            luongCoBan:  salary,
+            loaiHopDong: emp?.department || emp?.contract_type || 'Toàn thời gian',
+            chuyenMon:   trainer?.specialization || null,
+            chungChi:    trainer?.certifications ? [trainer.certifications] : [],
           }
         }
       } catch (err) {
@@ -707,6 +763,7 @@ export default {
         this.showAddModal = false
         this.addForm = { name: '', email: '', password: '', role_id: '', phone: '', gender: 'male', state: 'active' }
         await this.fetchUsers(1)
+        this.fetchStats()
       } catch (err) {
         const msg = err?.response?.data?.message
         if (err?.response?.data?.errors) {

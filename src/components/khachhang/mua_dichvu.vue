@@ -653,19 +653,26 @@ export default {
     async applyPromo() {
       if (!this.promoCode.trim()) return
       this.applyingPromo = true
+      this.promoResult   = null
       try {
-        const res = await axios.get(`/api/promotions/check?code=${encodeURIComponent(this.promoCode)}`)
+        const res   = await axios.get(`/api/promotions/check?code=${encodeURIComponent(this.promoCode.trim())}`)
         const promo = res.data
         if (promo?.is_valid) {
-          const discounted = Math.round(this.purchaseTarget.price * (1 - promo.discount / 100))
+          const discountPct = parseFloat(promo.discount) || 0
+          const discounted  = Math.round(this.purchaseTarget.price * (1 - discountPct / 100))
           this.appliedPromotionId = promo.id
-          this.promoResult = { valid: true, message: `Áp dụng thành công! Giảm ${promo.discount}%`, finalPrice: discounted }
+          this.promoResult = {
+            valid:      true,
+            message:    `Áp dụng thành công! Giảm ${discountPct}% — Tiết kiệm ${this.formatPrice(this.purchaseTarget.price - discounted)} VND`,
+            finalPrice: discounted,
+          }
         } else {
-          this.promoResult = { valid: false, message: 'Mã không hợp lệ hoặc đã hết hạn.' }
+          this.promoResult        = { valid: false, message: promo.message || 'Mã không hợp lệ hoặc đã hết hạn.' }
           this.appliedPromotionId = null
         }
-      } catch {
-        this.promoResult = { valid: false, message: 'Mã không hợp lệ hoặc đã hết hạn.' }
+      } catch (err) {
+        const msg = err?.response?.data?.message || 'Mã không hợp lệ hoặc đã hết hạn.'
+        this.promoResult        = { valid: false, message: msg }
         this.appliedPromotionId = null
       } finally {
         this.applyingPromo = false
