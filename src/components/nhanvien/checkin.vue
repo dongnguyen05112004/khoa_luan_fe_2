@@ -52,10 +52,21 @@
             <!-- Time -->
             <div class="f-time">{{ item.time }}</div>
 
-            <!-- Badge + note -->
+            <!-- Badge + note + Checkout -->
             <div class="f-badge-col">
               <span class="f-badge" :class="'fbadge-' + item.statusType">{{ item.status }}</span>
               <span v-if="item.note" class="f-note">{{ item.note }}</span>
+              <button
+                v-if="item.statusType === 'in'"
+                class="btn-feed-checkout"
+                :disabled="item._coLoading"
+                @click="checkoutRow(item)"
+                title="Check-out hội viên này"
+              >
+                <i class="fas fa-spinner fa-spin" v-if="item._coLoading"></i>
+                <i class="fas fa-sign-out-alt" v-else></i>
+                {{ item._coLoading ? '...' : 'Check-out' }}
+              </button>
             </div>
           </div>
         </div>
@@ -163,130 +174,192 @@
 </template>
 
 <script>
+import axios from 'axios'
+
+const COLORS = ['#2d7a3a','#0d47a1','#b71c1c','#4e342e','#00838f','#6a1b9a','#e65100']
+
 export default {
   name: 'Checkin',
   data() {
     return {
-      activeCount: 43,
-      analyticsRate: 88,
-      avgPerHour: 4.3,
-      todayTotal: 142,
+      activeCount: 0,
+      analyticsRate: 0,
+      avgPerHour: 0,
+      todayTotal: 0,
       searchPhone: '',
       foundMember: null,
       checkinSuccess: false,
       checkinSuccessName: '',
-
-      liveFeed: [
-        {
-          id: 1,
-          name: 'Nguyễn Thuy Linh',
-          memberId: 'MBR-0124',
-          initials: 'NL',
-          color: '#2d7a3a',
-          time: '14:22:10',
-          status: 'Trong Phòng',
-          statusType: 'in',
-          note: '',
-          isNew: false,
-        },
-        {
-          id: 2,
-          name: 'Lê Hoàng Nam',
-          memberId: 'MBR-0891',
-          initials: 'LN',
-          color: '#b71c1c',
-          time: '14:21:45',
-          status: 'THẤT BẠI',
-          statusType: 'fail',
-          note: 'kết nối hội viên',
-          isNew: false,
-        },
-        {
-          id: 3,
-          name: 'Trần Mỹ Hạnh',
-          memberId: 'MBR-0334',
-          initials: 'TH',
-          color: '#0d47a1',
-          time: '14:18:02',
-          status: 'Check-in',
-          statusType: 'checkin',
-          note: 'check-in OK',
-          isNew: false,
-        },
-        {
-          id: 4,
-          name: 'Vũ Đức Anh',
-          memberId: 'MBR-0512',
-          initials: 'VA',
-          color: '#4e342e',
-          time: '14:15:30',
-          status: 'SUCCESS',
-          statusType: 'success',
-          note: '',
-          isNew: false,
-        },
-      ],
-
-      memberDB: [
-        {
-          phone: '0901234567',
-          name: 'Nguyễn Văn Hùng',
-          memberId: 'MBR-765',
-          initials: 'NH',
-          color: '#00838f',
-          label: 'Hội viên tích lũy lội',
-          expire: '12/04/2025 - 08:30',
-          statusType: 'ok',
-        },
-        {
-          phone: '0987654321',
-          name: 'Lê Thị Thu Thao',
-          memberId: 'MBR-100',
-          initials: 'LT',
-          color: '#2d7a3a',
-          label: 'Hội viên tích lũy lội',
-          expire: '30/04/2025 - 09:00',
-          statusType: 'warn',
-        },
-      ],
+      searchLoading: false,
+      liveFeed: [],
+      _searchTimer: null,
+      _pollTimer: null,
+      currentUser: null,
     }
   },
+
+  async mounted() {
+    try { this.currentUser = JSON.parse(localStorage.getItem('user')) } catch {}
+    await Promise.all([this.loadFeed(), this.loadStats()])
+    this._pollTimer = setInterval(() => this.loadFeed(), 30000)
+  },
+
+  beforeUnmount() {
+    clearInterval(this._pollTimer)
+    clearTimeout(this._searchTimer)
+  },
+
   methods: {
-    onSearch() {
-      const q = this.searchPhone.trim()
-      if (q.length < 4) { this.foundMember = null; return }
-      this.foundMember = this.memberDB.find(
-        m => m.phone.includes(q) || m.memberId.toLowerCase().includes(q.toLowerCase())
-      ) || null
+    /* ─── helpers ─── */
+    _initials(name) {
+      const p = (name || '').trim().split(' ')
+      return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : (name||'??').slice(0,2)).toUpperCase()
     },
-    confirmCheckin() {
+    _color(id) { return COLORS[(id || 0) % COLORS.length] },
+    _fmtTime(isoStr) {
+      const d = new Date(isoStr), z = n => String(n).padStart(2,'0')
+      return `${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`
+    },
+    _mapRow(c) {
+      const name = c.user?.full_name || c.user?.name || '---'
+      return {
+        id:          c.id,
+        name,
+        memberId:    c.user?.card_number || `ID-${c.user_id}`,
+        initials:    this._initials(name),
+        color:       this._color(c.user_id),
+        time:        this._fmtTime(c.check_in_at),
+        status:      c.check_out_at ? 'Đã Ra' : 'Trong Phòng',
+        statusType:  c.check_out_at ? 'success' : 'in',
+        note:        c.notes || '',
+        isNew:       false,
+        _checkinAt:  c.check_in_at,
+        _coLoading:  false,
+      }
+    },
+
+    /* ─── load live feed ─── */
+    async loadFeed() {
+      try {
+        const today = new Date().toISOString().slice(0,10)
+        const res = await axios.get(`/api/checkins?date=${today}&per_page=15`)
+        const rows = res.data.data ?? res.data ?? []
+        this.liveFeed = rows.map(c => this._mapRow(c))
+        this.activeCount = this.liveFeed.filter(r => r.statusType === 'in').length
+      } catch (e) { console.error('loadFeed:', e) }
+    },
+
+    /* ─── analytics ─── */
+    async loadStats() {
+      try {
+        const today = new Date().toISOString().slice(0,10)
+        const [sRes, cRes] = await Promise.all([
+          axios.get('/api/members/stats'),
+          axios.get(`/api/checkins?date=${today}&per_page=1`),
+        ])
+        const active = sRes.data.total_active || 0
+        this.todayTotal = cRes.data.total ?? cRes.data.meta?.total ?? 0
+        this.analyticsRate = active > 0 ? Math.round((this.todayTotal / active) * 100) : 0
+        const hr = new Date().getHours() || 1
+        this.avgPerHour = +(this.todayTotal / hr).toFixed(1)
+      } catch (e) { console.error('loadStats:', e) }
+    },
+
+    /* ─── tìm kiếm hội viên (debounce 400ms) ─── */
+    onSearch() {
+      clearTimeout(this._searchTimer)
+      const q = this.searchPhone.trim()
+      if (q.length < 3) { this.foundMember = null; return }
+      this._searchTimer = setTimeout(() => this._doSearch(q), 400)
+    },
+    async _doSearch(q) {
+      this.searchLoading = true
+      try {
+        const res = await axios.get('/api/members/search', { params: { q, limit: 5 } })
+        const list = res.data || []
+        if (!list.length) { this.foundMember = null; return }
+        const m = list[0]
+        const name = m.full_name || m.name || '---'
+        this.foundMember = {
+          id:         m.id,
+          name,
+          initials:   this._initials(name),
+          color:      this._color(m.id),
+          label:      m.status === 'active'  ? 'Hội viên đang hoạt động'
+                    : m.status === 'expired' ? 'Hội viên đã hết hạn'
+                    : 'Hội viên tạm khóa',
+          expire:     m.card_number || m.phone || '',
+          statusType: m.status,
+          branch_id:  m.branch_id ?? null,
+        }
+      } catch (e) {
+        console.error('search:', e)
+        this.foundMember = null
+      } finally { this.searchLoading = false }
+    },
+
+    /* ─── xác nhận check-in ─── */
+    async confirmCheckin() {
       if (!this.foundMember) return
-      const member = { ...this.foundMember }
+      const m = { ...this.foundMember }
       const now = new Date()
-      const h   = String(now.getHours()).padStart(2, '0')
-      const min = String(now.getMinutes()).padStart(2, '0')
-      const s   = String(now.getSeconds()).padStart(2, '0')
-      this.liveFeed.unshift({
-        id: Date.now(),
-        name: member.name,
-        memberId: member.memberId,
-        initials: member.initials,
-        color: member.color,
-        time: `${h}:${min}:${s}`,
-        status: 'Trong Phòng',
-        statusType: 'in',
-        note: '',
-        isNew: true,
-      })
-      if (this.liveFeed.length > 4) this.liveFeed.pop()
-      this.checkinSuccessName = member.name
-      this.checkinSuccess = true
-      this.activeCount++
-      this.todayTotal++
-      this.searchPhone = ''
-      this.foundMember = null
-      setTimeout(() => { this.checkinSuccess = false }, 3000)
-      setTimeout(() => { if (this.liveFeed[0]) this.liveFeed[0].isNew = false }, 1500)
+      const z = n => String(n).padStart(2,'0')
+      const timeStr = `${z(now.getHours())}:${z(now.getMinutes())}:${z(now.getSeconds())}`
+      try {
+        const res = await axios.post('/api/checkins', {
+          user_id:      m.id,
+          branch_id:    m.branch_id || null,
+          check_in_at:  now.toISOString().slice(0,19).replace('T',' '),
+          method:       'manual',
+          notes:        `Thủ công – ${this.currentUser?.full_name || this.currentUser?.name || 'NV'}`,
+        })
+        /* push lên đầu feed */
+        const newRow = this._mapRow({
+          ...res.data,
+          user: { full_name: m.name, card_number: m.expire, id: m.id },
+        })
+        newRow.isNew = true
+        newRow.time  = timeStr
+        this.liveFeed.unshift(newRow)
+        if (this.liveFeed.length > 15) this.liveFeed.pop()
+
+        this.checkinSuccessName = m.name
+        this.checkinSuccess     = true
+        this.activeCount++
+        this.todayTotal++
+        this.searchPhone  = ''
+        this.foundMember  = null
+
+        setTimeout(() => { this.checkinSuccess = false }, 3000)
+        setTimeout(() => { if (this.liveFeed[0]) this.liveFeed[0].isNew = false }, 1500)
+      } catch (e) {
+        console.error('confirmCheckin:', e)
+        const msg = e.response?.data?.message || e.response?.data?.error || e.message
+        alert('Check-in thất bại: ' + msg)
+      }
+    },
+    /* ─── check-out hội viên từ feed ─── */
+    async checkoutRow(item) {
+      if (item._coLoading) return
+      item._coLoading = true
+      try {
+        const now = new Date()
+        const outStr = now.toISOString().slice(0,19).replace('T',' ')
+        const mins = Math.round((now - new Date(item._checkinAt || now)) / 60000)
+        await axios.put(`/api/checkins/${item.id}`, {
+          check_out_at: outStr,
+          duration: mins,
+        })
+        item.status     = 'Đã Ra'
+        item.statusType = 'success'
+        item.note       = `Ra lúc ${this._fmtTime(now.toISOString())} (${mins < 60 ? mins + ' phút' : Math.floor(mins/60) + 'h' + (mins%60 ? (mins%60)+'m' : '')})`
+        this.activeCount = Math.max(0, this.activeCount - 1)
+      } catch (e) {
+        const msg = e.response?.data?.message || e.response?.data?.error || 'Check-out thất bại'
+        alert(msg)
+      } finally {
+        item._coLoading = false
+      }
     },
   },
 }
@@ -481,9 +554,35 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 3px;
+  gap: 4px;
   flex-shrink: 0;
   min-width: 90px;
+}
+
+.btn-feed-checkout {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.16s;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(234,88,12,0.28);
+}
+.btn-feed-checkout:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(234,88,12,0.4);
+}
+.btn-feed-checkout:disabled {
+  background: #fed7aa; color: #c2410c; cursor: not-allowed; box-shadow: none;
 }
 .f-badge {
   font-size: 0.66rem;
