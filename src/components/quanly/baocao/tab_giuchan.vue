@@ -25,6 +25,73 @@
       </div>
     </div>
 
+    <!-- AI Strategic Insights -->
+    <!-- AI Strategic Insights Loading -->
+    <div v-if="isLoadingReport" class="ai-strategy-card">
+      <div class="strategy-header">
+        <div class="title-with-icon">
+          <div class="ai-icon-pulse loading">
+            <i class="fas fa-circle-notch fa-spin"></i>
+          </div>
+          <div>
+            <div class="skeleton-text" style="width: 200px; height: 1.2rem; background: #e2e8f0; border-radius: 4px; margin-bottom: 8px;"></div>
+            <div class="skeleton-text" style="width: 150px; height: 0.8rem; background: #f1f5f9; border-radius: 4px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="strategy-content">
+        <div class="diagnosis-box skeleton-pulse" style="height: 120px; background: #f8fafc;"></div>
+        <div class="suggestions-box skeleton-pulse" style="height: 120px; background: #f8fafc;"></div>
+      </div>
+    </div>
+
+    <!-- AI Strategic Insights -->
+    <div v-if="globalReport && !isLoadingReport" class="ai-strategy-card">
+      <div class="strategy-header">
+        <div class="title-with-icon">
+          <div class="ai-icon-pulse">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div>
+            <h4 class="m-0">{{ globalReport.title || 'Chiến lược giữ chân hội viên (AI Insight)' }}</h4>
+            <p class="text-muted small m-0">Phân tích hệ thống dựa trên dữ liệu thời gian thực</p>
+          </div>
+        </div>
+        <div class="strategy-metrics">
+          <div class="s-metric">
+            <span class="s-label">Tỷ lệ giữ chân</span>
+            <span class="s-value">{{ globalReport.key_metrics?.retention_rate || 'N/A' }}</span>
+          </div>
+          <div class="s-metric">
+            <span class="s-label">Nhóm rủi ro</span>
+            <span class="s-value text-red">{{ globalReport.key_metrics?.risk_group || 'N/A' }}</span>
+          </div>
+          <div class="s-metric">
+            <span class="s-label">Xu hướng</span>
+            <span class="s-value">{{ globalReport.key_metrics?.trend || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="strategy-content">
+        <div class="diagnosis-box">
+          <h5><i class="fas fa-stethoscope mr-2"></i> Chẩn đoán hệ thống</h5>
+          <p>{{ globalReport.ai_diagnosis }}</p>
+        </div>
+        <div class="suggestions-box">
+          <h5><i class="fas fa-lightbulb mr-2"></i> Chiến lược đề xuất</h5>
+          <div class="suggestion-grid">
+            <template v-for="(sug, idx) in (globalReport.ai_suggestions || '').split('\n')">
+              <div :key="idx" class="sug-item" v-if="sug.trim()">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ sug.replace(/^- /, '').replace(/^\* /, '') }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Section header -->
     <div class="section-bar">
       <h3 class="section-title">Phân tích tỷ lệ giữ chân hội viên</h3>
@@ -175,6 +242,9 @@ export default {
       members: [],
       selectedMember: null,
       showModal: false,
+      globalReport: null,
+      isLoadingReport: false,
+      rawMetrics: null 
     }
   },
   computed: {
@@ -215,9 +285,27 @@ export default {
     }
   },
   mounted() {
+    this.fetchRetentionAnalysis();
     this.fetchChurnPredictions();
   },
   methods: {
+    async fetchRetentionAnalysis() {
+      this.isLoadingReport = true;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.post('http://127.0.0.1:8000/api/manager/retention-analysis', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data) {
+          this.globalReport = res.data;
+          // Nếu BE trả về thêm thông tin metadata hoặc mình muốn map lại
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy phân tích giữ chân', error);
+      } finally {
+        this.isLoadingReport = false;
+      }
+    },
     async fetchChurnPredictions() {
       try {
         const token = localStorage.getItem('token');
@@ -400,4 +488,155 @@ export default {
 .text-green { color:#16a34a; }
 .mr-2 { margin-right:8px; margin-top:2px; }
 .mt-3 { margin-top:16px; }
+.m-0 { margin: 0; }
+.text-red { color: #dc2626 !important; }
+
+/* AI Strategy Card Premium Styles */
+.ai-strategy-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-strategy-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #7c3aed, #6366f1);
+}
+
+.strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ai-icon-pulse {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.5rem;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+  animation: pulse-glow 3s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.strategy-metrics {
+  display: flex;
+  gap: 30px;
+}
+
+.s-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.s-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.s-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.strategy-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.diagnosis-box, .suggestions-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.diagnosis-box h5, .suggestions-box h5 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #334155;
+  display: flex;
+  align-items: center;
+}
+
+.diagnosis-box p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.suggestion-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.sug-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #1e293b;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  border: 1px solid #dcfce7;
+}
+
+.sug-item i {
+  color: #16a34a;
+  margin-top: 3px;
+}
+
+.skeleton-pulse {
+  animation: skeleton-loading 1.5s infinite linear alternate;
+}
+
+@keyframes skeleton-loading {
+  0% { background-color: #f1f5f9; }
+  100% { background-color: #e2e8f0; }
+}
+
+@media (max-width: 768px) {
+  .strategy-content { grid-template-columns: 1fr; }
+  .strategy-header { flex-direction: column; align-items: flex-start; }
+  .strategy-metrics { width: 100%; justify-content: space-between; gap: 10px; }
+  .s-metric { align-items: flex-start; }
+}
 </style>
