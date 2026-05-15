@@ -8,8 +8,7 @@
           <img src="https://ui-avatars.com/api/?name=Admin&background=ffffff&color=2d7a3a&bold=true&size=40" alt="Admin" />
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
-          <div class="brand-title">SMARTGYM AI</div>
-          <div class="brand-sub">Management Panel</div>
+          <div class="brand-title">SMARTGYM AI</div> 
         </div>
       </div>
 

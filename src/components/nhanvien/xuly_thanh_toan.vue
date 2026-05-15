@@ -144,57 +144,63 @@
                     Vui lòng quét mã QR hoặc nhập thông tin bên dưới để hoàn tất giao dịch.
                   </div>
                 </div>
-                <div class="qr-wrap">
-                  <img
-                    :src="qrUrl"
-                    class="qr-img"
-                    alt="QR Code"
-                    @error="onQrError"
-                    @click="showQrModal = true"
-                    title="Nhấn để phóng to"
-                  />
-                  <div class="qr-label">
-                    <i class="fas fa-expand-alt" style="font-size:0.6rem;margin-right:3px"></i>Scan QR
-                  </div>
-                  <div class="qr-bank-badge">
-                    <span class="qr-bank-name-text">{{ bankConfig.bankName }}</span>
-                  </div>
-                </div>
               </div>
 
-              <div class="bank-info-grid">
-                <div class="bank-info-item">
-                  <div class="bi-label">NGÂN HÀNG</div>
-                  <div class="bi-val">{{ bankConfig.bankName }}</div>
-                </div>
-                <div class="bank-info-item">
-                  <div class="bi-label">SỐ TIỀN THANH TOÁN</div>
-                  <div class="bi-val bi-amount">{{ formatVND(total) }} đ</div>
-                </div>
-                <div class="bank-info-item">
-                  <div class="bi-label">CHỦ TÀI KHOẢN</div>
-                  <div class="bi-val">{{ bankConfig.bankOwner }}</div>
-                </div>
-                <div class="bank-info-item">
-                  <div class="bi-label">ĐỊA ĐIỂM</div>
-                  <div class="bi-val">Hồ Chí Minh – Quận 1</div>
-                </div>
-                <div class="bank-info-item bank-info-full">
-                  <div class="bi-label">SỐ TÀI KHOẢN</div>
-                  <div class="bi-val bi-copy-row">
-                    <span class="bi-account-num">{{ bankConfig.bankAcc }}</span>
-                    <button class="btn-copy" :class="{ copied: copiedKey === 'account' }" @click="copyText(bankConfig.bankAcc, 'account')">
-                      <i :class="copiedKey === 'account' ? 'fas fa-check' : 'fas fa-copy'"></i>
-                    </button>
+              <div class="bank-transfer-body">
+                <div class="bank-info-grid">
+                  <div class="bank-info-item">
+                    <div class="bi-label">NGÂN HÀNG</div>
+                    <div class="bi-val">{{ bankConfig.bankName }}</div>
+                  </div>
+                  <div class="bank-info-item">
+                    <div class="bi-label">SỐ TIỀN THANH TOÁN</div>
+                    <div class="bi-val bi-amount">{{ formatVND(total) }} đ</div>
+                  </div>
+                  <div class="bank-info-item">
+                    <div class="bi-label">CHỦ TÀI KHOẢN</div>
+                    <div class="bi-val">{{ bankConfig.bankOwner }}</div>
+                  </div>
+                  <div class="bank-info-item">
+                    <div class="bi-label">ĐỊA ĐIỂM</div>
+                    <div class="bi-val">Hồ Chí Minh – Quận 1</div>
+                  </div>
+                  <div class="bank-info-item bank-info-full">
+                    <div class="bi-label">SỐ TÀI KHOẢN</div>
+                    <div class="bi-val bi-copy-row">
+                      <span class="bi-account-num">{{ bankConfig.bankAcc }}</span>
+                      <button class="btn-copy" :class="{ copied: copiedKey === 'account' }" @click="copyText(bankConfig.bankAcc, 'account')">
+                        <i :class="copiedKey === 'account' ? 'fas fa-check' : 'fas fa-copy'"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="bank-info-item bank-info-full">
+                    <div class="bi-label">NỘI DUNG CHUYỂN KHOẢN</div>
+                    <div class="bi-val bi-copy-row">
+                      <span class="bi-content">{{ transferContent }}</span>
+                      <button class="btn-copy" :class="{ copied: copiedKey === 'content' }" @click="copyText(transferContent, 'content')">
+                        <i :class="copiedKey === 'content' ? 'fas fa-check' : 'fas fa-copy'"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div class="bank-info-item bank-info-full">
-                  <div class="bi-label">NỘI DUNG CHUYỂN KHOẢN</div>
-                  <div class="bi-val bi-copy-row">
-                    <span class="bi-content">{{ transferContent }}</span>
-                    <button class="btn-copy" :class="{ copied: copiedKey === 'content' }" @click="copyText(transferContent, 'content')">
-                      <i :class="copiedKey === 'content' ? 'fas fa-check' : 'fas fa-copy'"></i>
-                    </button>
+
+                <div class="qr-large-wrap">
+                  <div class="qr-container-premium">
+                    <img
+                      :src="qrUrl"
+                      class="qr-img-large"
+                      alt="QR Code"
+                      @error="onQrError"
+                      @click="showQrModal = true"
+                      title="Nhấn để phóng to"
+                    />
+                    <div class="qr-overlay-text">
+                      <i class="fas fa-expand-alt"></i> Nhấn để phóng to
+                    </div>
+                  </div>
+                  <div class="qr-bank-info">
+                    <div class="qr-bank-name">{{ bankConfig.bankName }}</div>
+                    <div class="qr-scan-hint">QUÉT ĐỂ THANH TOÁN</div>
                   </div>
                 </div>
               </div>
@@ -482,12 +488,11 @@ export default {
         { key: 'card',          label: 'Thẻ tín dụng', icon: 'fas fa-credit-card' },
       ],
 
-      // Cấu hình ngân hàng cố định
-      bankConfig: {
-        bankName:  'Techcombank (TCB)',
-        bankAcc:   '19039637328012',
-        bankOwner: 'KP FITNESS GYM',
-        bankId:    '970407',
+      // Cấu hình ngân hàng (Sẽ được ghi đè bởi fetchSystemSettings)
+      systemConfig: {
+        active_bank: '1',
+        bank_id_1: '970407', bank_acc_1: '19039637328012', bank_owner_1: 'KP FITNESS GYM',
+        bank_id_2: '970436', bank_acc_2: '1032067073', bank_owner_2: 'TRAN MINH QUANG',
       },
     }
   },
@@ -497,18 +502,32 @@ export default {
       return Math.max(0, this.subtotal - this.discount)
     },
 
+    bankConfig() {
+      const active = this.systemConfig.active_bank || '1';
+      const bankId = this.systemConfig[`bank_id_${active}`] || '970407';
+      const accountNo = this.systemConfig[`bank_acc_${active}`] || '19039637328012';
+      const accountName = this.systemConfig[`bank_owner_${active}`] || 'KP FITNESS GYM';
+      
+      return {
+        bankName:  this.getBankName(bankId),
+        bankAcc:   accountNo,
+        bankOwner: accountName,
+        bankId:    bankId,
+      };
+    },
+
     selectedPlanObj() {
       return this.plans.find(p => p.id == this.selectedPlanId) || null
     },
 
-    // QR Techcombank cho số tiền hiện tại
+    // QR VietQR cho số tiền hiện tại (Tăng từ 150 lên 250)
     qrUrl() {
-      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 150)
+      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 250)
     },
 
-    // QR phóng to cho modal (300px)
+    // QR phóng to cho modal (Tăng từ 300 lên 400)
     qrUrlLarge() {
-      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 300)
+      return getVietQR(this.total, this.transferContent, this.bankConfig.bankId, this.bankConfig.bankAcc, this.bankConfig.bankOwner, 400)
     },
 
     // Nội dung chuyển khoản
@@ -528,7 +547,10 @@ export default {
     if (q.service) this.serviceName = q.service
 
     // Load danh sách gói tập
-    await this.loadPlans()
+    await Promise.all([
+      this.loadPlans(),
+      this.fetchSystemSettings()
+    ]);
 
     // Đóng suggestions khi click ra ngoài
     document.addEventListener('click', this.closeOnOutside)
@@ -544,6 +566,39 @@ export default {
     // ── Utilities ──────────────────────────────────────────────
     formatVND(amount) {
       return Number(amount || 0).toLocaleString('vi-VN')
+    },
+
+    async fetchSystemSettings() {
+      try {
+        const { data } = await axios.get('/api/system-settings')
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            this.systemConfig[item.setting_key] = item.setting_value
+          })
+        }
+      } catch (e) {
+        console.warn('Lỗi lấy settings:', e)
+      }
+    },
+
+    getBankName(bin) {
+      const banks = {
+        '970418': 'BIDV',
+        '970436': 'Vietcombank',
+        '970415': 'VietinBank',
+        '970422': 'MBBank',
+        '970423': 'TPBank',
+        '970432': 'VPBank',
+        '970416': 'ACB',
+        '970403': 'Sacombank',
+        '970441': 'VIB',
+        '970405': 'Agribank',
+        '970407': 'Techcombank',
+        '970437': 'HDBank',
+        '970428': 'Nam A Bank',
+        '970448': 'OCB',
+      }
+      return banks[bin] || bin
     },
 
     closeOnOutside(e) {
@@ -1589,6 +1644,87 @@ export default {
   font-size: 0.74rem;
   color: #64748b;
   margin-top: 1px;
+}
+
+.bank-transfer-body {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.qr-large-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.qr-container-premium {
+  position: relative;
+  background: white;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.qr-container-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.qr-img-large {
+  width: 250px;
+  height: 250px;
+  display: block;
+  border-radius: 8px;
+}
+
+.qr-overlay-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  font-size: 0.7rem;
+  padding: 4px 0;
+  text-align: center;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.qr-container-premium:hover .qr-overlay-text {
+  opacity: 1;
+}
+
+.qr-bank-info {
+  text-align: center;
+}
+
+.qr-bank-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.qr-scan-hint {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.bank-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .qr-modal-img-wrap {

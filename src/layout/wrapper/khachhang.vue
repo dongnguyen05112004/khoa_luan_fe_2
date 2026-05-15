@@ -9,8 +9,7 @@
           <img v-else src="@/assets/logo.png" alt="SmartGym AI Logo" />
         </div>
         <div class="brand-info" v-show="!sidebarCollapsed">
-          <div class="brand-title">{{ brandInfo.name }}</div>
-          <div class="brand-sub">Hội viên Dashboard</div>
+          <div class="brand-title">{{ brandInfo.name }}</div> 
         </div>
       </div>
 
