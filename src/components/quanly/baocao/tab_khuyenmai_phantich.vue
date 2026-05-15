@@ -1,802 +1,753 @@
 <template>
-  <div class="kp-wrap">
-
-    <!-- ── Top Stats Bar ── -->
-    <div class="top-stats-bar">
-      <div class="ts-item" v-for="s in topStats" :key="s.label">
-        <div class="ts-label">{{ s.label }}</div>
-        <div class="ts-value" :class="s.valClass">{{ s.value }}</div>
-        <div class="ts-sub" v-if="s.sub">{{ s.sub }}</div>
-      </div>
-      <!-- AI Score – special green card -->
-      <div class="ts-item ts-ai">
-        <div class="ts-ai-score">94<span class="ts-ai-denom">/100</span></div>
-        <div class="ts-ai-label">ĐIỂM TỐI ƯU AI</div>
-        <div class="ts-ai-sub"><i class="fas fa-arrow-up"></i> Phiên hiệu suất đỉnh cao</div>
-      </div>
-    </div>
-
-    <!-- ── Page Header ── -->
-    <div class="kp-header">
-      <div class="kp-header-left">
-        <h2 class="kp-title">PHÂN TÍCH HIỆU QUẢ KHUYẾN MÃI</h2>
-        <p class="kp-sub">Phân tích và tối ưu hóa chi phí tiếp thị phòng tập. Theo dõi phễu chuyển đổi và hiệu quả từng chiến dịch theo thời gian thực.</p>
-      </div>
-      <div class="kp-header-actions">
-        <button class="btn-export" @click="exportReport"><i class="fas fa-file-export"></i> Xuất báo cáo</button>
-        <button class="btn-new"><i class="fas fa-plus"></i> Chiến dịch mới</button>
-      </div>
-    </div>
-
-    <!-- ── KPI Cards Row ── -->
-    <div class="kpi-row">
-      <div class="kpi-card" v-for="k in kpiCards" :key="k.label">
-        <div class="kpi-top-row">
-          <div class="kpi-icon-box" :class="k.iconBg"><i :class="k.icon"></i></div>
-          <span class="kpi-badge-trend" :class="k.trendClass">{{ k.trend }}</span>
+  <div class="premium-analytics-container">
+    
+    <!-- ── HEADER SECTION ── -->
+    <header class="dashboard-header">
+      <div class="header-content">
+        <div class="title-group">
+          <h1 class="main-title">Phân Tích Hiệu Quả Khuyến Mãi</h1>
+          <p class="subtitle">Tối ưu hóa chiến dịch marketing dựa trên dữ liệu ROI và AI Strategic Insights</p>
         </div>
-        <div class="kpi-value">{{ k.value }}</div>
-        <div class="kpi-label">{{ k.label }}</div>
-        <div class="kpi-desc">{{ k.desc }}</div>
+        <div class="header-actions">
+          <button class="btn-secondary" @click="exportReport">
+            <i class="fas fa-file-export"></i> Xuất Báo Cáo
+          </button>
+          <button class="btn-ai-glow" @click="fetchPromotionAnalysis" :disabled="isLoadingAnalysis">
+            <div class="ai-icon-pulse" v-if="isLoadingAnalysis"></div>
+            <i class="fas" :class="isLoadingAnalysis ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i>
+            <span>{{ isLoadingAnalysis ? 'Đang phân tích...' : 'Phân tích chiến lược AI' }}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <!-- ── Funnel + Campaign Table ── -->
-    <div class="body-row">
+    <!-- ── KPI QUICK STATS ── -->
+    <section class="quick-stats-grid">
+      <!-- Thẻ Doanh thu - Đưa lên đầu -->
+      <div class="stat-card">
+        <div class="stat-icon icon-bg-2">
+          <i class="fas fa-coins"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">{{ topStats[1].label }}</span>
+          <div class="stat-value-row">
+            <h2 class="stat-value">{{ topStats[1].value }}</h2>
+            <span class="stat-sub">{{ topStats[1].sub }}</span>
+          </div>
+        </div>
+      </div>
 
-      <!-- LEFT: Funnel Chart -->
-      <div class="funnel-panel premium-card">
-        <div class="panel-title"><i class="fas fa-filter"></i> BIỂU ĐỒ PHỄU CHUYỂN ĐỔI</div>
+      <!-- Thẻ Số chiến dịch -->
+      <div class="stat-card">
+        <div class="stat-icon icon-bg-1">
+          <i class="fas fa-bullhorn"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">CHIẾN DỊCH ĐANG HOẠT ĐỘNG</span>
+          <div class="stat-value-row">
+            <h2 class="stat-value">{{ activeCampaignsCount }}</h2>
+            <span class="stat-sub">Đang triển khai</span>
+          </div>
+        </div>
+      </div>
+      
+       
+    </section>
 
-        <!-- Funnel Steps -->
-        <div class="funnel-steps">
-          <div class="funnel-step" v-for="(step, i) in funnelSteps" :key="i">
-            <div class="funnel-bar-wrap">
-              <div
-                class="funnel-bar"
-                :class="step.cls"
-                :style="{ width: step.pct + '%' }"
-              >
-                <span class="funnel-bar-label">{{ step.label }}</span>
-                <span class="funnel-bar-icon"><i :class="step.icon"></i></span>
+    <!-- ── AI ANALYSIS RESULT (GLASS CARD) ── -->
+    <transition name="fade-slide">
+      <section v-if="analysisData && !isLoadingAnalysis" class="ai-report-section">
+        <div class="glass-card result-main">
+          <div class="result-header">
+            <div class="report-badge">AI ANALYTICS REPORT</div>
+            <h3 class="report-title">{{ analysisData.ai_analysis?.title || 'Báo cáo chiến lược' }}</h3>
+          </div>
+
+          <div class="result-body">
+            <div class="diagnosis-box">
+              <div class="box-icon"><i class="fas fa-stethoscope"></i></div>
+              <div class="box-content">
+                <h4>Chẩn đoán hệ thống</h4>
+                <p>{{ analysisData.ai_analysis?.ai_diagnosis }}</p>
               </div>
             </div>
-            <div class="funnel-value">{{ step.value }}</div>
-          </div>
-        </div>
 
-        <!-- AI Insight Box -->
-        <div class="funnel-ai-box">
-          <div class="funnel-ai-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
-          <div class="funnel-ai-text">
-            <div class="funnel-ai-title">THÔNG TIN THÔNG MINH TỪ AI</div>
-            <p>Phân tích các giai đoạn chuyển đổi cho thấy sự rút giảm giữa 'Quan tâm' và 'Mua hàng' đó được cải thiện 4% sau khi thay đổi nội dung sáng tạo cho chiến dịch 'Summer Blast'.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: Campaign Comparison Table -->
-      <div class="campaign-panel premium-card">
-        <div class="panel-title-row">
-          <div class="panel-title"><i class="fas fa-chart-bar"></i> So sánh chiến dịch đang chạy</div>
-          <div class="panel-sub">Chi tiết hiệu suất theo nền tảng và loại chiến dịch.</div>
-        </div>
-
-        <!-- Table Header -->
-        <div class="camp-table">
-          <div class="camp-thead">
-            <div class="camp-th">TÊN CHIẾN DỊCH</div>
-            <div class="camp-th center">LƯỢT DÙNG</div>
-            <div class="camp-th center">CTR</div>
-            <div class="camp-th center">TRẠNG THÁI</div>
-            <div class="camp-th center">ROI</div>
-          </div>
-          <div class="camp-tbody">
-            <div class="camp-row" v-for="c in mappedCampaigns" :key="c.id || c.name">
-              <div class="camp-td camp-name-cell">
-                <div class="camp-icon-box" :class="c.iconBg"><i :class="c.icon"></i></div>
-                <div>
-                  <div class="camp-name">{{ c.name }}</div>
-                  <div class="camp-type">{{ c.type }}</div>
-                  <span class="camp-tag" v-if="c.tag">{{ c.tag }}</span>
+            <div class="highlights-grid">
+              <div class="highlight-item performer">
+                <i class="fas fa-medal"></i>
+                <div class="hl-text">
+                  <label>Chiến dịch hiệu quả nhất</label>
+                  <span>{{ analysisData.ai_analysis?.top_performer || 'N/A' }}</span>
                 </div>
               </div>
-              <div class="camp-td center camp-uses">{{ c.uses }}</div>
-              <div class="camp-td center camp-ctr">{{ c.ctr }}</div>
-              <div class="camp-td center">
-                <span class="camp-status" :class="c.statusClass">{{ c.status }}</span>
+              <div class="highlight-item roi">
+                <i class="fas fa-chart-pie"></i>
+                <div class="hl-text">
+                  <label>Phân tích ROI</label>
+                  <span>{{ analysisData.ai_analysis?.roi_analysis || 'N/A' }}</span>
+                </div>
               </div>
-              <div class="camp-td center camp-roi">{{ c.roi }}</div>
+              <div class="highlight-item action">
+                <i class="fas fa-bolt"></i>
+                <div class="hl-text">
+                  <label>Hành động ưu tiên</label>
+                  <span class="text-indigo">{{ analysisData.ai_analysis?.recommendation || 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="suggestions-list">
+              <h4>Gợi ý tối ưu hóa</h4>
+              <div class="suggestion-items">
+                <div v-for="(sug, idx) in formatSuggestions(analysisData.ai_analysis?.ai_suggestions)" :key="idx" class="sug-pill">
+                  <i class="fas fa-lightbulb"></i> {{ sug }}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- View all link -->
-        <div class="camp-view-all">
-          <a href="#" class="camp-view-link">Xem tất cả 18 chiến dịch <i class="fas fa-arrow-right"></i></a>
+        <!-- Secondary metrics from analysis -->
+        <div class="analysis-summary-grid mt-4">
+            <div class="mini-summary-card">
+                <label>Doanh thu tạo ra</label>
+                <span class="val">{{ formatCurrency(analysisData.summary?.total_revenue_generated) }}</span>
+            </div>
+            <div class="mini-summary-card">
+                <label>Chi phí chiết khấu</label>
+                <span class="val">{{ formatCurrency(analysisData.summary?.total_discount_cost) }}</span>
+            </div>
+            <div class="mini-summary-card">
+                <label>ROI Trung bình</label>
+                <span class="val">{{ analysisData.summary?.avg_roi?.toFixed(2) }}x</span>
+            </div>
+            <div class="mini-summary-card">
+                <label>Tổng lượt chuyển đổi</label>
+                <span class="val">{{ analysisData.summary?.total_usage }}</span>
+            </div>
+        </div>
+      </section>
+    </transition>
+
+    <!-- ── LOADING SKELETON ── -->
+    <section v-if="isLoadingAnalysis" class="ai-report-section">
+      <div class="glass-card skeleton-pulse" style="height: 400px;"></div>
+    </section>
+
+    <!-- ── CAMPAIGN COMPARISON TABLE ── -->
+    <section class="campaign-section mt-5">
+      <div class="section-header">
+        <h3 class="section-title"><i class="fas fa-table"></i> Hiệu suất chi tiết từng chiến dịch</h3>
+        <div class="search-filter">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Tìm kiếm chiến dịch..." />
         </div>
       </div>
-    </div>
+
+      <div class="table-responsive">
+        <table class="premium-table">
+          <thead>
+            <tr>
+              <th>Chiến Dịch</th>
+              <th>Loại</th>
+              <th>Lượt Dùng</th>
+              <th>Chuyển Đổi</th>
+              <th>Trạng Thái</th>
+              <th>ROI</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in mappedCampaigns" :key="c.id">
+              <td>
+                <div class="campaign-cell">
+                  <div class="camp-icon" :class="c.iconBg"><i :class="c.icon"></i></div>
+                  <div class="camp-name-group">
+                    <span class="camp-name">{{ c.name || c.title || 'Không có tên' }}</span>
+                    <span class="camp-tag-v2" v-if="c.tag"><i class="fas fa-magic"></i> {{ c.tag }}</span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="type-badge">{{ c.type }}</span></td>
+              <td><span class="font-bold">{{ c.uses }}</span></td>
+              <td><span class="text-muted">{{ c.ctr }}</span></td>
+              <td><span class="status-badge" :class="c.statusClass">{{ c.status }}</span></td>
+              <td>
+                <div class="roi-indicator">
+                  <div class="roi-bar-bg"><div class="roi-bar-fill" :style="{width: getRoiWidth(c.roi)}"></div></div>
+                  <span class="roi-val">{{ c.roi }}</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn-icon" title="Xem chi tiết"><i class="fas fa-external-link-alt"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
   </div>
 </template>
 
 <script>
+import axios from 'axios'
+
 export default {
   name: 'TabKhuyenMaiPhanTich',
   data() {
     return {
       topStats: [
-        { label: 'Tỉ lệ chuyển đổi trực tiếp', value: '12.4%', sub: '+2.1% so với hôm qua' },
-        { label: 'Mã khuyến mãi đang chạy', value: '18', sub: 'Trên 4 nền tảng' },
-        { label: 'Doanh thu ước tính', value: '286.500.000 VNĐ', sub: 'Tháng này' },
+        { label: 'CHIẾN DỊCH ĐANG HOẠT ĐỘNG', value: '0', sub: 'Đang triển khai' },
+        { label: 'DOANH THU TỪ KM', value: '—', sub: 'Tổng thu thực tế' },
       ],
-      kpiCards: [
-        { label: 'Tổng mã đã dùng', value: '3,842', trend: '+12% so với năm ngoái', trendClass: 'trend-green', icon: 'fas fa-ticket-alt', iconBg: 'icon-green', desc: 'Số lượng mã khuyến mãi được quy đổi bởi các cặp thành viên giảm giá.' },
-        { label: 'Doanh thu từ khuyến mãi', value: '1.164.800.000 VNĐ', trend: 'Tri Vũ', trendClass: 'trend-blue', icon: 'fas fa-coins', iconBg: 'icon-blue', desc: 'Tổng doanh thu trực tiếp tạo ra từ các lượt đăng ký có sử dụng giảm giá.' },
-        { label: 'Tỷ lệ chuyển đổi', value: '21.8%', trend: 'Tiềm năng cao', trendClass: 'trend-purple', icon: 'fas fa-percent', iconBg: 'icon-purple', desc: 'Tỷ lệ chuyển đổi tổng từ khách hàng tiếp cận sang mua thẻ thành viên.' },
-      ],
-      funnelSteps: [
-        { label: 'PHÁT HÀNH (TIẾP CẬN)', value: '142,500', pct: 100, cls: 'funnel-green',  icon: 'fas fa-bullhorn' },
-        { label: 'LƯỢT QUAN TÂM',        value: '32,140',  pct: 70,  cls: 'funnel-teal',   icon: 'fas fa-eye' },
-        { label: 'LƯỢT CHUYỂN ĐỔI',      value: '6,842',   pct: 40,  cls: 'funnel-purple', icon: 'fas fa-shopping-cart' },
-      ],
+      campaigns: [],
+      analysisData: null,
+      isLoadingAnalysis: false,
       loading: false,
       errorMsg: '',
-      showEditModal: false,
-      editingId: null,
-      editForm: { name: '', code: '', discount: 20, startDate: '', endDate: '', usage_limit: '', desc: '' },
-      editing: false,
-      editError: '',
-      campaigns: [],
     }
   },
 
   computed: {
+    activeCampaignsCount() {
+      return this.mappedCampaigns.filter(c => c.statusClass === 'status-running').length;
+    },
     mappedCampaigns() {
-      const iconMap = [
-        { icon: 'fas fa-sun',      iconBg: 'icon-yellow' },
-        { icon: 'fab fa-facebook', iconBg: 'icon-blue'   },
-        { icon: 'fas fa-user-tie', iconBg: 'icon-orange' },
-        { icon: 'fas fa-envelope', iconBg: 'icon-purple' },
-        { icon: 'fas fa-tag',      iconBg: 'icon-green'  },
-      ]
       const now = new Date()
+      const iconMap = [
+        { icon: 'fas fa-fire',     iconBg: 'bg-orange' },
+        { icon: 'fas fa-gem',      iconBg: 'bg-indigo' },
+        { icon: 'fas fa-rocket',   iconBg: 'bg-blue' },
+        { icon: 'fas fa-gift',     iconBg: 'bg-pink' },
+      ]
+
       return this.campaigns.map((c, i) => {
         const start = c.start_date ? new Date(c.start_date) : null
         const end   = c.end_date   ? new Date(c.end_date)   : null
         const isRunning = (start && end) ? (now >= start && now <= end) : c.active
         const ic = iconMap[i % iconMap.length]
+        const metric = this.analysisData?.metrics?.find(m => m.promotion_id === c.id || m.code === c.code);
+        
         return {
           id:          c.id,
-          name:        c.name,
+          name:        c.name || c.title,
+          title:       c.title,
           type:        c.target || 'KHUYẾN MÃI',
-          tag:         i === 0 ? 'HIỆU QUẢ NHẤT' : '',
+          tag:         metric?.roi >= 3 ? 'LỢI NHUẬN CAO' : (i === 0 ? 'CHIẾN DỊCH CHỦ LỰC' : ''),
           icon:        ic.icon,
           iconBg:      ic.iconBg,
-          uses:        c.usage_limit ? String(c.usage_limit) : '—',
-          ctr:         c._raw?.discount ? `${c._raw.discount}%` : '—',
+          uses:        metric ? metric.usage_count : (c.usage_limit ? String(c.usage_limit) : '0'),
+          ctr:         metric ? metric.conversion_rate : '—',
           status:      isRunning ? 'Đang chạy' : (end && now > end ? 'Đã kết thúc' : 'Sắp diễn ra'),
           statusClass: isRunning ? 'status-running' : 'status-done',
-          roi:         '—',
+          roi:         metric ? metric.roi + 'x' : '—',
         }
       })
-    },
-    statsActive() {
-      return this.campaigns.filter(c => c.active).length
-    },
+    }
   },
 
   mounted() {
-    this.fetchPromotions()
+    this.fetchPromotions();
+    // Auto fetch analysis on mount if needed
   },
 
   methods: {
-    async fetchPromotions() {
-      this.loading = true
-      this.errorMsg = ''
+    getStatIcon(i) {
+      const icons = ['fas fa-percentage', 'fas fa-bullhorn', 'fas fa-coins'];
+      return icons[i] || 'fas fa-chart-line';
+    },
+    formatCurrency(val) {
+      if (!val) return '0 VNĐ';
+      return new Intl.NumberFormat('vi-VN').format(val) + ' VNĐ';
+    },
+    formatSuggestions(sug) {
+      if (!sug) return [];
+      return sug.split('\n').map(s => s.replace(/^- /, '').replace(/^\* /, '').trim()).filter(s => s.length > 0);
+    },
+    getRoiWidth(roi) {
+      if (roi === '—') return '0%';
+      const val = parseFloat(roi);
+      return Math.min(val * 20, 100) + '%';
+    },
+    async fetchPromotionAnalysis() {
+      this.isLoadingAnalysis = true;
       try {
-        const { promotionApi } = await import('@/services/promotionApi.js')
-        const res  = await promotionApi.getAll()
-        const data = res.data
-        const list = Array.isArray(data) ? data : (data.data || [])
-        this.campaigns = list.map((p, i) => this.mapPromotion(p, i))
-      } catch (err) {
-        console.error('fetchPromotions error:', err)
-        this.errorMsg = err?.response?.data?.message || err.message || 'Lỗi tải dữ liệu'
-      } finally {
-        this.loading = false
-      }
-    },
-
-    mapPromotion(p, idx = 0) {
-      const colors   = ['#2d7a3a', '#6366f1', '#f59e0b', '#ec4899', '#14b8a6']
-      const now      = new Date()
-      const start    = p.start_date ? new Date(p.start_date) : null
-      const end      = p.end_date   ? new Date(p.end_date)   : null
-      const isActive = (start && end) ? (now >= start && now <= end) : true
-      const period   = (p.start_date && p.end_date)
-        ? `${new Date(p.start_date).toLocaleDateString('vi-VN')} – ${new Date(p.end_date).toLocaleDateString('vi-VN')}`
-        : (p.start_date ? new Date(p.start_date).toLocaleDateString('vi-VN') : 'Đang diễn ra')
-      return {
-        id:          p.id,
-        name:        p.title || p.name,
-        target:      p.description || 'Tất cả hội viên',
-        code:        p.code || '—',
-        period,
-        discount:    p.discount ? `GIẢM ${p.discount}%` : '—',
-        active:      isActive,
-        color:       colors[idx % colors.length],
-        start_date:  p.start_date,
-        end_date:    p.end_date,
-        usage_limit: p.usage_limit,
-        _raw:        p,
-      }
-    },
-
-    async deletePromo(c) {
-      if (!c) return
-      if (!confirm(`Xóa chiến dịch "${c.name}"?`)) return
-      try {
-        const { promotionApi } = await import('@/services/promotionApi.js')
-        await promotionApi.remove(c.id)
-        this.campaigns = this.campaigns.filter(x => x.id !== c.id)
-      } catch (err) {
-        alert(err?.response?.data?.message || 'Lỗi khi xóa chiến dịch')
-      }
-    },
-
-    openEdit(c) {
-      if (!c) return
-      this.editingId = c.id
-      this.editError = ''
-      const raw = c._raw || {}
-      this.editForm = {
-        name:        raw.title       || c.name || '',
-        code:        raw.code        || (c.code !== '—' ? c.code : '') || '',
-        discount:    raw.discount    != null ? raw.discount : 20,
-        startDate:   raw.start_date  ? raw.start_date.substring(0, 10) : '',
-        endDate:     raw.end_date    ? raw.end_date.substring(0, 10)   : '',
-        usage_limit: raw.usage_limit || '',
-        desc:        raw.description || '',
-      }
-      this.showEditModal = true
-    },
-
-    closeEdit() {
-      this.showEditModal = false
-      this.editingId = null
-      this.editError = ''
-    },
-
-    async submitEdit() {
-      if (!this.editForm.name) { this.editError = 'Vui lòng nhập tên chiến dịch.'; return }
-      this.editing = true
-      this.editError = ''
-      try {
-        const { promotionApi } = await import('@/services/promotionApi.js')
-        const payload = {
-          title:       this.editForm.name,
-          code:        this.editForm.code        || undefined,
-          discount:    this.editForm.discount    || undefined,
-          description: this.editForm.desc        || undefined,
-          start_date:  this.editForm.startDate   || undefined,
-          end_date:    this.editForm.endDate     || undefined,
-          usage_limit: this.editForm.usage_limit || undefined,
+        const token = localStorage.getItem('token');
+        const res = await axios.post('http://127.0.0.1:8000/api/manager/promotion-analysis', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data && res.data.data) {
+          this.analysisData = res.data.data;
+          this.updateTopStats(res.data.data.summary, res.data.data.ai_analysis);
         }
-        const res     = await promotionApi.update(this.editingId, payload)
-        const updated = res.data?.data ?? res.data
-        const idx     = this.campaigns.findIndex(x => x.id === this.editingId)
-        if (idx !== -1) this.campaigns.splice(idx, 1, this.mapPromotion(updated, idx))
-        this.closeEdit()
-      } catch (err) {
-        this.editError = err?.response?.data?.errors
-          ? Object.values(err.response.data.errors).flat().join(', ')
-          : (err?.response?.data?.message || 'Lỗi khi cập nhật')
+      } catch (error) {
+        console.error('Lỗi khi lấy phân tích khuyến mãi:', error);
       } finally {
-        this.editing = false
+        this.isLoadingAnalysis = false;
       }
     },
-
-    getCampaignById(id) {
-      return this.campaigns.find(c => c.id === id) || null
+    updateTopStats(summary, ai) {
+      if (!summary) return;
+      this.topStats[1].value = this.formatCurrency(summary.total_revenue_generated);
+    },
+    async fetchPromotions() {
+      this.loading = true;
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://127.0.0.1:8000/api/promotions', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.campaigns = res.data;
+      } catch (error) {
+        console.error('Lỗi fetch promotions:', error);
+      } finally {
+        this.loading = false;
+      }
     },
     exportReport() {
-      window.print();
+      alert('Đang trích xuất báo cáo dữ liệu...')
     }
-  },
+  }
 }
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ─── Root ─── */
-.kp-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  font-family: 'Inter', sans-serif;
+.premium-analytics-container {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100vh;
   color: #1e293b;
 }
 
-/* ─── Top Stats Bar ─── */
-.top-stats-bar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) 180px;
+/* ── HEADER ── */
+.dashboard-header {
+  margin-bottom: 32px;
+}
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.main-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  margin-bottom: 4px;
+}
+.subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+.header-actions {
+  display: flex;
   gap: 12px;
 }
-.ts-item {
-  background: #ffffff;
+
+/* Buttons */
+.btn-secondary {
+  padding: 10px 20px;
+  background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 16px 18px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ts-label {
-  font-size: 0.68rem;
+  border-radius: 12px;
   font-weight: 600;
+  font-size: 0.88rem;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  background: #f1f5f9;
+}
+
+.btn-ai-glow {
+  position: relative;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+.btn-ai-glow:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+}
+.btn-ai-glow:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── STAT CARDS ── */
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+}
+.stat-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+.icon-bg-0 { background: #eef2ff; color: #4f46e5; }
+.icon-bg-1 { background: #fff7ed; color: #f59e0b; }
+.icon-bg-2 { background: #f0fdf4; color: #10b981; }
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.ts-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.1;
-}
-.ts-sub {
-  font-size: 0.72rem;
-  color: #10b981;
-  font-weight: 600;
-}
-
-/* AI Score Card */
-.ts-ai {
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  border-color: #16a34a;
-  color: #fff;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(22,163,74,0.3);
-}
-.ts-ai-score {
-  font-size: 2.4rem;
-  font-weight: 900;
-  color: #fff;
-  line-height: 1;
-}
-.ts-ai-denom {
-  font-size: 1rem;
-  font-weight: 600;
-  opacity: 0.8;
-}
-.ts-ai-label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: rgba(255,255,255,0.9);
-  letter-spacing: 0.5px;
-}
-.ts-ai-sub {
-  font-size: 0.68rem;
-  color: rgba(255,255,255,0.75);
-}
-
-/* ─── Page Header ─── */
-.kp-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 16px;
-}
-.kp-title {
-  margin: 0 0 6px;
-  font-size: 1.45rem;
-  font-weight: 900;
-  color: #0f172a;
-  letter-spacing: -0.5px;
-}
-.kp-sub {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #64748b;
-  max-width: 520px;
-  line-height: 1.6;
-}
-.kp-header-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-  align-items: center;
-}
-.btn-export {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-export:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-}
-.btn-new {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #16a34a, #15803d);
-  font-size: 0.83rem;
-  font-weight: 700;
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(22,163,74,0.3);
-  transition: all 0.2s;
-}
-.btn-new:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(22,163,74,0.4);
-}
-
-/* ─── KPI Cards ─── */
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-.kpi-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: all 0.25s;
-}
-.kpi-card:hover {
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
-  border-color: #cbd5e1;
-}
-.kpi-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 4px;
 }
-.kpi-icon-box {
-  width: 38px; height: 38px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.9rem;
-}
-.icon-green  { background: #dcfce7; color: #16a34a; }
-.icon-blue   { background: #dbeafe; color: #2563eb; }
-.icon-purple { background: #ede9fe; color: #7c3aed; }
-.icon-yellow { background: #fef9c3; color: #ca8a04; }
-.icon-orange { background: #ffedd5; color: #ea580c; }
-
-.kpi-badge-trend {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 20px;
-}
-.trend-green  { background: #dcfce7; color: #16a34a; }
-.trend-blue   { background: #dbeafe; color: #2563eb; }
-.trend-purple { background: #ede9fe; color: #7c3aed; }
-
-.kpi-value {
-  font-size: 1.7rem;
-  font-weight: 900;
-  color: #0f172a;
-  line-height: 1.1;
-}
-.kpi-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #334155;
-}
-.kpi-desc {
-  font-size: 0.72rem;
-  color: #94a3b8;
-  line-height: 1.5;
-}
-
-/* ─── Body Row: Funnel + Table ─── */
-.body-row {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-/* Premium Card Base */
-.premium-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-}
-
-.panel-title {
-  font-size: 0.78rem;
+.stat-value {
+  font-size: 1.15rem;
   font-weight: 800;
-  color: #0f172a;
-  letter-spacing: 0.3px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 18px;
-}
-.panel-title i { color: #7c3aed; }
-
-/* ─── Funnel Panel ─── */
-.funnel-panel {
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.funnel-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.funnel-step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.funnel-bar-wrap {
-  flex: 1;
-}
-.funnel-bar {
-  height: 52px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  transition: width 0.6s cubic-bezier(.22,.68,0,1.2);
-}
-.funnel-bar-label {
-  font-size: 0.63rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 0.3px;
-}
-.funnel-bar-icon {
-  color: rgba(255,255,255,0.8);
-  font-size: 0.85rem;
-}
-.funnel-green  { background: linear-gradient(90deg, #16a34a, #22c55e); }
-.funnel-teal   { background: linear-gradient(90deg, #7c3aed, #8b5cf6); }
-.funnel-purple { background: linear-gradient(90deg, #a855f7, #c084fc); }
-
-.funnel-value {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #0f172a;
-  min-width: 68px;
-  text-align: right;
-}
-
-/* AI insight box */
-.funnel-ai-box {
-  display: flex;
-  gap: 12px;
-  background: #f8f5ff;
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
-  padding: 14px;
-}
-.funnel-ai-icon {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-.funnel-ai-title {
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #7c3aed;
-  letter-spacing: 0.4px;
-  margin-bottom: 5px;
-}
-.funnel-ai-text p {
   margin: 0;
-  font-size: 0.73rem;
-  color: #475569;
-  line-height: 1.55;
-}
-
-/* ─── Campaign Panel ─── */
-.campaign-panel {
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-}
-.panel-title-row {
-  margin-bottom: 16px;
-}
-.panel-title-row .panel-title {
-  margin-bottom: 4px;
-}
-.panel-sub {
-  font-size: 0.73rem;
-  color: #94a3b8;
-}
-
-/* Table */
-.camp-table {
-  flex: 1;
-}
-.camp-thead {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.2fr 0.8fr;
-  gap: 4px;
-  padding: 0 6px 10px;
-  border-bottom: 1px solid #f1f5f9;
-}
-.camp-th {
-  font-size: 0.63rem;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.4px;
-}
-.camp-th.center { text-align: center; }
-
-.camp-tbody {
-  display: flex;
-  flex-direction: column;
-}
-.camp-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.2fr 0.8fr;
-  gap: 4px;
-  padding: 12px 6px;
-  border-bottom: 1px solid #f8fafc;
-  align-items: center;
-  transition: background 0.15s;
-}
-.camp-row:hover { background: #f8fafc; border-radius: 10px; }
-.camp-row:last-child { border-bottom: none; }
-
-.camp-td { font-size: 0.82rem; color: #334155; }
-.camp-td.center { text-align: center; }
-
-.camp-name-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.camp-icon-box {
-  width: 34px; height: 34px;
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.82rem;
-  flex-shrink: 0;
-}
-.camp-name {
-  font-size: 0.83rem;
-  font-weight: 700;
-  color: #0f172a;
-  line-height: 1.3;
-}
-.camp-type {
-  font-size: 0.62rem;
-  color: #94a3b8;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-.camp-tag {
-  display: inline-block;
-  font-size: 0.58rem;
-  font-weight: 800;
-  color: #16a34a;
-  background: #dcfce7;
-  padding: 1px 6px;
-  border-radius: 20px;
-  letter-spacing: 0.3px;
-}
-
-.camp-uses {
-  font-weight: 700;
   color: #1e293b;
 }
-.camp-ctr {
-  font-weight: 600;
-  color: #475569;
-}
-.camp-roi {
-  font-weight: 800;
-  color: #16a34a;
+.stat-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
-/* Status Badge */
-.camp-status {
+/* AI Score Card Specific */
+.ai-score-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+}
+.ai-score-card .stat-label { color: #cbd5e1; }
+.ai-score-card .stat-status { font-size: 0.75rem; color: #10b981; display: flex; align-items: center; gap: 4px; }
+
+.ai-score-ring {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+.circular-chart { display: block; width: 100%; height: 100%; }
+.circle-bg { fill: none; stroke: #334155; stroke-width: 3; }
+.circle { fill: none; stroke: #10b981; stroke-width: 3; stroke-linecap: round; }
+.percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* ── AI REPORT SECTION ── */
+.ai-report-section {
+  margin-bottom: 32px;
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 32px;
+  box-shadow: 0 10px 40px rgba(99, 102, 241, 0.08);
+}
+.result-header {
+  margin-bottom: 24px;
+}
+.report-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #eef2ff;
+  color: #6366f1;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.report-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.diagnosis-box {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid #f1f5f9;
+}
+.box-icon {
+  width: 40px;
+  height: 40px;
+  background: #f5f3ff;
+  color: #7c3aed;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.box-content h4 { margin: 0 0 4px 0; font-size: 1rem; }
+.box-content p { margin: 0; color: #475569; font-size: 0.92rem; line-height: 1.6; }
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.highlight-item {
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.highlight-item.performer { background: #fffbeb; }
+.highlight-item.performer i { color: #f59e0b; }
+.highlight-item.roi { background: #f0fdf4; }
+.highlight-item.roi i { color: #10b981; }
+.highlight-item.action { background: #f5f3ff; }
+.highlight-item.action i { color: #8b5cf6; }
+
+.hl-text label { display: block; font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+.hl-text span { font-size: 0.9rem; font-weight: 800; color: #1e293b; }
+
+.suggestions-list h4 { font-size: 0.95rem; margin-bottom: 12px; }
+.suggestion-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.sug-pill {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sug-pill i { color: #f59e0b; }
+
+.analysis-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+.mini-summary-card {
+    background: white;
+    padding: 12px 20px;
+    border-radius: 14px;
+    border: 1px solid #f1f5f9;
+}
+.mini-summary-card label { display: block; font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
+.mini-summary-card .val { font-size: 0.95rem; font-weight: 800; color: #1e293b; }
+
+/* ── TABLE SECTION ── */
+.campaign-section {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f1f5f9;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.section-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search-filter {
+  position: relative;
+  width: 280px;
+}
+.search-filter i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+.search-filter input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.premium-table th {
+  text-align: left;
+  padding: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  border-bottom: 1px solid #f1f5f9;
+}
+.premium-table td {
+  padding: 20px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.campaign-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.camp-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.bg-orange { background: #fff7ed; color: #f97316; }
+.bg-indigo { background: #eef2ff; color: #6366f1; }
+.bg-blue { background: #eff6ff; color: #3b82f6; }
+.bg-pink { background: #fdf2f8; color: #ec4899; }
+
+.camp-name { 
+  font-weight: 800; 
+  display: block; 
+  color: #0f172a; 
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+.camp-tag-v2 { 
+  font-size: 0.65rem; 
+  color: #7c3aed; 
+  font-weight: 700; 
+  text-transform: uppercase;
+  background: #f5f3ff;
+  padding: 2px 8px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
+}
+
+.type-badge {
   padding: 4px 10px;
-  border-radius: 20px;
-}
-.status-running {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.status-running::before {
-  content: '';
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #16a34a;
-  animation: pulse-dot 1.5s infinite;
-}
-.status-done {
   background: #f1f5f9;
-  color: #64748b;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
 }
 
-/* View All */
-.camp-view-all {
-  padding-top: 14px;
-  border-top: 1px solid #f1f5f9;
-  text-align: center;
-}
-.camp-view-link {
-  font-size: 0.78rem;
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #7c3aed;
-  text-decoration: none;
-  display: inline-flex;
+}
+.status-running { background: #dcfce7; color: #166534; }
+.status-done { background: #f1f5f9; color: #475569; }
+
+.roi-indicator {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  transition: gap 0.2s;
+  gap: 10px;
 }
-.camp-view-link:hover { gap: 10px; color: #6d28d9; }
+.roi-bar-bg {
+  width: 60px;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.roi-bar-fill {
+  height: 100%;
+  background: #10b981;
+}
+.roi-val { font-weight: 700; color: #1e293b; }
 
-/* ─── Animations ─── */
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-icon:hover {
+  background: #f8fafc;
+  color: #6366f1;
 }
 
-/* ─── Responsive ─── */
-@media (max-width: 1100px) {
-  .body-row { grid-template-columns: 1fr; }
-  .top-stats-bar { grid-template-columns: repeat(2, 1fr); }
+/* Animations */
+.skeleton-pulse {
+  background: linear-gradient(-45deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 400% 400%;
+  animation: pulse-shimmer 1.5s ease-in-out infinite;
 }
-@media (max-width: 768px) {
-  .kpi-row { grid-template-columns: 1fr; }
-  .top-stats-bar { grid-template-columns: 1fr 1fr; }
-  .camp-thead, .camp-row { grid-template-columns: 2fr 1fr 1fr; }
-  .camp-th:nth-child(3), .camp-td:nth-child(3),
-  .camp-th:nth-child(5), .camp-td:nth-child(5) { display: none; }
+@keyframes pulse-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.5s ease; }
+.fade-slide-enter-from { opacity: 0; transform: translateY(20px); }
+
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 24px; }
+.mt-5 { margin-top: 40px; }
+.font-bold { font-weight: 700; }
+.text-muted { color: #94a3b8; }
+.text-indigo { color: #6366f1; }
+
+@media (max-width: 1200px) {
+  .quick-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .highlights-grid { grid-template-columns: 1fr; }
+  .analysis-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
