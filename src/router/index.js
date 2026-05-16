@@ -230,4 +230,60 @@ const router = createRouter({
     routes: routes
 })
 
+router.beforeEach((to, from, next) => {
+    const publicPages = ['/dangnhap', '/dangky', '/forgot-password', '/reset-password', '/blank', '/'];
+    const authRequired = !publicPages.includes(to.path);
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    let user = null;
+
+    if (userStr) {
+        try {
+            user = JSON.parse(userStr);
+        } catch (e) { }
+    }
+
+    if (authRequired && (!token || !user)) {
+        return next('/dangnhap');
+    }
+
+    if (user && user.role && user.role.role_name) {
+        const roleName = user.role.role_name.toLowerCase().trim();
+
+        if (to.path === '/dangnhap' || to.path === '/dangky') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+
+        const pathLower = to.path.toLowerCase();
+        if (pathLower.startsWith('/admin') && roleName !== 'admin') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+        if (pathLower.startsWith('/quanly') && roleName !== 'manager') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+        if (pathLower.startsWith('/nhanvien') && roleName !== 'staff') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+        if (pathLower.startsWith('/pt') && roleName !== 'trainer') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+        if (pathLower.startsWith('/khachhang') && roleName !== 'member') {
+            return next(getRedirectUrlByRole(roleName));
+        }
+    }
+
+    next();
+});
+
+function getRedirectUrlByRole(roleName) {
+    const redirectMap = {
+        'admin': '/admin/quanlynguoidung',
+        'manager': '/quanly/baocao',
+        'staff': '/nhanvien',
+        'trainer': '/pt/lich_tap',
+        'member': '/khachhang/ho_so_ca_nhan',
+    };
+    return redirectMap[roleName] || '/dangnhap';
+}
+
 export default router
