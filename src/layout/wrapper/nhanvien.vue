@@ -55,24 +55,13 @@
       <!-- Top Header -->
       <header class="nv-header">
         <!-- Search bar -->
-        <div class="nv-search">
-          <i class="fas fa-search search-ico"></i>
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="Tìm kiếm hội viên, nhân viên, số điện thoại..."
-            class="search-input"
-          />
-        </div>
+        
 
         <!-- Header Right -->
         <div class="nv-header-right">
 
           <!-- Notification -->
-          <button class="nv-icon-btn" title="Thông báo">
-            <i class="fas fa-bell"></i>
-            <span class="badge-dot"></span>
-          </button>
+          
           <!-- Đăng xuất -->
           <button
             class="btn btn-danger btn-sm d-flex align-items-center gap-2"

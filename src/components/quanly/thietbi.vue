@@ -110,7 +110,8 @@
             :class="{ 'is-selected': selectedDevice && selectedDevice.id === device.id }" @click="selectDevice(device)">
             <div class="device-img-wrap">
               <div class="device-status-badge" :class="device.status">{{ statusLabel(device.status) }}</div>
-              <div class="device-img-placeholder" :style="imgBgFor(device.status)">
+              <img v-if="getEquipmentImage(device.equipment_name)" :src="getEquipmentImage(device.equipment_name)" alt="Equipment" style="width: 100%; height: 100%; object-fit: cover;" />
+              <div v-else class="device-img-placeholder" :style="imgBgFor(device.status)">
                 <i :class="iconFor(device.type)" class="device-img-icon"></i>
               </div>
             </div>
@@ -533,6 +534,27 @@ export default {
 
   methods: {
     // ── HELPERS ──────────────────────────────────────────
+    getEquipmentImage(name) {
+      if (!name) return null;
+      const n = name.toLowerCase();
+      if (n.includes('thảm yoga')) return 'https://tse2.mm.bing.net/th/id/OIP.mEDeEYcqSOPY-oO3RUxkRwHaEJ?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('xe đạp tập')) return 'https://tse1.mm.bing.net/th/id/OIP.kf7Undctgkk84mfFCsaUEAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('rack tập đa năng')) return 'https://tse3.mm.bing.net/th/id/OIP.1se92qVV02I-DI5XOyL9OAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('bóng pilates')) return 'https://tse4.mm.bing.net/th/id/OIP.W3xCdOUHxT19zKTMKnu_2gHaGj?w=870&h=770&rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('máy kéo lưng')) return 'https://tse1.mm.bing.net/th/id/OIP.0vyte9LG2T-Xfcf37AcI4AHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('máy leg press')) return 'https://tse2.mm.bing.net/th/id/OIP.RacZ-GkYTHIOOVEeMCnTnwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('máy rowing')) return 'https://tse4.mm.bing.net/th/id/OIP.SS_TVtlQWtNlYaL98HMsHgHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('khung power rack')) return 'https://tse2.mm.bing.net/th/id/OIP.wZpD8RZWAYYidCyW8FVd1AHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('tạ đơn')) return 'https://down-vn.img.susercontent.com/file/vn-11134208-7r98o-lyoo6k0khtb531';
+      if (n.includes('loa âm thanh')) return 'https://tse2.mm.bing.net/th/id/OIP.Tfd3z65ZAjvK9M_AnWT5DgHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('gương toàn thân')) return 'https://tse1.mm.bing.net/th/id/OIP.SpVARIzfzE1kGH7LXa6eUwHaHa?w=1600&h=1600&rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('máy đẩy ngực') || n.includes('ghế tập ngực')) return 'https://tse2.mm.bing.net/th/id/OIP.43ZteupvrKlAgcAbvqHk8gHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('máy squat')) return 'https://www.yanrefitness.com/wp-content/uploads/2021/06/Figure-1-Showing-a-V-Squat-Machine-image-src-Lifefitness-2048x2048.jpg';
+      if (n.includes('máy đạp leo')) return 'https://tse3.mm.bing.net/th/id/OIP.H6k0RuCPpgYimCkkDrZ5DAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3';
+      if (n.includes('chạy bộ')) return 'https://atochi.vn/media/product/2321_may_chay_bo_atochi_at_316_1.jpg';
+      return null;
+    },
+
     showToast(text, type = 'success') {
       clearTimeout(this.toastTimer)
       this.toast = { show: true, text, type }

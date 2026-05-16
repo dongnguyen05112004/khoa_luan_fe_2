@@ -209,17 +209,24 @@ export default {
         if (!myTrainer) return
         this.myTrainerId = myTrainer.id
 
-        const cRes = await axios.get(`${API}/pt-contracts?trainer_id=${this.myTrainerId}&per_page=100`, authHeaders())
+        const cRes = await axios.get(`${API}/pt-contracts?trainer_id=${this.myTrainerId}&status=active&per_page=100`, authHeaders())
         const contracts = Array.isArray(cRes.data) ? cRes.data : (cRes.data?.data || [])
-        this.members = contracts.map((c, idx) => ({
-          id: c.user?.id,
-          contractId: c.id,
-          name: c.user?.name || 'Hội viên',
-          goal: c.user?.member_profile?.health_notes || 'Giảm cân',
-          remaining: (c.total_sessions||0) - (c.used_sessions||0),
-          total: c.total_sessions || 0,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user?.name||'HV')}&background=${COLORS[idx%COLORS.length].replace('#','')}&color=fff`,
-        }))
+        
+        // Chỉ lấy các hợp đồng còn buổi tập
+        this.members = contracts
+          .filter(c => ((c.total_sessions || 0) - (c.used_sessions || 0)) > 0)
+          .map((c, idx) => {
+            const memberName = c.user?.full_name || c.user?.name || 'Hội viên';
+            return {
+              id: c.user?.id,
+              contractId: c.id,
+              name: memberName,
+              goal: c.user?.member_profile?.health_notes || 'Cải thiện sức khỏe',
+              remaining: (c.total_sessions||0) - (c.used_sessions||0),
+              total: c.total_sessions || 0,
+              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(memberName)}&background=${COLORS[idx%COLORS.length].replace('#','')}&color=fff`,
+            };
+          })
 
         this.loadBookings()
       } catch (e) {
@@ -239,10 +246,11 @@ export default {
             ds = `${parts[0]}-${parts[1]}-${parts[2]}`;
             hr = parseInt(parts[3], 10);
           }
+          const memberName = b.contract?.user?.full_name || b.contract?.user?.name || 'HV';
           return {
             id: b.id,
             memberId: b.contract?.user?.id || b.contract?.user_id,
-            memberName: b.contract?.user?.name || 'HV',
+            memberName: memberName,
             dateStr: ds,
             hour: hr,
             status: b.status === 'pending' ? 'confirmed' : b.status // map pending to booked in ui
@@ -493,7 +501,7 @@ export default {
   border-radius: 3px;
 }
 .box.done { background: #10b981; }
-.box.booked { background: #22c55e; }
+.box.booked { background: #eab308; }
 .box.cancelled { background: #cbd5e1; }
 
 .psc-nav {
@@ -595,7 +603,7 @@ export default {
 .session-block:hover { filter: brightness(0.95); }
 .session-block.active { transform: scale(1.03); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .session-block.done { background: #10b981; }
-.session-block.confirmed, .session-block.booked { background: #22c55e; }
+.session-block.confirmed, .session-block.booked { background: #eab308; color: #fff; }
 .session-block.cancelled { background: #cbd5e1; }
 
 /* Right Panel */
