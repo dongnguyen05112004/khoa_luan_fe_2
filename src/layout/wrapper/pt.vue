@@ -135,9 +135,10 @@ export default {
     loadUserInfo() {
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}')
-        if (user.name) {
-          this.ptName = user.name
-          this.ptAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1c5e2e&color=fff&bold=true&size=64`
+        const nameToDisplay = user.full_name || user.name
+        if (nameToDisplay) {
+          this.ptName = nameToDisplay
+          this.ptAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameToDisplay)}&background=1c5e2e&color=fff&bold=true&size=64`
         }
       } catch (e) {}
     },
@@ -311,8 +312,7 @@ export default {
   font-size: 0.83rem;
   font-weight: 500;
   transition: all 0.2s;
-  white-space: nowrap;
-  overflow: hidden;
+  white-space: normal;
   line-height: 1.35;
 }
 .pt-nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
