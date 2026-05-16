@@ -284,15 +284,24 @@ const loadMembers = async () => {
 
     const cRes = await axios.get(`${API}/pt-contracts?trainer_id=${myTrainerId.value}&per_page=100`, authHeaders());
     const contracts = Array.isArray(cRes.data) ? cRes.data : (cRes.data?.data || []);
-    members.value = contracts.map((c, idx) => {
-      const memberName = c.user?.full_name || c.user?.name || 'Hội viên';
-      return {
-        id: c.user?.id,
-        name: memberName,
-        code: c.user?.member_profile?.card_number || `HV-${c.user?.id}`,
-        avatar: c.user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberName)}&background=${COLORS[idx % COLORS.length].replace('#', '')}&color=fff`,
-      };
+    
+    const uniqueMembers = [];
+    const memberIds = new Set();
+    
+    contracts.forEach((c, idx) => {
+      if (c.user && !memberIds.has(c.user.id)) {
+        const memberName = c.user.full_name || c.user.name || 'Hội viên';
+        uniqueMembers.push({
+          id: c.user.id,
+          name: memberName,
+          code: c.user.member_profile?.card_number || `HV-${c.user.id}`,
+          avatar: c.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberName)}&background=${COLORS[idx % COLORS.length].replace('#', '')}&color=fff`,
+        });
+        memberIds.add(c.user.id);
+      }
     });
+
+    members.value = uniqueMembers;
 
     if (members.value.length > 0) {
       selectMember(members.value[0]);

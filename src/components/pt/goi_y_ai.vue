@@ -94,26 +94,26 @@
               <div class="col-6">
                 <div class="bg-light rounded-4 p-3 h-100 border border-white shadow-sm">
                   <div class="text-muted fw-bold mb-2" style="font-size: 0.7rem;">CÂN NẶNG</div>
-                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.weight || '72.5' }} <span class="fs-6 text-muted fw-normal">kg</span></div> 
+                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.weight || '--' }} <span class="fs-6 text-muted fw-normal" v-if="healthMetrics?.weight">kg</span></div> 
                 </div>
               </div>
               <div class="col-6">
                 <div class="bg-light rounded-4 p-3 h-100 border border-white shadow-sm">
                   <div class="text-muted fw-bold mb-2" style="font-size: 0.7rem;">BMI</div>
-                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.bmi || '22.9' }}</div> 
+                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.bmi || '--' }}</div> 
                 </div>
               </div>
               <div class="col-6">
                 <div class="bg-light rounded-4 p-3 h-100 border border-white shadow-sm">
                   <div class="text-muted fw-bold mb-2" style="font-size: 0.7rem;">TỶ LỆ MỠ</div>
-                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.body_fat_percentage || '24.2' }} <span class="fs-6 text-muted fw-normal">%</span></div>
+                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.body_fat_percentage || '--' }} <span class="fs-6 text-muted fw-normal" v-if="healthMetrics?.body_fat_percentage">%</span></div>
                    
                 </div>
               </div>
               <div class="col-6">
                 <div class="bg-light rounded-4 p-3 h-100 border border-white shadow-sm">
                   <div class="text-muted fw-bold mb-2" style="font-size: 0.7rem;">CHIỀU CAO</div>
-                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.height || '178' }} <span class="fs-6 text-muted fw-normal">cm</span></div>
+                  <div class="fw-bold text-dark fs-3 lh-1 mb-2">{{ healthMetrics?.height || '--' }} <span class="fs-6 text-muted fw-normal" v-if="healthMetrics?.height">cm</span></div>
                   <div style="height: 18px;"></div>
                 </div>
               </div>
@@ -124,8 +124,8 @@
               <i class="fas fa-dumbbell position-absolute" style="font-size: 6rem; right: -20px; bottom: -20px; transform: rotate(-30deg); opacity: 0.15;"></i>
               <div class="position-relative z-1">
                 <div class="fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px; color: rgba(255,255,255,0.9);">KHỐI LƯỢNG CƠ BẮP</div>
-                <div class="fw-bold fs-1 lh-1 mb-2">{{ healthMetrics?.muscle_mass_kg || '34.8' }} <span class="fs-6 fw-normal" style="color: rgba(255,255,255,0.9);">kg</span></div>
-                <div class="fw-bold" style="font-size: 0.8rem; color: #a7f3d0;"><i class="fas fa-arrow-trend-up"></i> Tăng 1.2kg (30 ngày)</div>
+                <div class="fw-bold fs-1 lh-1 mb-2">{{ healthMetrics?.muscle_mass_kg || '--' }} <span class="fs-6 fw-normal" style="color: rgba(255,255,255,0.9);" v-if="healthMetrics?.muscle_mass_kg">kg</span></div>
+                <div v-if="healthMetrics" class="fw-bold" style="font-size: 0.8rem; color: #a7f3d0;"><i class="fas fa-arrow-trend-up"></i> Tăng 1.2kg (30 ngày)</div>
               </div>
             </div>
           </div>
@@ -224,9 +224,7 @@
                 <h4 class="fw-bold text-dark mb-1">Lộ trình 12 tuần đề xuất</h4>
                 <div class="text-muted" style="font-size: 0.9rem;">Cá nhân hóa theo mục tiêu tăng cơ giảm mỡ</div>
               </div>
-              <a href="#" class="text-success text-decoration-none fw-bold d-flex align-items-center gap-1" style="font-size: 0.9rem;">
-                Xem chi tiết <i class="fas fa-arrow-right"></i>
-              </a>
+              
             </div>
 
             <div class="row g-3 mb-4">
@@ -269,8 +267,9 @@
                 </div>
                 <span style="font-size: 0.9rem; max-width: 250px; line-height: 1.4;">Xác nhận để áp dụng lộ trình này vào lịch tập của hội viên.</span>
               </div>
-              <button class="btn btn-primary rounded-3 px-5 py-3 fw-bold border-0 shadow" style="background: #3b82f6; font-size: 0.95rem; letter-spacing: 0.5px;" @click="activatePlan">
-                KÍCH HOẠT LỘ TRÌNH
+              <button class="btn btn-primary rounded-3 px-5 py-3 fw-bold border-0 shadow" style="background: #3b82f6; font-size: 0.95rem; letter-spacing: 0.5px;" @click="activatePlan" :disabled="isActivating">
+                <i class="fas fa-spinner fa-spin me-2" v-if="isActivating"></i>
+                {{ isActivating ? 'ĐANG KÍCH HOẠT...' : 'KÍCH HOẠT LỘ TRÌNH' }}
               </button>
             </div>
           </div>
@@ -339,6 +338,7 @@ export default {
       showHistoryModal: false,
       aiHistory: [],
       loadingHistory: false,
+      isActivating: false,
     }
   },
   computed: {
@@ -413,17 +413,19 @@ export default {
         }
         this.myTrainerId = myTrainer.id
 
-        const cRes = await axios.get(`${API}/pt-contracts?trainer_id=${myTrainer.id}&status=active&per_page=100`)
+        const cRes = await axios.get(`${API}/pt-contracts?trainer_id=${myTrainer.id}&per_page=100`)
         const contracts = Array.isArray(cRes.data) ? cRes.data : (cRes.data?.data || [])
-        const allMembers = contracts.map((c, idx) => ({
-          id: c.user?.id,
-          name: c.user?.full_name || 'Hội viên',
-          shortName: c.user?.full_name || 'Hội viên',
-          code: `HV${c.user?.id}` || 'HV',
-          goal: c.user?.member_profile?.health_notes || 'Tập luyện',
-          level: 'INTERMEDIATE',
-          avatar: c.user?.member_profile?.avatar ? `http://localhost:8000/storage/${c.user.member_profile.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user?.full_name||'HV')}&background=${COLORS[idx%COLORS.length].replace('#','')}&color=fff&bold=true&size=48`,
-        }))
+        const allMembers = contracts
+          .filter(c => c.user)
+          .map((c, idx) => ({
+            id: c.user.id,
+            name: c.user.full_name || 'Hội viên',
+            shortName: c.user.full_name || 'Hội viên',
+            code: `HV${c.user.id}`,
+            goal: c.user.member_profile?.health_notes || 'Tập luyện',
+            level: 'INTERMEDIATE',
+            avatar: c.user.member_profile?.avatar ? `http://localhost:8000/storage/${c.user.member_profile.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user.full_name||'HV')}&background=${COLORS[idx%COLORS.length].replace('#','')}&color=fff&bold=true&size=48`,
+          }))
         
         const uniqueMembers = [];
         const memberIds = new Set();
@@ -489,8 +491,29 @@ export default {
         console.error('generateAi error', e)
       }
     },
-    activatePlan() { 
-      alert('Đã kích hoạt lộ trình cho ' + this.selectedMember.name) 
+    async activatePlan() { 
+      if (!this.aiRecommendation) {
+        alert('Vui lòng tạo phân tích AI trước khi kích hoạt.');
+        return;
+      }
+      
+      this.isActivating = true;
+      try {
+        // Cập nhật tiêu đề để hội viên biết đây là lộ trình chính thức từ PT
+        await axios.put(`${API}/ai-recommendations/${this.aiRecommendation.id}`, {
+          title: 'LỘ TRÌNH LUYỆN TẬP 12 TUẦN: ' + this.aiRecommendation.title
+        });
+        
+        alert('Đã kích hoạt lộ trình cho ' + this.selectedMember.name + '. Hội viên đã có thể xem lộ trình này trong trang "Theo dõi tiến trình".');
+        
+        // Tải lại dữ liệu để cập nhật UI
+        await this.loadMemberData(this.selectedMember.id);
+      } catch (e) {
+        console.error('Lỗi khi kích hoạt lộ trình', e);
+        alert('Có lỗi xảy ra khi kích hoạt lộ trình. Vui lòng thử lại.');
+      } finally {
+        this.isActivating = false;
+      }
     },
     async openHistory() {
       if (!this.selectedMember) return;

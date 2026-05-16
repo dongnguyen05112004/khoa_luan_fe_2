@@ -184,6 +184,8 @@
                 </select>
                 <span class="error-msg" v-if="createErrors.role_id">{{ createErrors.role_id }}</span>
               </div>
+            </div>
+            <div class="form-row">
               <div class="form-group">
                 <label><i class="fas fa-lock form-label-icon"></i> Mật khẩu <span class="required">*</span></label>
                 <div class="input-with-icon">
@@ -672,7 +674,7 @@ export default {
           name: displayName,
           full_name: displayName,
           email: this.editAcc.email,
-          state: this.editAcc.state
+          state: this.editAcc.state,
         };
         if (this.showChangePw && this.editAcc.newPassword) {
           payload.password = this.editAcc.newPassword;

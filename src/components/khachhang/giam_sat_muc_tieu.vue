@@ -55,7 +55,19 @@
             <div class="ai-card-badge"><i class="fas fa-robot me-1"></i>AI RECOMMENDATION</div>
             <div class="ai-card-title">{{ aiRec.title }}</div>
             <p class="ai-card-body">{{ aiRec.ai_diagnosis }}</p>
-            <router-link to="/khachhang/phan_hoi_ai" class="ai-card-link">
+
+            <!-- Roadmap Preview (if exists) -->
+            <div v-if="roadmapPhases.length > 0" class="roadmap-mini mt-3">
+              <div v-for="(phase, idx) in roadmapPhases" :key="idx" class="roadmap-item-mini">
+                <div class="roadmap-phase-tag">W{{ idx*4 + 1 }}-{{ (idx+1)*4 }}</div>
+                <div class="roadmap-phase-content">
+                  <strong>{{ phase.title }}</strong>
+                  <span>{{ phase.desc }}</span>
+                </div>
+              </div>
+            </div>
+
+            <router-link to="/khachhang/phan_hoi_ai" class="ai-card-link mt-2">
               Xem kế hoạch chi tiết <i class="fas fa-arrow-right ms-1"></i>
             </router-link>
           </div>
@@ -205,6 +217,24 @@ export default {
       const pct = Math.min(((this.stats.checkin_count || 0) / max) * 100, 100)
       return pct + '%'
     },
+    roadmapPhases() {
+      if (!this.aiRec || !this.aiRec.ai_suggestions) return [];
+      const lines = this.aiRec.ai_suggestions.split('\n');
+      const phases = [];
+      for (let i = 1; i <= 3; i++) {
+        const line = lines.find(l => l.includes(`[PHASE${i}]`));
+        if (line) {
+          const content = line.replace(`[PHASE${i}]`, '').trim();
+          const parts = content.split('|').map(s => s.trim());
+          if (parts.length >= 2) {
+            phases.push({ title: parts[0], desc: parts.slice(1).join(' | ') });
+          } else {
+            phases.push({ title: `Giai đoạn ${i}`, desc: parts[0] });
+          }
+        }
+      }
+      return phases;
+    }
   },
   async mounted() {
     await this.fetchProgress()
@@ -391,6 +421,43 @@ export default {
 }
 .ai-card-link:hover { text-decoration: underline; }
 .ai-card-empty { border-left-color: #e2e8f0; }
+
+/* Roadmap Mini */
+.roadmap-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
+}
+.roadmap-item-mini {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.roadmap-phase-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #64748b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.roadmap-phase-content {
+  display: flex;
+  flex-direction: column;
+}
+.roadmap-phase-content strong {
+  font-size: 0.75rem;
+  color: #1e293b;
+}
+.roadmap-phase-content span {
+  font-size: 0.7rem;
+  color: #64748b;
+  line-height: 1.3;
+}
 
 /* Monthly Wins */
 .wins-card {

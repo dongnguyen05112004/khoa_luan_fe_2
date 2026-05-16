@@ -427,6 +427,7 @@
 </template>
 
 <script>
+import axios from 'axios'
 import { equipmentApi, maintenanceApi } from '../../services/equipmentApi.js'
 
 export default {

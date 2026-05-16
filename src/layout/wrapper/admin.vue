@@ -26,7 +26,7 @@
           <span v-show="!sidebarCollapsed">Quản lý người dùng</span>
         </router-link>
 
-       <router-link to="/admin/config" class="nav-item" active-class="active">
+        <router-link to="/admin/config" class="nav-item" active-class="active">
           <i class="fas fa-cogs nav-icon"></i>
           <span v-show="!sidebarCollapsed">Cấu hình hệ thống</span>
         </router-link>
