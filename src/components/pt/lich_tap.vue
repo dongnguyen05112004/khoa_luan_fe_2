@@ -184,7 +184,15 @@ export default {
     },
     activeMemberData() {
       if(!this.activeSession) return null
-      return this.members.find(m => m.id === this.activeSession.memberId)
+      const member = this.members.find(m => m.id === this.activeSession.memberId)
+      if (member) return member;
+      return {
+        name: this.activeSession.memberName,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(this.activeSession.memberName)}&background=cbd5e1&color=fff`,
+        goal: 'Đã hoàn thành khóa tập',
+        remaining: 0,
+        total: 0
+      }
     },
     selectedFormMember() {
       if(!this.form.contractId) return null
